@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Türkiye Gezi Günlüğü (Tam Sürüm)</title>
+    
+    <!-- React & ReactDOM (Global) -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Firebase Compat SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .leaflet-container { width: 100%; height: 100%; z-index: 1; background: #f8fafc; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #ef4444; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #dc2626; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .animate-fadeIn { animation: fadeIn 0.2s ease-out; }
+        
+        /* AI Metin Stilleri */
+        .ai-content h3 { font-weight: bold; margin-top: 0.5em; color: #b91c1c; }
+        .ai-content ul { list-style-type: disc; padding-left: 1.2em; margin-bottom: 0.5em; }
+        .ai-content li { margin-bottom: 0.2em; }
+        
+        .city-label {
+            background: transparent; border: none; box-shadow: none;
+            font-size: 11px; font-weight: 700; color: #1f2937;
+            text-shadow: 2px 0 #fff, -2px 0 #fff, 0 2px #fff, 0 -2px #fff, 1px 1px #fff, -1px -1px #fff, 1px -1px #fff, -1px 1px #fff;
+            text-align: center; opacity: 1 !important; white-space: nowrap;
+        }
+        .leaflet-tooltip { background: transparent; border: none; box-shadow: none; }
+        .leaflet-tooltip-top:before, .leaflet-tooltip-bottom:before, .leaflet-tooltip-left:before, .leaflet-tooltip-right:before { display: none; }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen overflow-hidden">
+    <div id="root" class="h-full"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // ==========================================
+        // --- AYARLAR ---
+        // ==========================================
+        
+        const MANUAL_GEMINI_KEY = "AIzaSyA48kSMw0m8i7Fc3bPHned7jE_8iBUwTDk"; 
+        
+        const MANUAL_FIREBASE_CONFIG = {
+          apiKey: "AIzaSyBB5WR_SqJOjcKJjMLElGnwclYYbX_6zNQ",
+          authDomain: "adimadim-5b4da.firebaseapp.com",
+          projectId: "adimadim-5b4da",
+          storageBucket: "adimadim-5b4da.firebasestorage.app",
+          messagingSenderId: "751539260206",
+          appId: "1:751539260206:web:a9278d0953627121b088bf",
+          measurementId: "G-EY96KQHCSZ"
+        };
+
+        // ------------------------------------------
+
+        const envApiKey = typeof apiKey !== 'undefined' ? apiKey : ""; 
+        const finalApiKey = MANUAL_GEMINI_KEY || envApiKey;
+        const firebaseConfig = MANUAL_FIREBASE_CONFIG || (typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        let app, auth, db;
+        let isFirebaseReady = false;
+
+        if (firebaseConfig) {
+            try {
+                if (!firebase.apps.length) {
+                    app = firebase.initializeApp(firebaseConfig);
+                } else {
+                    app = firebase.app();
+                }
+                auth = firebase.auth();
+                db = firebase.firestore();
+                isFirebaseReady = true;
+            } catch (e) {
+                console.error("Firebase başlatma hatası:", e);
+            }
+        }
+
+        const Icon = ({ name, className, onClick }) => {
+            const ref = useRef(null);
+            useEffect(() => {
+                if(window.lucide && ref.current) {
+                    const pascalName = name.split('-').map(n => n.charAt(0).toUpperCase() + n.slice(1)).join('');
+                    const iconNode = window.lucide.icons[pascalName];
+                    if(iconNode) {
+                        const svg = window.lucide.createElement(iconNode);
+                        if(className) {
+                            const existingClass = svg.getAttribute('class') || '';
+                            svg.setAttribute('class', `${existingClass} ${className}`.trim());
+                        }
+                        ref.current.innerHTML = '';
+                        ref.current.appendChild(svg);
+                    }
+                }
+            }, [name, className]);
+            return <span ref={ref} onClick={onClick} className={`inline-flex items-center justify-center ${onClick ? 'cursor-pointer' : ''}`}></span>;
+        };
+
+        const ConfigWarning = () => (
+            <div className="flex flex-col h-screen w-full items-center justify-center bg-gray-100 p-6 text-center">
+                <div className="bg-white p-8 rounded-xl shadow-2xl max-w-lg">
+                    <div className="text-red-500 mb-4 flex justify-center"><Icon name="alert-triangle" className="w-16 h-16" /></div>
+                    <h1 className="text-2xl font-bold text-gray-800 mb-2">Ayarlar Eksik</h1>
+                    <p className="text-gray-600">Firebase yapılandırması bulunamadı.</p>
+                </div>
+            </div>
+        );
+
+        const callGeminiAPI = async (prompt) => {
+            if (!finalApiKey) return "Hata: API anahtarı eksik.";
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${finalApiKey}`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                if (!response.ok) throw new Error('API Hatası');
+                const data = await response.json();
+                return data.candidates?.[0]?.content?.parts?.[0]?.text || "Yanıt alınamadı.";
+            } catch (error) { return "Yapay zeka servisine ulaşılamıyor."; }
+        };
+
+        // 81 İL İÇİN GEZİ ÖNERİLERİ (TAM LİSTE)
+        const citySuggestionsData = {
+            "Adana": ["Taş Köprü", "Sabancı Merkez Camii", "Kazancılar Çarşısı"],
+            "Adıyaman": ["Nemrut Dağı", "Cendere Köprüsü", "Perre Antik Kenti"],
+            "Afyonkarahisar": ["Afyon Kalesi", "İscehisar Peribacaları", "Ulu Camii"],
+            "Ağrı": ["İshak Paşa Sarayı", "Ağrı Dağı", "Meteor Çukuru"],
+            "Amasya": ["Kral Kaya Mezarları", "Yalıboyu Evleri", "Amasya Kalesi"],
+            "Ankara": ["Anıtkabir", "Ankara Kalesi", "Anadolu Medeniyetleri Müzesi"],
+            "Antalya": ["Kaleiçi", "Düden Şelalesi", "Aspendos Antik Tiyatrosu"],
+            "Artvin": ["Karagöl", "Mençuna Şelalesi", "Maral Şelalesi"],
+            "Aydın": ["Afrodisias Antik Kenti", "Didim Apollon Tapınağı", "Güvercinada Kalesi"],
+            "Balıkesir": ["Cunda Adası", "Kaz Dağları", "Manyas Kuş Cenneti"],
+            "Bilecik": ["Şeyh Edebali Türbesi", "Ertuğrul Gazi Türbesi", "Metristepe Zafer Anıtı"],
+            "Bingöl": ["Yüzen Adalar", "Çır Şelalesi", "Kral Kızı Kalesi"],
+            "Bitlis": ["Ahlat Selçuklu Mezarlığı", "Nemrut Krater Gölü", "İhlasiye Medresesi"],
+            "Bolu": ["Yedigöller", "Abant Gölü", "Gölcük Tabiat Parkı"],
+            "Burdur": ["Salda Gölü", "Sagalassos Antik Kenti", "İnsuyu Mağarası"],
+            "Bursa": ["Ulu Camii", "Yeşil Türbe", "Cumalıkızık Köyü"],
+            "Çanakkale": ["Gelibolu Yarımadası", "Truva Antik Kenti", "Aynalı Çarşı"],
+            "Çankırı": ["Tuz Mağarası", "Çankırı Kalesi", "Taş Mescit"],
+            "Çorum": ["Hattuşaş Antik Kenti", "Alacahöyük", "Çorum Müzesi"],
+            "Denizli": ["Pamukkale Travertenleri", "Hierapolis Antik Kenti", "Keloğlan Mağarası"],
+            "Diyarbakır": ["Diyarbakır Surları", "Ulu Camii", "Hevsel Bahçeleri"],
+            "Edirne": ["Selimiye Camii", "Meriç Köprüsü", "Karaağaç"],
+            "Elazığ": ["Harput Kalesi", "Keban Barajı", "Hazar Gölü"],
+            "Erzincan": ["Girlevik Şelalesi", "Karanlık Kanyon", "Mama Hatun Türbesi"],
+            "Erzurum": ["Çifte Minareli Medrese", "Palandöken", "Üç Kümbetler"],
+            "Eskişehir": ["Odunpazarı Evleri", "Porsuk Çayı", "Sazova Parkı"],
+            "Gaziantep": ["Zeugma Mozaik Müzesi", "Bakırcılar Çarşısı", "Gaziantep Kalesi"],
+            "Giresun": ["Giresun Adası", "Giresun Kalesi", "Kümbet Yaylası"],
+            "Gümüşhane": ["Karaca Mağarası", "Tomara Şelalesi", "Santa Harabeleri"],
+            "Hakkari": ["Cilo Dağları", "Zap Vadisi", "Meydan Medresesi"],
+            "Hatay": ["Hatay Arkeoloji Müzesi", "Saint Pierre Kilisesi", "Titus Tüneli"],
+            "Isparta": ["Lavanta Bahçeleri", "Eğirdir Gölü", "Yazılı Kanyon"],
+            "Mersin": ["Kızkalesi", "Cennet-Cehennem Obrukları", "Yerköprü Şelalesi"],
+            "İstanbul": ["Ayasofya", "Topkapı Sarayı", "Galata Kulesi"],
+            "İzmir": ["Efes Antik Kenti", "Saat Kulesi", "Şirince Köyü"],
+            "Kars": ["Ani Harabeleri", "Çıldır Gölü", "Kars Kalesi"],
+            "Kastamonu": ["Kastamonu Kalesi", "Valla Kanyonu", "Ilıca Şelalesi"],
+            "Kayseri": ["Erciyes Dağı", "Kapuzbaşı Şelaleleri", "Hunat Hatun Külliyesi"],
+            "Kırklareli": ["Dupnisa Mağarası", "İğneada Longoz Ormanları", "Kıyıköy"],
+            "Kırşehir": ["Cacabey Medresesi", "Ahi Evran Türbesi", "Seyfe Gölü"],
+            "Kocaeli": ["Ormanya", "Maşukiye", "Kartepe"],
+            "Konya": ["Mevlana Müzesi", "Çatalhöyük", "Kelebekler Vadisi"],
+            "Kütahya": ["Aizanoi Antik Kenti", "Kütahya Kalesi", "Çini Müzesi"],
+            "Malatya": ["Arslantepe Höyüğü", "Günpınar Şelalesi", "Levent Vadisi"],
+            "Manisa": ["Sardes Antik Kenti", "Spil Dağı", "Kula Peribacaları"],
+            "Kahramanmaraş": ["Taş Köprü", "Yedikuyular Kayak Merkezi", "Kapalı Çarşı"],
+            "Mardin": ["Deyrulzafaran Manastırı", "Mardin Evleri", "Kasımiye Medresesi"],
+            "Muğla": ["Ölüdeniz", "Kelebekler Vadisi", "Bodrum Kalesi"],
+            "Muş": ["Murat Köprüsü", "Muş Kalesi", "Haspet Kalesi"],
+            "Nevşehir": ["Kapadokya", "Göreme Açık Hava Müzesi", "Ihlara Vadisi"],
+            "Niğde": ["Niğde Kalesi", "Gümüşler Manastırı", "Aladağlar"],
+            "Ordu": ["Boztepe", "Yason Burnu", "Çambaşı Yaylası"],
+            "Rize": ["Ayder Yaylası", "Zilkale", "Fırtına Deresi"],
+            "Sakarya": ["Sapanca Gölü", "Acarlar Longozu", "Justinianus Köprüsü"],
+            "Samsun": ["Bandırma Vapuru", "Amisos Tepesi", "Şahinkaya Kanyonu"],
+            "Siirt": ["Tillo Kalesi", "Veysel Karani Türbesi", "Botan Vadisi"],
+            "Sinop": ["Hamsilos Koyu", "Tarihi Sinop Cezaevi", "Erfelek Şelaleleri"],
+            "Sivas": ["Divriği Ulu Camii", "Çifte Minareli Medrese", "Gökpınar Gölü"],
+            "Tekirdağ": ["Rüstem Paşa Camii", "Rakoczi Müzesi", "Uçmakdere"],
+            "Tokat": ["Ballıca Mağarası", "Tokat Kalesi", "Taşhan"],
+            "Trabzon": ["Sümela Manastırı", "Uzungöl", "Atatürk Köşkü"],
+            "Tunceli": ["Munzur Vadisi", "Pertek Kalesi", "Ovacık Gözeleri"],
+            "Şanlıurfa": ["Göbeklitepe", "Balıklıgöl", "Harran Evleri"],
+            "Uşak": ["Ulubey Kanyonu", "Karun Hazineleri", "Clandras Köprüsü"],
+            "Van": ["Akdamar Adası", "Van Kalesi", "Muradiye Şelalesi"],
+            "Yozgat": ["Yozgat Çamlığı", "Basilica Therma", "Saat Kulesi"],
+            "Zonguldak": ["Gökgöl Mağarası", "Filyos Kalesi", "Maden Müzesi"],
+            "Aksaray": ["Ihlara Vadisi", "Sultanhanı Kervansarayı", "Hasan Dağı"],
+            "Bayburt": ["Baksı Müzesi", "Bayburt Kalesi", "Aydıntepe Yeraltı Şehri"],
+            "Karaman": ["Karaman Kalesi", "Manazan Mağaraları", "Binbirkilise"],
+            "Kırıkkale": ["Silah Müzesi", "Çeşnigir Köprüsü", "Karaahmetli Tabiat Parkı"],
+            "Batman": ["Hasankeyf", "Malabadi Köprüsü", "Mor Kiryakus Manastırı"],
+            "Şırnak": ["Cudi Dağı", "Mem u Zin Türbesi", "Kırmızı Medrese"],
+            "Bartın": ["Amasra Kalesi", "Güzelcehisar Lav Sütunları", "İnkumu"],
+            "Ardahan": ["Çıldır Gölü", "Şeytan Kalesi", "Ardahan Kalesi"],
+            "Iğdır": ["Ağrı Dağı", "Tuzluca Tuz Mağaraları", "Meteor Çukuru"],
+            "Yalova": ["Yürüyen Köşk", "Sudüşen Şelalesi", "Termal Kaplıcaları"],
+            "Karabük": ["Safranbolu Evleri", "Kristal Teras", "Bulak Mencilis Mağarası"],
+            "Kilis": ["Ravanda Kalesi", "Oylum Höyük", "Şeyh Mansur Türbesi"],
+            "Osmaniye": ["Karatepe Aslantaş", "Toprakkale Kalesi", "Zorkun Yaylası"],
+            "Düzce": ["Güzeldere Şelalesi", "Fakıllı Mağarası", "Prusias ad Hypium"]
+        };
+
+        const customCityCenters = {
+            'Antalya': [36.95, 30.70], 'Muğla': [37.20, 28.45], 'İstanbul': [41.05, 28.97],
+            'Çanakkale': [40.15, 26.40], 'İzmir': [38.42, 27.14], 'Bursa': [40.18, 29.06],
+            'Mersin': [36.80, 34.63], 'Samsun': [41.28, 36.33], 'Trabzon': [40.95, 39.75],
+            'Rize': [40.95, 40.85], 'Artvin': [41.18, 41.82], 'Hakkari': [37.57, 43.73],
+            'Kocaeli': [40.85, 29.88], 'Tekirdağ': [40.98, 27.51], 'Zonguldak': [41.35, 31.79],
+            'Sinop': [41.95, 35.10]
+        };
+
+        const LoginScreen = ({ onLogin }) => {
+            const [isRegistering, setIsRegistering] = useState(false);
+            const [inputUsername, setInputUsername] = useState("");
+            const [inputPassword, setInputPassword] = useState("");
+            const [loading, setLoading] = useState(false);
+            const [error, setError] = useState(null);
+            const [successMsg, setSuccessMsg] = useState(null);
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                if(!inputUsername.trim() || !inputPassword.trim()) return;
+                const uName = inputUsername.trim().toLowerCase();
+                const uPass = inputPassword.trim();
+
+                if (isRegistering && uPass.length < 6) {
+                    setError("Şifre en az 6 karakter olmalı.");
+                    return;
+                }
+                setLoading(true); setError(null); setSuccessMsg(null);
+
+                try {
+                    const userRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_credentials').doc(uName);
+                    const docSnap = await userRef.get();
+
+                    if (isRegistering) {
+                        if (docSnap.exists) {
+                            setError("Bu kullanıcı adı alınmış.");
+                        } else {
+                            await userRef.set({ password: uPass });
+                            setSuccessMsg("Kayıt başarılı! Giriş yapabilirsiniz.");
+                            setIsRegistering(false); setInputPassword("");
+                        }
+                    } else {
+                        if (docSnap.exists) {
+                            if (docSnap.data().password === uPass) onLogin(uName);
+                            else setError("Hatalı şifre!");
+                        } else {
+                            setError("Kullanıcı bulunamadı.");
+                        }
+                    }
+                } catch (err) {
+                    console.error("Giriş Hatası:", err);
+                    let msg = "Bağlantı hatası.";
+                    if (err.code === 'permission-denied') msg = "Erişim Reddedildi! Lütfen Firebase Console'dan Firestore Rules kısmını 'allow read, write: if true;' yapın.";
+                    else if (err.code === 'unavailable') msg = "Sunucuya ulaşılamıyor. İnternet bağlantınızı kontrol edin.";
+                    setError(msg);
+                } finally { setLoading(false); }
+            };
+
+            return (
+                <div className="flex h-screen w-full items-center justify-center bg-gray-100 p-4">
+                    <div className="bg-white p-8 rounded-xl shadow-2xl w-full max-w-sm text-center">
+                        <div className="mb-6 flex justify-center"><div className="bg-red-100 p-4 rounded-full"><Icon name="map" className="w-12 h-12 text-red-600" /></div></div>
+                        <h1 className="text-2xl font-bold text-gray-800 mb-1">Türkiye Gezi Günlüğü</h1>
+                        <p className="text-gray-500 mb-6 text-xs">Gez, İşaretle, Paylaş.</p>
+                        <div className="flex border-b border-gray-200 mb-4">
+                            <button className={`flex-1 pb-2 text-sm font-medium ${!isRegistering ? 'text-red-600 border-b-2 border-red-600' : 'text-gray-500'}`} onClick={() => setIsRegistering(false)}>Giriş Yap</button>
+                            <button className={`flex-1 pb-2 text-sm font-medium ${isRegistering ? 'text-red-600 border-b-2 border-red-600' : 'text-gray-500'}`} onClick={() => setIsRegistering(true)}>Kayıt Ol</button>
+                        </div>
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <input type="text" className="w-full border border-gray-300 rounded px-3 py-2" placeholder="Kullanıcı Adı (örn: sametcinar)" value={inputUsername} onChange={e => setInputUsername(e.target.value)} disabled={loading} />
+                            <input type="password" className="w-full border border-gray-300 rounded px-3 py-2" placeholder="Şifre" value={inputPassword} onChange={e => setInputPassword(e.target.value)} disabled={loading} />
+                            {error && <div className="text-red-500 text-xs text-left bg-red-50 p-2 rounded border border-red-200">{error}</div>}
+                            {successMsg && <div className="text-green-600 text-xs text-left bg-green-50 p-2 rounded">{successMsg}</div>}
+                            <button type="submit" className="w-full bg-red-600 text-white font-bold py-2 rounded hover:bg-red-700 transition-colors" disabled={loading}>{loading ? "İşleniyor..." : (isRegistering ? "Kayıt Ol" : "Giriş Yap")}</button>
+                        </form>
+                    </div>
+                </div>
+            );
+        };
+
+        const MainApp = ({ myUsername, currentUsername, onViewChange, onLogout }) => {
+            const [markers, setMarkers] = useState([]);
+            const mapRef = useRef(null);
+            const [geoJsonLayer, setGeoJsonLayer] = useState(null);
+            const [isModalOpen, setIsModalOpen] = useState(false);
+            const [selectedCity, setSelectedCity] = useState(null);
+            const [sidebarOpen, setSidebarOpen] = useState(true);
+            const [loading, setLoading] = useState(true);
+            const [searchQuery, setSearchQuery] = useState("");
+            
+            const [guideContent, setGuideContent] = useState(null);
+            const [isGeneratingGuide, setIsGeneratingGuide] = useState(false);
+            const [isEnhancingNote, setIsEnhancingNote] = useState(false);
+            const [note, setNote] = useState("");
+            const [images, setImages] = useState([]);
+            const [checkedPlaces, setCheckedPlaces] = useState([]);
+
+            const isReadOnly = myUsername !== currentUsername;
+            const markersRef = useRef(markers);
+
+            useEffect(() => { markersRef.current = markers; }, [markers]);
+
+            // Veri Çekme
+            useEffect(() => {
+                if (!currentUsername) return;
+                const docRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_maps').doc(currentUsername);
+                const unsubscribe = docRef.onSnapshot((doc) => {
+                    if (doc.exists) setMarkers(doc.data().markers || []);
+                    else setMarkers([]);
+                });
+                return () => unsubscribe();
+            }, [currentUsername]);
+
+            // Veri Kaydetme
+            const saveToFirebase = async (newMarkers) => {
+                if (isReadOnly) return;
+                try {
+                    await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_maps').doc(myUsername).set({
+                        markers: newMarkers, lastUpdated: new Date().toISOString(), username: myUsername
+                    }, { merge: true });
+                } catch (e) { console.error("Kayıt Hatası:", e); alert("Kayıt başarısız: " + e.message); }
+            };
+
+            // Harita Boyama
+            useEffect(() => {
+                if (geoJsonLayer) {
+                    geoJsonLayer.eachLayer(layer => {
+                        const cityName = layer.feature.properties.name;
+                        const isVisited = markers.some(m => m.cityName === cityName);
+                        layer.setStyle({ fillColor: isVisited ? '#ef4444' : '#9ca3af', fillOpacity: isVisited ? 0.9 : 0.5, color: 'white', weight: 1 });
+                    });
+                }
+            }, [markers, geoJsonLayer]);
+
+            // Harita Başlatma
+            useEffect(() => {
+                if (mapRef.current) return;
+                const container = document.getElementById('map-container');
+                if(!container) return;
+                
+                if(container._leaflet_id) { container._leaflet_id = null; container.innerHTML = ""; }
+
+                const mapInstance = L.map('map-container').setView([39.0, 35.5], 6);
+                mapRef.current = mapInstance;
+
+                L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+                    attribution: 'Tiles &copy; Esri', maxZoom: 16
+                }).addTo(mapInstance);
+
+                fetch('https://raw.githubusercontent.com/codeforgermany/click_that_hood/main/public/data/turkey.geojson')
+                    .then(res => res.json())
+                    .then(data => {
+                        const layer = L.geoJSON(data, {
+                            style: () => ({ fillColor: '#9ca3af', weight: 1, opacity: 1, color: 'white', fillOpacity: 0.5 }),
+                            onEachFeature: (feature, layer) => {
+                                const cityName = feature.properties.name;
+                                let center = layer.getBounds().getCenter();
+                                if(customCityCenters[cityName]) center = L.latLng(customCityCenters[cityName]);
+
+                                L.marker(center, { icon: L.divIcon({className: 'hidden'}), interactive: false })
+                                 .addTo(mapInstance).bindTooltip(cityName, { permanent: true, direction: 'center', className: 'city-label' });
+
+                                layer.on('click', () => {
+                                    setSelectedCity({ name: cityName, latlng: center });
+                                    const existing = markersRef.current.find(m => m.cityName === cityName);
+                                    if(existing) {
+                                        setNote(existing.note || "");
+                                        setImages(existing.images || (existing.image ? [existing.image] : []));
+                                        setCheckedPlaces(existing.checkedPlaces || []);
+                                        setGuideContent(existing.aiGuide || null);
+                                    } else {
+                                        setNote(""); setImages([]); setCheckedPlaces([]); setGuideContent(null);
+                                    }
+                                    setIsModalOpen(true);
+                                });
+                                layer.on('mouseover', function() { this.setStyle({ weight: 2, color: '#333', fillOpacity: 0.8 }); });
+                                layer.on('mouseout', function() { this.setStyle({ weight: 1, color: 'white', fillOpacity: 0.5 }); });
+                            }
+                        }).addTo(mapInstance);
+                        setGeoJsonLayer(layer);
+                        setLoading(false);
+                    }).catch(err => { console.error(err); setLoading(false); alert("Harita verisi yüklenemedi."); });
+                
+                return () => { if(mapRef.current) { mapRef.current.remove(); mapRef.current = null; } };
+            }, []);
+
+            const handleSave = () => {
+                if (!selectedCity || isReadOnly) return;
+                const newMarker = {
+                    id: Date.now(), lat: selectedCity.latlng.lat, lng: selectedCity.latlng.lng,
+                    cityName: selectedCity.name, note: note, images: images, checkedPlaces: checkedPlaces,
+                    aiGuide: guideContent, date: new Date().toLocaleDateString('tr-TR')
+                };
+                const updated = [...markers.filter(m => m.cityName !== selectedCity.name), newMarker];
+                setMarkers(updated);
+                saveToFirebase(updated);
+                setIsModalOpen(false);
+            };
+
+            const handleDelete = (name) => {
+                if(confirm("Silmek istediğinize emin misiniz?")) {
+                    const updated = markers.filter(m => m.cityName !== name);
+                    setMarkers(updated);
+                    saveToFirebase(updated);
+                }
+            };
+
+            const handleImage = (e) => {
+                const files = Array.from(e.target.files);
+                files.forEach(f => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => setImages(prev => [...prev, reader.result]);
+                    reader.readAsDataURL(f);
+                });
+            };
+
+            const toggleCheckedPlace = (place) => {
+                if(isReadOnly) return;
+                setCheckedPlaces(prev => prev.includes(place) ? prev.filter(p=>p!==place) : [...prev, place]);
+            };
+
+            const generateGuide = async () => {
+                if(!selectedCity) return;
+                setIsGeneratingGuide(true);
+                const res = await callGeminiAPI(`${selectedCity.name} için 3 gizli yer ve 3 yerel lezzet önerisi yap. Türkçe ve kısa maddeler halinde.`);
+                setGuideContent(res);
+                setIsGeneratingGuide(false);
+            };
+
+            const enhanceNote = async () => {
+                if(!note) return;
+                setIsEnhancingNote(true);
+                const res = await callGeminiAPI(`Bu gezi notunu edebi ve etkileyici bir dille yeniden yaz: "${note}"`);
+                setNote(res);
+                setIsEnhancingNote(false);
+            };
+
+            const handleSearch = async (e) => {
+                e.preventDefault();
+                if(!searchQuery.trim()) return;
+                const target = searchQuery.trim().toLowerCase();
+                try {
+                    const doc = await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_credentials').doc(target).get();
+                    if(doc.exists) { onViewChange(target); setSearchQuery(""); if(window.innerWidth < 768) setSidebarOpen(false); }
+                    else alert("Kullanıcı bulunamadı!");
+                } catch(e) { alert("Arama hatası: " + e.message); }
+            };
+
+            const calculateProgress = (cityName, visitedPlaces) => {
+                const allPlaces = citySuggestionsData[cityName] || [];
+                if (allPlaces.length === 0) return 0;
+                const visitedCount = visitedPlaces ? visitedPlaces.length : 0;
+                return Math.round((visitedCount / allPlaces.length) * 100);
+            };
+
+            const formatAI = (text) => text ? text.split('\n').map((l, i) => <p key={i} className="mb-1">{l.replace(/\*/g, '')}</p>) : null;
+
+            return (
+                <div className="flex h-full relative">
+                    <div className={`absolute md:relative z-20 h-full bg-white shadow-xl transition-all flex flex-col ${sidebarOpen ? 'w-full md:w-96' : 'w-0 overflow-hidden'}`}>
+                        <div className="p-4 bg-red-600 text-white shadow-md">
+                            <div className="flex justify-between items-center mb-4">
+                                <h1 className="font-bold flex gap-2"><Icon name="map" className="w-6 h-6"/> Gezi Günlüğü</h1>
+                                <div className="flex gap-2">
+                                    {isReadOnly ? <button onClick={()=>onViewChange(myUsername)} className="bg-white text-red-600 px-2 rounded text-xs">Profilim</button> 
+                                    : <button onClick={onLogout} className="bg-red-800 p-1 rounded"><Icon name="log-out" className="w-4 h-4"/></button>}
+                                    <button onClick={()=>setSidebarOpen(false)}><Icon name="chevrons-left" className="w-6 h-6"/></button>
+                                </div>
+                            </div>
+                            <form onSubmit={handleSearch} className="relative">
+                                <input className="w-full pl-8 py-1 rounded text-black text-sm" placeholder="Kullanıcı ara" value={searchQuery} onChange={e=>setSearchQuery(e.target.value)}/>
+                                <Icon name="search" className="w-4 h-4 text-gray-500 absolute left-2 top-2"/>
+                            </form>
+                        </div>
+                        
+                        <div className="p-4 bg-gray-50 border-b">
+                            <div className="flex justify-between mb-1 text-sm font-bold text-red-800">
+                                <span>Gezilen: {markers.length} / 81</span>
+                                <span>@{currentUsername}</span>
+                            </div>
+                            <div className="w-full bg-gray-200 h-2 rounded-full"><div className="bg-red-600 h-2 rounded-full" style={{width: `${(markers.length/81)*100}%`}}></div></div>
+                            {isReadOnly && <div className="mt-2 text-xs bg-blue-100 text-blue-700 p-1 rounded text-center">Görüntüleme Modu</div>}
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-2 space-y-3">
+                            {markers.map(m => {
+                                const progress = calculateProgress(m.cityName, m.checkedPlaces);
+                                return (
+                                <div key={m.id} onClick={()=> { if(mapRef.current) mapRef.current.flyTo([m.lat, m.lng], 8); }} className="bg-white p-3 rounded border shadow-sm hover:shadow-md cursor-pointer relative group">
+                                    <div className="flex justify-between font-bold text-gray-800">
+                                        <span className="flex items-center gap-1">
+                                            {m.cityName}
+                                            {progress === 100 && <span className="text-xs bg-green-100 text-green-600 px-1 rounded">Tamamlandı</span>}
+                                        </span>
+                                        {!isReadOnly && <button onClick={(e)=>{e.stopPropagation(); handleDelete(m.cityName)}} className="text-gray-400 hover:text-red-500"><Icon name="trash-2" className="w-4 h-4"/></button>}
+                                    </div>
+                                    
+                                    <div className="mt-1 mb-2">
+                                         <div className="flex justify-between text-xs mb-1 text-gray-500"><span>İlerleme</span><span>%{progress}</span></div>
+                                         <div className="w-full bg-gray-100 h-1.5 rounded-full"><div className={`h-1.5 rounded-full ${progress===100?'bg-green-500':'bg-blue-500'}`} style={{width: `${progress}%`}}></div></div>
+                                    </div>
+
+                                    <div className="text-xs text-gray-500 mb-2">{m.date}</div>
+                                    {m.images?.length > 0 && <div className="flex gap-1 overflow-x-auto pb-1">{m.images.map((img,i)=><img key={i} src={img} className="h-12 w-12 object-cover rounded"/>)}</div>}
+                                </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {!sidebarOpen && <button onClick={()=>setSidebarOpen(true)} className="absolute top-4 left-4 z-10 bg-white p-2 rounded shadow text-red-600"><Icon name="menu" className="w-6 h-6"/></button>}
+
+                    <div id="map-container" className="flex-1 z-0 relative">
+                        {loading && <div className="absolute inset-0 flex items-center justify-center bg-white z-[999] opacity-80">Yükleniyor...</div>}
+                    </div>
+
+                    {isModalOpen && (
+                        <div className="fixed inset-0 z-[1000] bg-black bg-opacity-50 flex items-center justify-center p-4">
+                            <div className="bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col">
+                                <div className="bg-red-600 p-3 text-white flex justify-between">
+                                    <span className="font-bold flex gap-2"><Icon name="map-pin" className="w-5 h-5"/> {selectedCity?.name}</span>
+                                    <button onClick={()=>setIsModalOpen(false)}><Icon name="x" className="w-5 h-5"/></button>
+                                </div>
+                                <div className="p-4 overflow-y-auto flex-1">
+                                    
+                                    <div className="bg-orange-50 border border-orange-100 rounded p-3 mb-4">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <h4 className="text-sm font-bold text-orange-800 flex gap-2"><Icon name="list-checks" className="w-4 h-4"/> Gezilecek Yerler</h4>
+                                            <span className="text-xs font-bold bg-white px-2 py-0.5 rounded text-orange-600 border border-orange-200">%{calculateProgress(selectedCity?.name, checkedPlaces)}</span>
+                                        </div>
+                                        <div className="space-y-1">
+                                            {(citySuggestionsData[selectedCity?.name] || []).map((place, idx) => {
+                                                const isChecked = checkedPlaces.includes(place);
+                                                return (
+                                                    <div key={idx} onClick={()=>toggleCheckedPlace(place)} className={`flex items-center gap-2 p-2 rounded border cursor-pointer ${isChecked ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200 hover:border-orange-300'}`}>
+                                                        <div className={`w-4 h-4 rounded border flex items-center justify-center ${isChecked ? 'bg-green-500 border-green-500' : 'bg-white border-gray-300'}`}>{isChecked && <Icon name="check" className="w-3 h-3 text-white"/>}</div>
+                                                        <span className={`text-xs ${isChecked ? 'text-green-800 font-bold' : 'text-gray-700'}`}>{place}</span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    {!isReadOnly && (
+                                        <button onClick={generateGuide} disabled={isGeneratingGuide} className="w-full bg-purple-100 text-purple-700 py-2 rounded mb-4 font-bold flex justify-center gap-2">
+                                            {isGeneratingGuide ? "Hazırlanıyor..." : <><Icon name="sparkles" className="w-4 h-4"/> AI Rehber Oluştur</>}
+                                        </button>
+                                    )}
+                                    {guideContent && <div className="bg-purple-50 p-3 rounded text-sm mb-4 text-gray-700">{formatAI(guideContent)}</div>}
+                                    
+                                    <div className="mb-4">
+                                        <div className="font-bold text-sm mb-2 text-gray-700">Fotoğraflar ({images.length})</div>
+                                        <div className="flex flex-wrap gap-2 mb-2">
+                                            {images.map((img,i) => (
+                                                <div key={i} className="relative w-16 h-16 group">
+                                                    <img src={img} className="w-full h-full object-cover rounded"/>
+                                                    {!isReadOnly && <button onClick={()=>setImages(images.filter((_,x)=>x!==i))} className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-0.5"><Icon name="x" className="w-3 h-3"/></button>}
+                                                </div>
+                                            ))}
+                                        </div>
+                                        {!isReadOnly && <label className="block w-full border-2 border-dashed p-2 text-center cursor-pointer text-gray-500 text-sm hover:bg-gray-50 rounded">
+                                            + Fotoğraf Ekle <input type="file" multiple className="hidden" onChange={handleImage}/>
+                                        </label>}
+                                    </div>
+
+                                    <div>
+                                        <div className="flex justify-between mb-1">
+                                            <label className="font-bold text-sm text-gray-700">Notlar</label>
+                                            {!isReadOnly && <button onClick={enhanceNote} disabled={isEnhancingNote || !note} className="text-xs text-purple-600 font-bold flex gap-1 items-center"><Icon name="wand-2" className="w-3 h-3"/> Güzelleştir</button>}
+                                        </div>
+                                        {isReadOnly ? <div className="p-2 bg-gray-50 rounded text-sm min-h-[60px]">{note || "Not yok."}</div> 
+                                        : <textarea className="w-full border rounded p-2 text-sm" rows="3" value={note} onChange={e=>setNote(e.target.value)} placeholder="Buraya notlarınızı yazın..."></textarea>}
+                                    </div>
+                                </div>
+                                <div className="p-3 border-t bg-gray-50 flex justify-end gap-2">
+                                    <button onClick={()=>setIsModalOpen(false)} className="px-4 py-2 border rounded text-gray-600 text-sm">Kapat</button>
+                                    {!isReadOnly && <button onClick={handleSave} className="px-4 py-2 bg-red-600 text-white rounded text-sm font-bold">Kaydet</button>}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const Root = () => {
+            const [user, setUser] = useState(null);
+            const [myUsername, setMyUsername] = useState(localStorage.getItem('my_username'));
+            const [viewUser, setViewUser] = useState(null);
+
+            useEffect(() => {
+                if(!isFirebaseReady) return;
+                const unsub = auth.onAuthStateChanged(u => {
+                    if(u) setUser(u);
+                    else auth.signInAnonymously();
+                });
+                return () => unsub();
+            }, []);
+
+            if (!isFirebaseReady) return <ConfigWarning />;
+            if (!user) return <div className="h-screen flex items-center justify-center text-red-600">Yükleniyor...</div>;
+
+            if (!myUsername) {
+                return <LoginScreen onLogin={(u) => { setMyUsername(u); localStorage.setItem('my_username', u); }} />;
+            }
+
+            return <MainApp myUsername={myUsername} currentUsername={viewUser || myUsername} onViewChange={setViewUser} onLogout={()=>{ localStorage.removeItem('my_username'); setMyUsername(null); setViewUser(null); }} />;
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<Root />);
+    </script>
+</body>
+</html>
