@@ -5,10 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Türkiye Gezi Günlüğü (Ultimate)</title>
     
-    <!-- Google AdSense -->
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6212448037400866"
-     crossorigin="anonymous"></script>
-
     <!-- React & ReactDOM (Global) -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -760,36 +756,24 @@
                  setIsPartnerModalOpen(false);
             };
 
-            // Partner Kontrol (REALTIME LISTEN)
             useEffect(() => {
                 if (myUsername !== currentUsername) return;
-                
                 const unsub = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_partners').doc(myUsername)
                     .onSnapshot(async (doc) => {
                         if (doc.exists && doc.data().partner) {
                             const potentialPartner = doc.data().partner;
                             const targetDoc = await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_partners').doc(potentialPartner).get();
-                            
                             if (targetDoc.exists && targetDoc.data().partner === myUsername) {
                                 setPartner(potentialPartner);
                                 const ids = [myUsername, potentialPartner].sort();
                                 setCoupleId(ids.join('_'));
-                            } else {
-                                // Pending or Broken
-                                setPartner(null);
-                                setCoupleId(null);
-                            }
-                        } else {
-                            setPartner(null);
-                            setCoupleId(null);
-                        }
+                            } else { setPartner(null); setCoupleId(null); }
+                        } else { setPartner(null); setCoupleId(null); }
                         setPartnerLoading(false);
                     });
-                    
                 return () => unsub();
             }, [myUsername, currentUsername]);
 
-            // Veri Çekme
             useEffect(() => {
                 let docRef;
                 if (myUsername !== currentUsername) {
@@ -797,9 +781,6 @@
                 } else {
                     if (activeTab === 'couple' && coupleId) {
                          docRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('couple_maps').doc(coupleId);
-                    } else if (activeTab === 'couple' && !coupleId) {
-                         setMarkers([]); // Clear if no couple id
-                         return;
                     } else {
                          docRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_maps').doc(myUsername);
                     }
@@ -921,7 +902,6 @@
                             progress = calculateProgress(cityName, marker.checkedPlaces);
                             if (progress > 0) labelContent = `<div class="city-label"><div>${cityName}</div><div class="city-label-progress">%${progress}</div></div>`;
                         }
-                        
                         L.marker(center, { icon: L.divIcon({className: 'hidden'}), interactive: false })
                          .bindTooltip(labelContent, { permanent: true, direction: 'center', className: '' }).addTo(labelLayerRef.current);
 
