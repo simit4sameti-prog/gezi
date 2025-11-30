@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Türkiye Gezi Günlüğü (Sosyal & AI)</title>
+    <title>Türkiye Gezi Günlüğü (Ultimate)</title>
     
     <!-- React & ReactDOM (Global) -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -36,9 +36,12 @@
         ::-webkit-scrollbar-thumb:hover { background: #dc2626; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .animate-fadeIn { animation: fadeIn 0.2s ease-out; }
+        @keyframes likeBounce { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
+        .like-anim { animation: likeBounce 0.3s ease-in-out; }
         
         .ai-content h3 { font-weight: bold; margin-top: 0.5em; color: #b91c1c; }
         .ai-content ul { list-style-type: disc; padding-left: 1.2em; margin-bottom: 0.5em; }
+        .ai-content li { margin-bottom: 0.2em; }
         
         .city-label {
             background: transparent; border: none; box-shadow: none;
@@ -407,7 +410,7 @@
                     setFeedItems(allItems);
                 };
                 fetchFeed();
-            }, [friends, feedOpen]); // Sadece feed açıldığında veya arkadaşlar değişince çek
+            }, [friends, feedOpen]); 
 
             const sendNotification = async (targetUser, type) => {
                 const notifRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_notifications').doc(targetUser);
@@ -451,7 +454,36 @@
                 await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_notifications').doc(myUsername).set({ list: updatedNotifs });
             };
 
-            // Partner Kontrol (Init'te çalışır)
+            // Toggle Like
+            const toggleLike = async (targetUser, markerId) => {
+                // This needs to find the specific marker in the target user's map data
+                const docRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_maps').doc(targetUser);
+                const doc = await docRef.get();
+                if(doc.exists) {
+                    let markers = doc.data().markers || [];
+                    const markerIndex = markers.findIndex(m => m.id === markerId);
+                    if(markerIndex > -1) {
+                        let likes = markers[markerIndex].likes || [];
+                        if(likes.includes(myUsername)) {
+                            likes = likes.filter(u => u !== myUsername);
+                        } else {
+                            likes.push(myUsername);
+                        }
+                        markers[markerIndex].likes = likes;
+                        await docRef.set({ markers: markers }, { merge: true });
+                        
+                        // Update local feed view immediately
+                        setFeedItems(prev => prev.map(item => {
+                            if(item.id === markerId) {
+                                return {...item, likes: likes};
+                            }
+                            return item;
+                        }));
+                    }
+                }
+            };
+
+            // Partner Kontrol
             useEffect(() => {
                 if (myUsername !== currentUsername) return; 
                 const checkPartner = async () => {
@@ -490,6 +522,7 @@
                 return () => unsubscribe();
             }, [currentUsername, activeTab, coupleId, myUsername]);
 
+            // Profil Fotosu
             useEffect(() => {
                 const profileRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_profiles').doc(currentUsername);
                 const unsub = profileRef.onSnapshot(doc => {
@@ -535,7 +568,8 @@
                     aiGuide: guideContent, comments: comments, favoriteImage: favoriteImage,
                     status: status, category: category, 
                     date: new Date().toLocaleDateString('tr-TR'),
-                    timestamp: Date.now() 
+                    timestamp: Date.now(),
+                    likes: [] // Init likes
                 };
                 const updated = [...markers.filter(m => m.cityName !== selectedCity.name), newMarker];
                 setMarkers(updated);
@@ -549,11 +583,16 @@
                 const updatedComments = [...comments, commentObj];
                 setComments(updatedComments);
                 setNewComment("");
+                // Find original marker to preserve other fields like likes
+                const originalMarker = markers.find(m => m.cityName === selectedCity.name) || {};
+                
                 const newMarker = {
-                    id: Date.now(), lat: selectedCity.latlng.lat, lng: selectedCity.latlng.lng,
+                    id: originalMarker.id || Date.now(), 
+                    lat: selectedCity.latlng.lat, lng: selectedCity.latlng.lng,
                     cityName: selectedCity.name, note: note, images: images, checkedPlaces: checkedPlaces,
                     aiGuide: guideContent, comments: updatedComments, favoriteImage: favoriteImage,
-                    status: status, category: category, date: new Date().toLocaleDateString('tr-TR'), timestamp: Date.now()
+                    status: status, category: category, date: new Date().toLocaleDateString('tr-TR'), timestamp: Date.now(),
+                    likes: originalMarker.likes || []
                 };
                 const updatedMarkers = [...markers.filter(m => m.cityName !== selectedCity.name), newMarker];
                 saveMarkersToUser(currentUsername, updatedMarkers, activeTab === 'couple');
@@ -579,7 +618,7 @@
                 if(friendName === myUsername) return;
                 if(friends.includes(friendName)) { alert("Zaten arkadaşsınız."); return; }
                 await sendNotification(friendName, 'friend');
-                alert(`${friendName} kullanıcısına arkadaşlık isteği gönderildi.`);
+                alert(`${friendName} eklendi!`);
             };
 
             const handleDelete = (name) => {
@@ -770,6 +809,7 @@
                             {isReadOnly && !friends.includes(currentUsername) && <button onClick={()=>addFriend(currentUsername)} className="mt-2 w-full bg-white text-red-600 font-bold text-xs py-1 rounded flex items-center justify-center gap-1"><Icon name="user-plus" className="w-3 h-3"/> Ekle</button>}
                         </div>
 
+                        {/* VIEW MODE */}
                         {viewMode === 'friends' && !isReadOnly ? (
                              <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
                                 <h2 className="font-bold text-gray-700 mb-3 flex items-center gap-2"><Icon name="users" className="w-4 h-4"/> Arkadaşlarım ({friends.length})</h2>
@@ -853,6 +893,17 @@
                                             </div>
                                         )}
                                         {item.note && <p className="text-xs text-gray-600 italic line-clamp-2">"{item.note}"</p>}
+
+                                        {/* Like Button */}
+                                        <div className="mt-2 flex items-center gap-1 text-gray-500">
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); toggleLike(item.username, item.id); }}
+                                                className={`p-1 rounded-full hover:bg-red-50 transition-colors ${item.likes && item.likes.includes(myUsername) ? 'text-red-500 like-anim' : 'text-gray-400'}`}
+                                            >
+                                                <Icon name="heart" className={`w-4 h-4 ${item.likes && item.likes.includes(myUsername) ? 'fill-current' : ''}`} />
+                                            </button>
+                                            <span className="text-xs">{item.likes ? item.likes.length : 0}</span>
+                                        </div>
                                     </div>
                                 ))}
                             </div>
