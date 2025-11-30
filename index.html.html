@@ -25,6 +25,10 @@
                             card: '#2d3748',
                             text: '#e2e8f0'
                         }
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+                        'inner-soft': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.05)'
                     }
                 }
             }
@@ -97,6 +101,12 @@
         }
         .city-marker-img:hover { transform: scale(1.2); z-index: 1000; }
         .dark .city-marker-img { border-color: #4a5568; }
+
+        /* Custom Scrollbar for the sidebar content */
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e0; border-radius: 10px; }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #4a5568; }
     </style>
 </head>
 <body class="bg-gray-100 h-screen overflow-hidden transition-colors duration-300">
@@ -935,64 +945,86 @@
             return (
                 <div className={`flex h-full relative ${darkMode ? 'dark' : ''}`}>
                     <div className={`absolute md:relative z-20 h-full bg-white dark:bg-gray-800 shadow-xl transition-all flex flex-col ${sidebarOpen ? 'w-full md:w-96' : 'w-0 overflow-hidden'}`}>
-                        <div className={`p-4 ${mainColor} text-white shadow-md transition-colors duration-500`}>
-                             <div className="flex justify-between items-center mb-4">
-                                <div className="flex items-center gap-3 font-bold cursor-pointer" onClick={() => setViewMode('map')}>
-                                    <div className="relative group">
-                                        <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center overflow-hidden border-2 border-white/50">
-                                            {userAvatar ? <img src={userAvatar} className="w-full h-full object-cover" /> : <Icon name="user" className="w-6 h-6"/>}
+                        {/* YENİ TASARIM BAŞLANGICI */}
+                        <div className={`relative overflow-hidden transition-all duration-500 ${activeTab === 'couple' ? 'bg-gradient-to-br from-pink-500 to-rose-600' : 'bg-gradient-to-br from-red-500 to-orange-600'} text-white shadow-lg`}>
+                            <div className="absolute top-0 left-0 w-full h-full bg-white/10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20 mix-blend-overlay"></div>
+                            <div className="relative p-6 flex flex-col gap-6">
+                                
+                                {/* Üst Kısım: Kullanıcı Kartı ve Araç Çubuğu */}
+                                <div className="flex justify-between items-start">
+                                    
+                                    {/* Sol: Kullanıcı Kartı */}
+                                    <div className="flex items-center gap-4 cursor-pointer group" onClick={() => setViewMode('map')}>
+                                        <div className="relative">
+                                            <div className="w-16 h-16 rounded-full bg-white/30 p-1 shadow-inner-soft backdrop-blur-sm transition-transform group-hover:scale-105">
+                                                <div className="w-full h-full rounded-full bg-white/90 overflow-hidden flex items-center justify-center border-2 border-white/50 shadow-sm">
+                                                    {userAvatar ? <img src={userAvatar} className="w-full h-full object-cover" /> : <Icon name="user" className="w-8 h-8 text-gray-400"/>}
+                                                </div>
+                                            </div>
+                                            {!isReadOnly && activeTab === 'personal' && (
+                                                <label className="absolute bottom-0 right-0 bg-white text-gray-700 rounded-full p-1.5 cursor-pointer shadow-md hover:bg-gray-100 transition-colors border-2 border-white/50">
+                                                    <Icon name="camera" className="w-3.5 h-3.5"/>
+                                                    <input type="file" className="hidden" accept="image/*" onChange={handleAvatarUpload} />
+                                                </label>
+                                            )}
                                         </div>
-                                        {!isReadOnly && activeTab === 'personal' && (
-                                            <label className="absolute bottom-0 right-0 bg-white text-black rounded-full p-0.5 cursor-pointer shadow-md hover:bg-gray-100"><Icon name="camera" className="w-3 h-3"/><input type="file" className="hidden" accept="image/*" onChange={handleAvatarUpload} /></label>
-                                        )}
+                                        <div>
+                                            <h1 className="text-xl font-bold leading-tight tracking-tight text-white drop-shadow-sm">@{currentUsername}</h1>
+                                            <div className="text-sm font-medium text-white/90 flex items-center gap-1.5 bg-black/20 px-2 py-0.5 rounded-full mt-1 w-fit backdrop-blur-sm">
+                                                <Icon name={rank.icon} className="w-3.5 h-3.5"/> {rank.title}
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h1 className="text-lg leading-tight">@{currentUsername}</h1>
-                                        <div className="text-xs opacity-80 font-normal flex items-center gap-1"><Icon name={rank.icon} className="w-3 h-3"/> {rank.title}</div>
-                                    </div>
-                                </div>
-                                <div className="flex gap-2 items-center">
-                                    <div className="relative">
-                                        <button onClick={()=>setIsNotifOpen(!isNotifOpen)} className="bg-white/20 p-1.5 rounded-full hover:bg-white/30 relative">
-                                            <Icon name="bell" className="w-5 h-5"/>
-                                            {notifications.length > 0 && <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-yellow-400 rounded-full border-2 border-red-600"></span>}
+
+                                    {/* Sağ: Araç Çubuğu */}
+                                    <div className="flex items-center gap-1 bg-black/20 p-1 rounded-full backdrop-blur-sm shadow-inner-soft">
+                                        <div className="relative">
+                                            <button onClick={()=>setIsNotifOpen(!isNotifOpen)} className="p-2 rounded-full hover:bg-white/20 transition-colors relative group">
+                                                <Icon name="bell" className="w-5 h-5 text-white/90 group-hover:text-white"/>
+                                                {notifications.length > 0 && <span className="absolute top-0.5 right-0.5 w-2.5 h-2.5 bg-yellow-400 rounded-full border-2 border-red-600 animate-pulse"></span>}
+                                            </button>
+                                        </div>
+                                        <button onClick={()=>setIsCinemaOpen(true)} className="p-2 rounded-full hover:bg-white/20 transition-colors group" title="Anı Sineması"><Icon name="play" className="w-5 h-5 text-white/90 group-hover:text-white"/></button>
+                                        <button onClick={()=>setFeedOpen(!feedOpen)} className={`p-2 rounded-full transition-colors group ${feedOpen ? 'bg-white text-red-600 shadow-sm' : 'hover:bg-white/20 text-white/90 hover:text-white'}`} title="Akış">
+                                            <Icon name="activity" className="w-5 h-5"/>
                                         </button>
+                                        <button onClick={()=>setIsStatsOpen(true)} className="p-2 rounded-full hover:bg-white/20 transition-colors group" title="İstatistikler"><Icon name="bar-chart-2" className="w-5 h-5 text-white/90 group-hover:text-white"/></button>
+                                        <button onClick={toggleDarkMode} className="p-2 rounded-full hover:bg-white/20 transition-colors group" title="Gece Modu"><Icon name={darkMode ? "sun" : "moon"} className="w-5 h-5 text-white/90 group-hover:text-white"/></button>
+                                        <div className="w-px h-6 bg-white/30 mx-1"></div>
+                                        <button onClick={()=>setSidebarOpen(false)} className="p-2 rounded-full hover:bg-white/20 transition-colors group"><Icon name="chevrons-left" className="w-5 h-5 text-white/90 group-hover:text-white"/></button>
                                     </div>
-                                    <button onClick={()=>setIsCinemaOpen(true)} className="bg-white/20 p-1.5 rounded-full hover:bg-white/30" title="Anı Sineması"><Icon name="play" className="w-5 h-5"/></button>
-                                    <button onClick={()=>setFeedOpen(!feedOpen)} className={`p-1.5 rounded-full transition-colors ${feedOpen ? 'bg-white text-red-600' : 'bg-white/20 text-white hover:bg-white/30'}`} title="Akış">
-                                        <Icon name="activity" className="w-5 h-5"/>
+                                </div>
+                                
+                                {/* Alt Kısım: Arama Çubuğu */}
+                                <form onSubmit={handleSearch} className="relative group">
+                                    <input 
+                                        className="w-full pl-10 pr-4 py-2.5 rounded-full bg-white/20 border border-white/30 text-white placeholder-white/70 text-sm focus:outline-none focus:bg-white/30 focus:border-white/50 transition-all shadow-sm backdrop-blur-sm" 
+                                        placeholder="Kullanıcı ara..." 
+                                        value={searchQuery} 
+                                        onChange={e=>setSearchQuery(e.target.value)}
+                                    />
+                                    <Icon name="search" className="w-5 h-5 text-white/70 absolute left-3.5 top-2.5 transition-colors group-focus-within:text-white"/>
+                                </form>
+                                
+                                {isReadOnly && !friends.includes(currentUsername) && (
+                                    <button onClick={()=>addFriend(currentUsername)} className="w-full bg-white text-red-600 font-bold text-sm py-2 rounded-full flex items-center justify-center gap-2 shadow-md hover:shadow-lg hover:bg-gray-50 transition-all">
+                                        <Icon name="user-plus" className="w-4 h-4"/> Arkadaş Ekle
                                     </button>
-                                    <button onClick={()=>setIsStatsOpen(true)} className="bg-white/20 p-1.5 rounded-full hover:bg-white/30" title="İstatistikler"><Icon name="bar-chart-2" className="w-5 h-5"/></button>
-                                    <button onClick={toggleDarkMode} className="bg-white/20 p-1.5 rounded-full hover:bg-white/30" title="Gece Modu"><Icon name={darkMode ? "sun" : "moon"} className="w-5 h-5"/></button>
-                                    <button onClick={()=>setSidebarOpen(false)}><Icon name="chevrons-left" className="w-6 h-6"/></button>
-                                </div>
+                                )}
                             </div>
-
-                            {!isReadOnly && viewMode !== 'friends' && (
-                                <div className="flex bg-black/20 rounded-lg p-1 mb-3">
-                                    <button onClick={() => setActiveTab('personal')} className={`flex-1 py-1.5 rounded-md text-xs font-bold flex items-center justify-center gap-1 transition-all ${activeTab === 'personal' && viewMode === 'map' ? 'bg-white text-red-600 shadow' : 'text-white hover:bg-white/10'}`}><Icon name="user" className="w-3 h-3"/> Bireysel</button>
-                                    <button onClick={() => {!partner ? setIsPartnerModalOpen(true) : setActiveTab('couple'); setViewMode('map');}} className={`flex-1 py-1.5 rounded-md text-xs font-bold flex items-center justify-center gap-1 transition-all ${activeTab === 'couple' && viewMode === 'map' ? 'bg-white text-pink-600 shadow' : 'text-white hover:bg-white/10'}`}><Icon name="heart" className={`w-3 h-3 ${partner ? 'fill-current' : ''}`}/> Sevgili</button>
-                                    <button onClick={() => setViewMode('friends')} className={`flex-1 py-1.5 rounded-md text-xs font-bold flex items-center justify-center gap-1 transition-all ${viewMode === 'friends' ? 'bg-white text-indigo-600 shadow' : 'text-white hover:bg-white/10'}`}><Icon name="users" className="w-3 h-3"/> Arkadaşlar</button>
-                                </div>
-                            )}
-
-                            <form onSubmit={handleSearch} className="relative">
-                                <input className="w-full pl-8 py-1 rounded text-black text-sm" placeholder="Kullanıcı ara..." value={searchQuery} onChange={e=>setSearchQuery(e.target.value)}/>
-                                <Icon name="search" className="w-4 h-4 text-gray-500 absolute left-2 top-2"/>
-                            </form>
-                            {isReadOnly && !friends.includes(currentUsername) && <button onClick={()=>addFriend(currentUsername)} className="mt-2 w-full bg-white text-red-600 font-bold text-xs py-1 rounded flex items-center justify-center gap-1"><Icon name="user-plus" className="w-3 h-3"/> Ekle</button>}
                         </div>
+                        {/* YENİ TASARIM BİTİŞİ */}
 
                         {/* VIEW MODE */}
                         {viewMode === 'friends' && !isReadOnly ? (
-                             <div className="flex-1 overflow-y-auto p-4 bg-gray-50 dark:bg-gray-900">
+                             <div className="flex-1 overflow-y-auto p-4 bg-gray-50 dark:bg-gray-900 custom-scrollbar">
                                 <h2 className="font-bold text-gray-700 dark:text-white mb-3 flex items-center gap-2"><Icon name="users" className="w-4 h-4"/> Arkadaşlarım ({friends.length})</h2>
                                 {friends.map((f, i) => (
-                                    <div key={i} className="bg-white dark:bg-gray-700 p-3 rounded border dark:border-gray-600 mb-2 flex justify-between items-center cursor-pointer hover:shadow-md">
+                                    <div key={i} className="bg-white dark:bg-gray-700 p-3 rounded-lg border dark:border-gray-600 mb-2 flex justify-between items-center cursor-pointer hover:shadow-md transition-shadow">
                                         <div className="flex items-center gap-3" onClick={()=>{onViewChange(f); setViewMode('map'); setActiveTab('personal');}}>
                                             <span className="font-bold text-gray-800 dark:text-white">@{f}</span>
                                         </div>
-                                        <button onClick={() => setCurrentChatFriend(f)} className="text-indigo-600 hover:text-indigo-800 bg-indigo-50 dark:bg-indigo-900 dark:text-indigo-200 p-2 rounded-full">
+                                        <button onClick={() => setCurrentChatFriend(f)} className="text-indigo-600 hover:text-indigo-800 bg-indigo-50 dark:bg-indigo-900 dark:text-indigo-200 p-2 rounded-full transition-colors hover:bg-indigo-100 dark:hover:bg-indigo-800">
                                             <Icon name="message-circle" className="w-4 h-4"/>
                                         </button>
                                     </div>
@@ -1000,38 +1032,48 @@
                             </div>
                         ) : (
                             <>
-                                <div className={`p-4 ${lightColor} dark:bg-gray-800 border-b dark:border-gray-700 transition-colors duration-500`}>
+                                <div className="flex bg-gray-100 dark:bg-gray-800 p-2 gap-2 shadow-inner-soft">
+                                    {!isReadOnly && viewMode !== 'friends' && (
+                                        <>
+                                            <button onClick={() => setActiveTab('personal')} className={`flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${activeTab === 'personal' && viewMode === 'map' ? 'bg-white dark:bg-gray-700 text-red-600 dark:text-red-400 shadow-sm border border-gray-200 dark:border-gray-600' : 'text-gray-500 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-700/50'}`}><Icon name="user" className="w-3.5 h-3.5"/> Bireysel</button>
+                                            <button onClick={() => {!partner ? setIsPartnerModalOpen(true) : setActiveTab('couple'); setViewMode('map');}} className={`flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${activeTab === 'couple' && viewMode === 'map' ? 'bg-white dark:bg-gray-700 text-pink-600 dark:text-pink-400 shadow-sm border border-gray-200 dark:border-gray-600' : 'text-gray-500 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-700/50'}`}><Icon name="heart" className={`w-3.5 h-3.5 ${partner ? 'fill-current' : ''}`}/> Sevgili</button>
+                                            <button onClick={() => setViewMode('friends')} className={`flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${viewMode === 'friends' ? 'bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-sm border border-gray-200 dark:border-gray-600' : 'text-gray-500 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-gray-700/50'}`}><Icon name="users" className="w-3.5 h-3.5"/> Arkadaşlar</button>
+                                        </>
+                                    )}
+                                </div>
+
+                                <div className={`p-4 ${lightColor} dark:bg-gray-800 border-b dark:border-gray-700 transition-colors duration-500 shadow-sm relative z-10`}>
                                     <div className={`flex justify-between mb-1 text-sm font-bold ${activeTab === 'couple' ? 'text-pink-800 dark:text-pink-300' : 'text-red-800 dark:text-red-300'}`}><span>Gezilen: {markers.length} / 81</span><span>{activeTab === 'couple' ? '❤️ Bizim Haritamız' : ''}</span></div>
-                                    <div className="w-full bg-gray-200 dark:bg-gray-600 h-2 rounded-full"><div className={`h-2 rounded-full ${subColor}`} style={{width: `${(markers.length/81)*100}%`}}></div></div>
+                                    <div className="w-full bg-gray-200 dark:bg-gray-600 h-2 rounded-full overflow-hidden shadow-inner"><div className={`h-2 rounded-full ${subColor}`} style={{width: `${(markers.length/81)*100}%`}}></div></div>
                                     {isReadOnly && <div className="mt-2 text-xs bg-blue-100 text-blue-700 p-1 rounded text-center flex items-center justify-center gap-1"><Icon name="eye" className="w-3 h-3"/> Görüntüleme Modu</div>}
                                 </div>
 
-                                <div className="p-2 bg-gray-50 dark:bg-gray-900 border-b dark:border-gray-700 flex gap-2 overflow-x-auto">
-                                    <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="text-xs border dark:border-gray-600 rounded p-1 bg-white dark:bg-gray-700 dark:text-white">
+                                <div className="p-2 bg-gray-50 dark:bg-gray-900 border-b dark:border-gray-700 flex gap-2 overflow-x-auto custom-scrollbar shadow-sm z-10 relative">
+                                    <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="text-xs border dark:border-gray-600 rounded-lg p-1.5 bg-white dark:bg-gray-700 dark:text-white focus:outline-none focus:border-blue-500 transition-colors shadow-sm">
                                         <option value="Tümü">Tüm Kategoriler</option>
                                         {categories.map(c => <option key={c} value={c}>{c}</option>)}
                                     </select>
-                                    <button onClick={() => setShowRoute(!showRoute)} className={`text-xs px-2 py-1 rounded border flex items-center gap-1 ${showRoute ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-white dark:bg-gray-700 dark:text-white dark:border-gray-600'}`}><Icon name="route" className="w-3 h-3"/> Rota</button>
-                                    <button onClick={() => setViewMode(viewMode === 'timeline' ? 'map' : 'timeline')} className={`text-xs px-2 py-1 rounded border flex items-center gap-1 ${viewMode === 'timeline' ? 'bg-purple-100 text-purple-700 border-purple-200' : 'bg-white dark:bg-gray-700 dark:text-white dark:border-gray-600'}`}><Icon name="clock" className="w-3 h-3"/> Zaman</button>
+                                    <button onClick={() => setShowRoute(!showRoute)} className={`text-xs px-2.5 py-1.5 rounded-lg border flex items-center gap-1 transition-all shadow-sm ${showRoute ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-white dark:bg-gray-700 dark:text-white dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600'}`}><Icon name="route" className="w-3.5 h-3.5"/> Rota</button>
+                                    <button onClick={() => setViewMode(viewMode === 'timeline' ? 'map' : 'timeline')} className={`text-xs px-2.5 py-1.5 rounded-lg border flex items-center gap-1 transition-all shadow-sm ${viewMode === 'timeline' ? 'bg-purple-100 text-purple-700 border-purple-200' : 'bg-white dark:bg-gray-700 dark:text-white dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600'}`}><Icon name="clock" className="w-3.5 h-3.5"/> Zaman</button>
                                 </div>
 
-                                <div className="flex-1 overflow-y-auto p-2 space-y-3 bg-gray-50 dark:bg-gray-900">
+                                <div className="flex-1 overflow-y-auto p-2 space-y-3 bg-gray-50 dark:bg-gray-900 custom-scrollbar z-0">
                                     {displayMarkers.map((m, idx) => {
                                         const progress = calculateProgress(m.cityName, m.checkedPlaces);
                                         const coverImage = m.favoriteImage || (m.images && m.images.length > 0 ? m.images[0] : null);
                                         const isBucket = m.status === 'bucket';
                                         
                                         return (
-                                            <div key={m.id} onClick={()=> { if(mapRef.current) mapRef.current.flyTo([m.lat, m.lng], 8); }} className={`bg-white dark:bg-gray-700 p-3 rounded border dark:border-gray-600 shadow-sm hover:shadow-md cursor-pointer relative group ${isBucket ? 'border-yellow-200 bg-yellow-50 dark:bg-yellow-900 dark:border-yellow-700' : ''}`}>
-                                                {viewMode === 'timeline' && <div className="absolute -left-2 top-4 w-4 h-0.5 bg-gray-300"></div>} 
+                                            <div key={m.id} onClick={()=> { if(mapRef.current) mapRef.current.flyTo([m.lat, m.lng], 8); }} className={`bg-white dark:bg-gray-700 p-3 rounded-lg border dark:border-gray-600 shadow-sm hover:shadow-md cursor-pointer relative group transition-all ${isBucket ? 'border-yellow-200 bg-yellow-50 dark:bg-yellow-900 dark:border-yellow-700' : ''}`}>
+                                                {viewMode === 'timeline' && <div className="absolute -left-2 top-4 w-4 h-0.5 bg-gray-300 dark:bg-gray-600"></div>} 
                                                 <div className="flex justify-between font-bold text-gray-800 dark:text-white items-center">
-                                                    <span className="flex items-center gap-1">{isBucket ? <Icon name="flag" className="w-4 h-4 text-yellow-600"/> : null}{m.cityName}{progress === 100 && <span className="text-[10px] bg-green-100 text-green-600 px-1 rounded border border-green-200">Tamamlandı</span>}</span>
-                                                    {!isReadOnly && <button onClick={(e)=>{e.stopPropagation(); handleDelete(m.cityName)}} className="text-gray-400 hover:text-red-500"><Icon name="trash-2" className="w-4 h-4"/></button>}
+                                                    <span className="flex items-center gap-1">{isBucket ? <Icon name="flag" className="w-4 h-4 text-yellow-600"/> : null}{m.cityName}{progress === 100 && <span className="text-[10px] bg-green-100 text-green-600 px-1.5 py-0.5 rounded-full border border-green-200 shadow-sm">Tamamlandı</span>}</span>
+                                                    {!isReadOnly && <button onClick={(e)=>{e.stopPropagation(); handleDelete(m.cityName)}} className="text-gray-400 hover:text-red-500 transition-colors p-1 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20"><Icon name="trash-2" className="w-4 h-4"/></button>}
                                                 </div>
-                                                <div className="text-[10px] text-gray-400 dark:text-gray-400 mb-2 flex justify-between"><span>{m.date}</span><span className="bg-gray-100 dark:bg-gray-600 dark:text-gray-200 px-1 rounded text-gray-600">{m.category}</span></div>
-                                                {!isBucket && <div className="mt-1 mb-2"><div className="w-full bg-gray-200 dark:bg-gray-600 h-1.5 rounded-full overflow-hidden"><div className={`h-1.5 ${progress===100?'bg-green-500':'bg-blue-500'}`} style={{width: `${progress}%`}}></div></div></div>}
-                                                {coverImage && <div className="relative w-full h-32 rounded overflow-hidden mt-2 border border-gray-100 dark:border-gray-600"><img src={coverImage} className="w-full h-full object-cover" />{m.images.length > 1 && <div className="absolute bottom-1 right-1 bg-black/50 text-white text-xs px-1 rounded">+{m.images.length - 1}</div>}</div>}
-                                                {m.note && <p className="text-xs text-gray-500 dark:text-gray-300 italic mt-2 line-clamp-2">"{m.note}"</p>}
+                                                <div className="text-[10px] text-gray-400 dark:text-gray-400 mb-2 flex justify-between"><span>{m.date}</span><span className="bg-gray-100 dark:bg-gray-600 dark:text-gray-200 px-1.5 py-0.5 rounded-full text-gray-600 shadow-sm">{m.category}</span></div>
+                                                {!isBucket && <div className="mt-1 mb-2"><div className="w-full bg-gray-200 dark:bg-gray-600 h-1.5 rounded-full overflow-hidden shadow-inner"><div className={`h-1.5 ${progress===100?'bg-green-500':'bg-blue-500'}`} style={{width: `${progress}%`}}></div></div></div>}
+                                                {coverImage && <div className="relative w-full h-32 rounded-lg overflow-hidden mt-2 border border-gray-100 dark:border-gray-600 shadow-sm"><img src={coverImage} className="w-full h-full object-cover transition-transform group-hover:scale-105" />{m.images.length > 1 && <div className="absolute bottom-1 right-1 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded-full backdrop-blur-sm">+{m.images.length - 1}</div>}</div>}
+                                                {m.note && <p className="text-xs text-gray-500 dark:text-gray-300 italic mt-2 line-clamp-2 leading-relaxed">"{m.note}"</p>}
                                             </div>
                                         );
                                     })}
@@ -1040,24 +1082,24 @@
                         )}
                     </div>
 
-                    {!sidebarOpen && <button onClick={()=>setSidebarOpen(true)} className={`absolute top-4 left-4 z-10 bg-white dark:bg-gray-700 p-2 rounded shadow ${activeTab === 'couple' ? 'text-pink-600' : 'text-red-600'}`}><Icon name="menu" className="w-6 h-6"/></button>}
+                    {!sidebarOpen && <button onClick={()=>setSidebarOpen(true)} className={`absolute top-4 left-4 z-10 bg-white dark:bg-gray-700 p-2 rounded-full shadow-md transition-transform hover:scale-105 ${activeTab === 'couple' ? 'text-pink-600' : 'text-red-600'}`}><Icon name="menu" className="w-6 h-6"/></button>}
                     
                     {feedOpen && (
-                        <div className="absolute top-0 right-0 h-full w-80 bg-white dark:bg-gray-800 shadow-2xl z-20 flex flex-col border-l border-gray-200 dark:border-gray-700 animate-fadeIn">
-                            <div className="p-3 bg-indigo-600 text-white flex justify-between items-center">
+                        <div className="absolute top-0 right-0 h-full w-80 bg-white dark:bg-gray-800 shadow-2xl z-20 flex flex-col border-l border-gray-200 dark:border-gray-700 animate-fadeIn custom-scrollbar">
+                            <div className="p-3 bg-indigo-600 text-white flex justify-between items-center shadow-md">
                                 <h3 className="font-bold flex items-center gap-2"><Icon name="activity" className="w-5 h-5"/> Arkadaş Akışı</h3>
-                                <button onClick={()=>setFeedOpen(false)}><Icon name="x" className="w-5 h-5"/></button>
+                                <button onClick={()=>setFeedOpen(false)} className="hover:bg-white/20 p-1 rounded-full transition-colors"><Icon name="x" className="w-5 h-5"/></button>
                             </div>
-                            <div className="flex-1 overflow-y-auto p-3 space-y-4 bg-gray-50 dark:bg-gray-900">
+                            <div className="flex-1 overflow-y-auto p-3 space-y-4 bg-gray-50 dark:bg-gray-900 custom-scrollbar">
                                 {feedItems.length === 0 && <p className="text-center text-gray-400 text-sm mt-10">Henüz bir hareket yok.</p>}
                                 {feedItems.map((item, i) => (
-                                    <div key={i} className="bg-white dark:bg-gray-700 p-3 rounded-lg shadow-sm border dark:border-gray-600 cursor-pointer hover:border-indigo-300" onClick={() => {
+                                    <div key={i} className="bg-white dark:bg-gray-700 p-3 rounded-lg shadow-sm border dark:border-gray-600 cursor-pointer hover:border-indigo-300 transition-all" onClick={() => {
                                         onViewChange(item.username);
                                         if(mapRef.current) mapRef.current.flyTo([item.lat, item.lng], 9);
                                     }}>
                                         <div className="flex items-center gap-2 mb-2">
-                                            <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xs border border-indigo-200">
-                                                {item.userAvatar ? <img src={item.userAvatar} className="w-full h-full rounded-full object-cover"/> : item.username.substring(0,2).toUpperCase()}
+                                            <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xs border border-indigo-200 shadow-sm overflow-hidden">
+                                                {item.userAvatar ? <img src={item.userAvatar} className="w-full h-full object-cover"/> : item.username.substring(0,2).toUpperCase()}
                                             </div>
                                             <div>
                                                 <div className="text-sm font-bold text-gray-800 dark:text-white">@{item.username}</div>
@@ -1066,14 +1108,14 @@
                                         </div>
                                         <div className="mb-2 text-gray-800 dark:text-gray-200">
                                             <span className="font-bold text-indigo-600 dark:text-indigo-400">{item.cityName}</span> şehrini ziyaret etti.
-                                            {item.status === 'bucket' && <span className="text-xs bg-yellow-100 text-yellow-700 px-1 ml-1 rounded">Hedef 🎯</span>}
+                                            {item.status === 'bucket' && <span className="text-xs bg-yellow-100 text-yellow-700 px-1.5 py-0.5 ml-1 rounded-full shadow-sm">Hedef 🎯</span>}
                                         </div>
                                         {item.images && item.images.length > 0 && (
-                                            <div className="h-24 w-full rounded-md overflow-hidden border border-gray-100 mb-2">
-                                                <img src={item.favoriteImage || item.images[0]} className="w-full h-full object-cover"/>
+                                            <div className="h-24 w-full rounded-lg overflow-hidden border border-gray-100 mb-2 shadow-sm">
+                                                <img src={item.favoriteImage || item.images[0]} className="w-full h-full object-cover transition-transform hover:scale-105"/>
                                             </div>
                                         )}
-                                        {item.note && <p className="text-xs text-gray-600 dark:text-gray-400 italic line-clamp-2">"{item.note}"</p>}
+                                        {item.note && <p className="text-xs text-gray-600 dark:text-gray-400 italic line-clamp-2 leading-relaxed">"{item.note}"</p>}
 
                                         <div className="mt-2 flex items-center gap-1 text-gray-500 dark:text-gray-400">
                                             <button 
@@ -1094,19 +1136,19 @@
                                                             <span className="font-bold text-gray-800 dark:text-gray-300">@{c.user}</span> {c.text}
                                                         </div>
                                                     ))}
-                                                    {item.comments.length > 2 && <div className="text-[10px] text-gray-400">Tümünü gör...</div>}
+                                                    {item.comments.length > 2 && <div className="text-[10px] text-gray-400 cursor-pointer hover:text-indigo-500 transition-colors">Tümünü gör...</div>}
                                                 </div>
                                             )}
                                             <div className="flex gap-1">
                                                 <input 
                                                     type="text" 
-                                                    className="flex-1 border dark:border-gray-600 rounded px-2 py-1 text-xs focus:outline-none focus:border-indigo-500 dark:bg-gray-800 dark:text-white"
+                                                    className="flex-1 border dark:border-gray-600 rounded-full px-3 py-1.5 text-xs focus:outline-none focus:border-indigo-500 dark:bg-gray-800 dark:text-white shadow-sm transition-all"
                                                     placeholder="Yorum yaz..."
                                                     value={feedCommentInputs[item.id] || ""}
                                                     onChange={(e) => setFeedInput(item.id, e.target.value)}
                                                     onKeyDown={(e) => { if (e.key === 'Enter') submitFeedComment(item.username, item.id); }}
                                                 />
-                                                <button className="bg-indigo-600 text-white px-2 py-1 rounded text-xs hover:bg-indigo-700" onClick={() => submitFeedComment(item.username, item.id)}><Icon name="send" className="w-3 h-3"/></button>
+                                                <button className="bg-indigo-600 text-white p-1.5 rounded-full text-xs hover:bg-indigo-700 transition-colors shadow-sm" onClick={() => submitFeedComment(item.username, item.id)}><Icon name="send" className="w-3.5 h-3.5"/></button>
                                             </div>
                                         </div>
                                     </div>
@@ -1122,64 +1164,64 @@
                     <div id="map-container" className="flex-1 z-0 relative">{loading && <div className="absolute inset-0 flex items-center justify-center bg-white z-[999] opacity-80">Yükleniyor...</div>}</div>
                     
                     {zoomedImage && <div className="fixed inset-0 z-[2000] bg-black bg-opacity-90 flex items-center justify-center p-4" onClick={() => setZoomedImage(null)}>
-                        <button className="absolute left-4 top-1/2 text-white bg-gray-800 p-2 rounded-full hover:bg-gray-700" onClick={prevLightbox}><Icon name="chevron-left" className="w-6 h-6"/></button>
-                        <img src={zoomedImage} className="max-h-full max-w-full rounded shadow-2xl animate-fadeIn" />
-                        <button className="absolute right-4 top-1/2 text-white bg-gray-800 p-2 rounded-full hover:bg-gray-700" onClick={nextLightbox}><Icon name="chevron-right" className="w-6 h-6"/></button>
-                        <button className="absolute top-4 right-4 text-white bg-gray-800 p-2 rounded-full hover:bg-gray-700" onClick={(e) => { e.stopPropagation(); setZoomedImage(null); }}><Icon name="x" className="w-6 h-6"/></button>
+                        <button className="absolute left-4 top-1/2 text-white bg-gray-800 p-2 rounded-full hover:bg-gray-700 transition-transform hover:scale-110" onClick={prevLightbox}><Icon name="chevron-left" className="w-6 h-6"/></button>
+                        <img src={zoomedImage} className="max-h-full max-w-full rounded-lg shadow-2xl animate-fadeIn" />
+                        <button className="absolute right-4 top-1/2 text-white bg-gray-800 p-2 rounded-full hover:bg-gray-700 transition-transform hover:scale-110" onClick={nextLightbox}><Icon name="chevron-right" className="w-6 h-6"/></button>
+                        <button className="absolute top-4 right-4 text-white bg-gray-800 p-2 rounded-full hover:bg-gray-700 transition-transform hover:scale-110" onClick={(e) => { e.stopPropagation(); setZoomedImage(null); }}><Icon name="x" className="w-6 h-6"/></button>
                     </div>}
                     {isNotifOpen && <NotificationModal notifications={notifications} onClose={()=>setIsNotifOpen(false)} onAccept={handleAcceptNotif} onReject={handleRejectNotif}/>}
                     {isPartnerModalOpen && <PartnerModal myUsername={myUsername} currentPartner={partner} onClose={() => setIsPartnerModalOpen(false)} onLink={linkPartner}/>}
                     {isModalOpen && (
                         <div className="fixed inset-0 z-[1000] bg-black bg-opacity-50 flex items-center justify-center p-4">
-                            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col">
-                                <div className={`${activeTab === 'couple' ? 'bg-pink-600' : 'bg-red-600'} p-3 text-white flex justify-between items-center`}>
-                                    <span className="font-bold flex gap-2 items-center"><Icon name="map-pin" className="w-5 h-5"/> {selectedCity?.name}</span>
-                                    <button onClick={()=>setIsModalOpen(false)}><Icon name="x" className="w-5 h-5"/></button>
+                            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col animate-fadeIn overflow-hidden">
+                                <div className={`${activeTab === 'couple' ? 'bg-gradient-to-r from-pink-500 to-rose-500' : 'bg-gradient-to-r from-red-500 to-orange-500'} p-4 text-white flex justify-between items-center shadow-md`}>
+                                    <span className="font-bold flex gap-2 items-center text-lg"><Icon name="map-pin" className="w-5 h-5"/> {selectedCity?.name}</span>
+                                    <button onClick={()=>setIsModalOpen(false)} className="hover:bg-white/20 p-1 rounded-full transition-colors"><Icon name="x" className="w-5 h-5"/></button>
                                 </div>
-                                <div className="p-4 overflow-y-auto flex-1 custom-scrollbar">
+                                <div className="p-5 overflow-y-auto flex-1 custom-scrollbar">
                                     {!isReadOnly && (
-                                        <div className="flex gap-2 mb-4">
-                                            <select value={status} onChange={(e) => setStatus(e.target.value)} className="flex-1 border dark:border-gray-600 rounded p-2 text-sm bg-gray-50 dark:bg-gray-700 dark:text-white">
+                                        <div className="flex gap-3 mb-5">
+                                            <select value={status} onChange={(e) => setStatus(e.target.value)} className="flex-1 border dark:border-gray-600 rounded-lg p-2.5 text-sm bg-gray-50 dark:bg-gray-700 dark:text-white focus:outline-none focus:border-blue-500 transition-colors shadow-sm">
                                                 <option value="visited">Gezildi ✅</option>
                                                 <option value="bucket">Gideceğim (Bucket List) 🎯</option>
                                             </select>
-                                            <select value={category} onChange={(e) => setCategory(e.target.value)} className="flex-1 border dark:border-gray-600 rounded p-2 text-sm bg-gray-50 dark:bg-gray-700 dark:text-white">
+                                            <select value={category} onChange={(e) => setCategory(e.target.value)} className="flex-1 border dark:border-gray-600 rounded-lg p-2.5 text-sm bg-gray-50 dark:bg-gray-700 dark:text-white focus:outline-none focus:border-blue-500 transition-colors shadow-sm">
                                                 {categories.map(c => <option key={c} value={c}>{c}</option>)}
                                             </select>
                                         </div>
                                     )}
                                     {status === 'visited' && (
-                                        <div className="bg-orange-50 dark:bg-orange-900 border border-orange-100 dark:border-orange-800 rounded p-3 mb-4">
-                                            <div className="flex justify-between items-center mb-2"><h4 className="text-sm font-bold text-orange-800 dark:text-orange-200 flex gap-2 items-center"><Icon name="list-checks" className="w-4 h-4"/> 3 Öneri</h4><span className="text-xs font-bold bg-white dark:bg-gray-800 px-2 py-0.5 rounded text-orange-600 border border-orange-200">%{calculateProgress(selectedCity?.name, checkedPlaces)}</span></div>
-                                            <div className="space-y-1">{(citySuggestionsData[selectedCity?.name] || ["Müze", "Tarihi Çarşı", "Şehir Parkı"]).map((place, idx) => { const isChecked = checkedPlaces.includes(place); return (<div key={idx} onClick={()=>toggleCheckedPlace(place)} className={`flex items-center gap-2 p-2 rounded border cursor-pointer transition-all ${isChecked ? 'bg-green-50 dark:bg-green-900 border-green-200' : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 hover:border-orange-300'}`}><div className={`w-4 h-4 rounded border flex items-center justify-center ${isChecked ? 'bg-green-500 border-green-500' : 'bg-white dark:bg-gray-600 border-gray-300'}`}>{isChecked && <Icon name="check" className="w-3 h-3 text-white"/>}</div><span className={`text-xs ${isChecked ? 'text-green-800 dark:text-green-200 font-bold' : 'text-gray-700 dark:text-gray-300'}`}>{place}</span></div>); })}</div>
+                                        <div className="bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800/50 rounded-lg p-4 mb-5 shadow-sm">
+                                            <div className="flex justify-between items-center mb-3"><h4 className="text-sm font-bold text-orange-800 dark:text-orange-300 flex gap-2 items-center"><Icon name="list-checks" className="w-4 h-4"/> 3 Öneri</h4><span className="text-xs font-bold bg-white dark:bg-gray-800 px-2.5 py-1 rounded-full text-orange-600 border border-orange-200 shadow-sm">%{calculateProgress(selectedCity?.name, checkedPlaces)}</span></div>
+                                            <div className="space-y-2">{(citySuggestionsData[selectedCity?.name] || ["Müze", "Tarihi Çarşı", "Şehir Parkı"]).map((place, idx) => { const isChecked = checkedPlaces.includes(place); return (<div key={idx} onClick={()=>toggleCheckedPlace(place)} className={`flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer transition-all shadow-sm hover:shadow-md ${isChecked ? 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800/50' : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 hover:border-orange-300'}`}><div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${isChecked ? 'bg-green-500 border-green-500' : 'bg-white dark:bg-gray-600 border-gray-300'}`}>{isChecked && <Icon name="check" className="w-3 h-3 text-white"/>}</div><span className={`text-sm ${isChecked ? 'text-green-800 dark:text-green-300 font-bold' : 'text-gray-700 dark:text-gray-300'}`}>{place}</span></div>); })}</div>
                                         </div>
                                     )}
-                                    {!isReadOnly && <button onClick={generateGuide} disabled={isGeneratingGuide} className="w-full bg-gradient-to-r from-purple-500 to-indigo-500 text-white py-2 rounded mb-4 font-bold flex justify-center gap-2 shadow hover:shadow-md transition-all">{isGeneratingGuide ? "Hazırlanıyor..." : <><Icon name="sparkles" className="w-4 h-4"/> AI Rehber Oluştur</>}</button>}
-                                    {guideContent && <div className="bg-purple-50 dark:bg-gray-700 p-3 rounded text-sm mb-4 text-gray-700 dark:text-gray-200 ai-content shadow-inner border border-purple-100 dark:border-gray-600">{formatAI(guideContent)}</div>}
-                                    <div className="mb-4">
-                                        <div className="font-bold text-sm mb-2 text-gray-700 dark:text-gray-300 flex items-center gap-2"><Icon name="image" className="w-4 h-4"/> Fotoğraflar</div>
-                                        <div className="flex flex-wrap gap-2 mb-2">
+                                    {!isReadOnly && <button onClick={generateGuide} disabled={isGeneratingGuide} className="w-full bg-gradient-to-r from-purple-500 to-indigo-500 text-white py-2.5 rounded-lg mb-5 font-bold flex justify-center gap-2 shadow-md hover:shadow-lg transition-all disabled:opacity-70">{isGeneratingGuide ? "Hazırlanıyor..." : <><Icon name="sparkles" className="w-4 h-4"/> AI Rehber Oluştur</>}</button>}
+                                    {guideContent && <div className="bg-purple-50 dark:bg-gray-700/50 p-4 rounded-lg text-sm mb-5 text-gray-700 dark:text-gray-200 ai-content shadow-inner border border-purple-100 dark:border-gray-600/50 leading-relaxed">{formatAI(guideContent)}</div>}
+                                    <div className="mb-5">
+                                        <div className="font-bold text-sm mb-3 text-gray-700 dark:text-gray-300 flex items-center gap-2"><Icon name="image" className="w-4 h-4"/> Fotoğraflar</div>
+                                        <div className="flex flex-wrap gap-3 mb-3">
                                             {images.map((img,i) => (
-                                                <div key={i} className="relative w-20 h-20 group">
-                                                    <img src={img} className="w-full h-full object-cover rounded cursor-zoom-in hover:opacity-90" onClick={() => openLightbox(img, images)}/>
-                                                    {!isReadOnly && <div className="absolute top-0 right-0 flex gap-1"><button onClick={()=>setFavoriteImage(img)} className={`p-0.5 rounded-full bg-white shadow hover:bg-gray-100 ${favoriteImage === img ? 'text-yellow-500' : 'text-gray-400'}`} title="Kapak Yap"><Icon name="star" className="w-3 h-3 fill-current"/></button><button onClick={()=>setImages(images.filter((_,x)=>x!==i))} className="bg-red-500 text-white rounded-full p-0.5 shadow hover:bg-red-600"><Icon name="x" className="w-3 h-3"/></button></div>}
-                                                    {favoriteImage === img && <div className="absolute bottom-0 left-0 w-full bg-yellow-500 text-white text-[9px] text-center font-bold">KAPAK</div>}
+                                                <div key={i} className="relative w-24 h-24 group rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all">
+                                                    <img src={img} className="w-full h-full object-cover cursor-zoom-in hover:opacity-90 transition-opacity" onClick={() => openLightbox(img, images)}/>
+                                                    {!isReadOnly && <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity"><button onClick={()=>setFavoriteImage(img)} className={`p-1 rounded-full bg-white/80 shadow-sm hover:bg-white ${favoriteImage === img ? 'text-yellow-500' : 'text-gray-500'}`} title="Kapak Yap"><Icon name="star" className="w-3.5 h-3.5 fill-current"/></button><button onClick={()=>setImages(images.filter((_,x)=>x!==i))} className="bg-red-500/80 text-white rounded-full p-1 shadow-sm hover:bg-red-600"><Icon name="x" className="w-3.5 h-3.5"/></button></div>}
+                                                    {favoriteImage === img && <div className="absolute bottom-0 left-0 w-full bg-yellow-500/90 text-white text-[9px] text-center font-bold py-0.5 backdrop-blur-sm">KAPAK</div>}
                                                 </div>
                                             ))}
                                         </div>
-                                        {!isReadOnly && <label className="block w-full border-2 border-dashed border-gray-300 dark:border-gray-600 p-4 text-center cursor-pointer text-gray-500 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-all">+ Fotoğraf Ekle <input type="file" multiple className="hidden" onChange={handleImage}/></label>}
+                                        {!isReadOnly && <label className="block w-full border-2 border-dashed border-gray-300 dark:border-gray-600 p-6 text-center cursor-pointer text-gray-500 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-all hover:border-blue-400 flex flex-col items-center gap-2"><Icon name="image-plus" className="w-6 h-6 text-gray-400"/> Fotoğraf Ekle <input type="file" multiple className="hidden" onChange={handleImage}/></label>}
                                     </div>
-                                    <div className="mb-4">
-                                        <div className="flex justify-between mb-1 items-center"><label className="font-bold text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"><Icon name="edit-3" className="w-4 h-4"/> Notlar</label>{!isReadOnly && <button onClick={enhanceNote} disabled={isEnhancingNote || !note} className="text-xs text-purple-600 font-bold flex gap-1 items-center hover:text-purple-800 disabled:opacity-50"><Icon name="wand-2" className="w-3 h-3"/> Güzelleştir</button>}</div>
-                                        {isReadOnly ? <div className="p-3 bg-gray-50 dark:bg-gray-700 border dark:border-gray-600 rounded text-sm min-h-[60px] italic text-gray-600 dark:text-gray-300">{note || "Not yok."}</div> : <textarea className="w-full border dark:border-gray-600 rounded p-3 text-sm focus:outline-none focus:ring-1 focus:ring-red-500 dark:bg-gray-700 dark:text-white" rows="3" value={note} onChange={e=>setNote(e.target.value)} placeholder="Buraya anılarınızı yazın..."></textarea>}
+                                    <div className="mb-5">
+                                        <div className="flex justify-between mb-2 items-center"><label className="font-bold text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"><Icon name="edit-3" className="w-4 h-4"/> Notlar</label>{!isReadOnly && <button onClick={enhanceNote} disabled={isEnhancingNote || !note} className="text-xs text-purple-600 font-bold flex gap-1 items-center hover:text-purple-800 disabled:opacity-50 transition-colors bg-purple-50 dark:bg-purple-900/30 px-2 py-1 rounded-full"><Icon name="wand-2" className="w-3 h-3"/> Güzelleştir</button>}</div>
+                                        {isReadOnly ? <div className="p-4 bg-gray-50 dark:bg-gray-700/50 border dark:border-gray-600/50 rounded-lg text-sm min-h-[80px] italic text-gray-600 dark:text-gray-300 shadow-inner leading-relaxed">{note || "Not yok."}</div> : <textarea className="w-full border dark:border-gray-600 rounded-lg p-4 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:text-white shadow-sm transition-all resize-none" rows="4" value={note} onChange={e=>setNote(e.target.value)} placeholder="Buraya anılarınızı yazın..."></textarea>}
                                     </div>
-                                    <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-                                        <h4 className="font-bold text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2 mb-3"><Icon name="message-circle" className="w-4 h-4"/> Yorumlar</h4>
-                                        <div className="space-y-3 mb-4 max-h-40 overflow-y-auto">{comments.map(c => (<div key={c.id} className="bg-gray-50 dark:bg-gray-700 p-2 rounded text-sm border border-gray-100 dark:border-gray-600"><div className="flex justify-between items-start mb-1"><span className="font-bold text-xs text-gray-800 dark:text-white">@{c.user}</span><span className="text-[10px] text-gray-400">{c.date}</span></div><p className="text-gray-600 dark:text-gray-300 text-xs">{c.text}</p></div>))}</div>
-                                        <div className="flex gap-2"><input type="text" value={newComment} onChange={e=>setNewComment(e.target.value)} placeholder="Yorum yaz..." className="flex-1 border dark:border-gray-600 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"/><button onClick={handleAddComment} className="bg-blue-600 text-white px-3 py-1.5 rounded text-sm font-bold hover:bg-blue-700"><Icon name="send" className="w-3 h-3"/></button></div>
+                                    <div className="mt-8 pt-5 border-t border-gray-200 dark:border-gray-700">
+                                        <h4 className="font-bold text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2 mb-4"><Icon name="message-circle" className="w-4 h-4"/> Yorumlar</h4>
+                                        <div className="space-y-3 mb-5 max-h-48 overflow-y-auto custom-scrollbar pr-1">{comments.map(c => (<div key={c.id} className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg text-sm border border-gray-100 dark:border-gray-600/50 shadow-sm"><div className="flex justify-between items-start mb-1"><span className="font-bold text-xs text-gray-800 dark:text-white">@{c.user}</span><span className="text-[10px] text-gray-400">{c.date}</span></div><p className="text-gray-600 dark:text-gray-300 text-xs leading-relaxed">{c.text}</p></div>))}</div>
+                                        <div className="flex gap-2"><input type="text" value={newComment} onChange={e=>setNewComment(e.target.value)} placeholder="Yorum yaz..." className="flex-1 border dark:border-gray-600 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white shadow-sm transition-all"/><button onClick={handleAddComment} className="bg-blue-600 text-white p-2 rounded-full text-sm font-bold hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg"><Icon name="send" className="w-4 h-4"/></button></div>
                                     </div>
                                 </div>
-                                <div className="p-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex justify-end gap-2 rounded-b-lg"><button onClick={()=>setIsModalOpen(false)} className="px-4 py-2 border dark:border-gray-600 rounded text-gray-600 dark:text-gray-300 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">Kapat</button>{!isReadOnly && <button onClick={handleSave} className={`px-4 py-2 text-white rounded text-sm font-bold shadow ${activeTab === 'couple' ? 'bg-pink-600 hover:bg-pink-700' : 'bg-red-600 hover:bg-red-700'}`}>Kaydet</button>}</div>
+                                <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex justify-end gap-3 rounded-b-xl shadow-inner-soft"><button onClick={()=>setIsModalOpen(false)} className="px-5 py-2.5 border dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-300 text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors shadow-sm">Kapat</button>{!isReadOnly && <button onClick={handleSave} className={`px-5 py-2.5 text-white rounded-lg text-sm font-bold shadow-md hover:shadow-lg transition-all ${activeTab === 'couple' ? 'bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700' : 'bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700'}`}>Kaydet</button>}</div>
                             </div>
                         </div>
                     )}
