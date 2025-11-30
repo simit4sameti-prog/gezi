@@ -39,7 +39,6 @@
         
         .ai-content h3 { font-weight: bold; margin-top: 0.5em; color: #b91c1c; }
         .ai-content ul { list-style-type: disc; padding-left: 1.2em; margin-bottom: 0.5em; }
-        .ai-content li { margin-bottom: 0.2em; }
         
         .city-label {
             background: transparent; border: none; box-shadow: none;
@@ -333,6 +332,8 @@
             const [isModalOpen, setIsModalOpen] = useState(false);
             const [selectedCity, setSelectedCity] = useState(null);
             const [sidebarOpen, setSidebarOpen] = useState(true);
+            const [feedOpen, setFeedOpen] = useState(false); // Sağ Panel
+            const [feedItems, setFeedItems] = useState([]); // Akış
             const [loading, setLoading] = useState(true);
             const [searchQuery, setSearchQuery] = useState("");
             const [viewMode, setViewMode] = useState("map"); 
@@ -342,6 +343,7 @@
             
             const [activeTab, setActiveTab] = useState("personal"); 
             const [partner, setPartner] = useState(null); 
+            const [partnerLoading, setPartnerLoading] = useState(true);
             const [isPartnerModalOpen, setIsPartnerModalOpen] = useState(false);
             const [coupleId, setCoupleId] = useState(null);
 
@@ -373,7 +375,6 @@
 
             useEffect(() => { markersRef.current = markers; }, [markers]);
 
-            // Rütbe Hesapla
             const visitedCount = markers.filter(m => m.status !== 'bucket').length;
             const rank = getRank(visitedCount);
 
@@ -387,43 +388,47 @@
                 return () => unsub();
             }, [myUsername]);
 
-            // BİLDİRİM GÖNDERME FONKSİYONU
+            // FEED DİNLEME (ARKADAŞ AKIŞI)
+            useEffect(() => {
+                if(!friends.length) return;
+                const fetchFeed = async () => {
+                    let allItems = [];
+                    for (const friend of friends) {
+                        const doc = await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_maps').doc(friend).get();
+                        if (doc.exists) {
+                            const m = doc.data().markers || [];
+                            // Add username info
+                            const mWithUser = m.map(i => ({...i, username: friend, avatar: null})); 
+                            allItems = [...allItems, ...mWithUser];
+                        }
+                    }
+                    // Sort by newest
+                    allItems.sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
+                    setFeedItems(allItems);
+                };
+                fetchFeed();
+            }, [friends, feedOpen]); // Sadece feed açıldığında veya arkadaşlar değişince çek
+
             const sendNotification = async (targetUser, type) => {
                 const notifRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_notifications').doc(targetUser);
-                
-                // Önce mevcut bildirimleri al (Overwrite yapmamak için)
                 const doc = await notifRef.get();
                 let currentNotifs = doc.exists ? doc.data().list : [];
-                
-                // Aynı kişi daha önce istek attı mı?
                 if(currentNotifs.find(n => n.from === myUsername && n.type === type)) return;
-
-                currentNotifs.push({
-                    id: Date.now(),
-                    from: myUsername,
-                    type: type,
-                    date: new Date().toLocaleDateString('tr-TR')
-                });
-                
+                currentNotifs.push({ id: Date.now(), from: myUsername, type: type, date: new Date().toLocaleDateString('tr-TR') });
                 await notifRef.set({ list: currentNotifs });
             };
 
-            // BİLDİRİM KABUL/RED
             const handleAcceptNotif = async (notif) => {
-                // 1. Bildirimi listeden sil
                 const updatedNotifs = notifications.filter(n => n.id !== notif.id);
                 await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_notifications').doc(myUsername).set({ list: updatedNotifs });
 
                 if(notif.type === 'friend') {
-                    // Arkadaş ekleme işlemi (Çift taraflı)
-                    // Benim listem
                     const myFriendsRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_friends').doc(myUsername);
                     const myFriendsDoc = await myFriendsRef.get();
                     let myList = myFriendsDoc.exists ? myFriendsDoc.data().list : [];
                     if(!myList.includes(notif.from)) myList.push(notif.from);
                     await myFriendsRef.set({ list: myList }, {merge: true});
 
-                    // Onun listesi
                     const otherFriendsRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_friends').doc(notif.from);
                     const otherFriendsDoc = await otherFriendsRef.get();
                     let otherList = otherFriendsDoc.exists ? otherFriendsDoc.data().list : [];
@@ -433,10 +438,7 @@
                     alert(`${notif.from} ile arkadaş oldunuz!`);
                 } 
                 else if (notif.type === 'partner') {
-                    // Partner eşleştirme
                     await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_partners').doc(myUsername).set({ partner: notif.from });
-                    // Karşı taraf zaten istek attıysa onun partneri de muhtemelen set edilmiştir, ama yine de kontrol edebiliriz.
-                    // Burada sadece kabul edip kendi partnerimi o kişi yapıyorum.
                     setPartner(notif.from);
                     const ids = [myUsername, notif.from].sort();
                     setCoupleId(ids.join('_'));
@@ -449,10 +451,11 @@
                 await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_notifications').doc(myUsername).set({ list: updatedNotifs });
             };
 
-            // Partner Kontrol (Eski yöntemle çakışmaması için burası durabilir)
+            // Partner Kontrol (Init'te çalışır)
             useEffect(() => {
                 if (myUsername !== currentUsername) return; 
                 const checkPartner = async () => {
+                    setPartnerLoading(true);
                     const myPartnerDoc = await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_partners').doc(myUsername).get();
                     if (myPartnerDoc.exists) {
                         const targetUser = myPartnerDoc.data().partner;
@@ -463,6 +466,7 @@
                             setCoupleId(ids.join('_'));
                         }
                     }
+                    setPartnerLoading(false);
                 };
                 checkPartner();
             }, [myUsername, currentUsername]);
@@ -486,7 +490,6 @@
                 return () => unsubscribe();
             }, [currentUsername, activeTab, coupleId, myUsername]);
 
-            // Profil Fotosu
             useEffect(() => {
                 const profileRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_profiles').doc(currentUsername);
                 const unsub = profileRef.onSnapshot(doc => {
@@ -530,9 +533,9 @@
                     id: Date.now(), lat: selectedCity.latlng.lat, lng: selectedCity.latlng.lng,
                     cityName: selectedCity.name, note: note, images: images, checkedPlaces: checkedPlaces,
                     aiGuide: guideContent, comments: comments, favoriteImage: favoriteImage,
-                    status: status, category: category, // Yeni Alanlar
+                    status: status, category: category, 
                     date: new Date().toLocaleDateString('tr-TR'),
-                    timestamp: Date.now() // Sıralama için
+                    timestamp: Date.now() 
                 };
                 const updated = [...markers.filter(m => m.cityName !== selectedCity.name), newMarker];
                 setMarkers(updated);
@@ -567,10 +570,7 @@
             };
 
             const linkPartner = async (targetUsername) => {
-                // Partner isteği: Sadece bildirim gönder, lokal ayar yapma (onaylayınca olacak)
                 await sendNotification(targetUsername, 'partner');
-                // Kendim için geçici bir istek atabilirim veritabanına, ama şimdilik bildirim yeterli.
-                // Mevcut sistemde "bekleyen istek" mantığı basit tutulduğu için direkt bildirim atıyoruz.
                 alert(`Eşleşme isteği ${targetUsername} kullanıcısına gönderildi.`);
                 setIsPartnerModalOpen(false);
             };
@@ -578,8 +578,6 @@
             const addFriend = async (friendName) => {
                 if(friendName === myUsername) return;
                 if(friends.includes(friendName)) { alert("Zaten arkadaşsınız."); return; }
-                
-                // BİLDİRİM GÖNDER
                 await sendNotification(friendName, 'friend');
                 alert(`${friendName} kullanıcısına arkadaşlık isteği gönderildi.`);
             };
@@ -631,10 +629,8 @@
                     labelLayerRef.current.clearLayers();
                     if (routeLayerRef.current) routeLayerRef.current.clearLayers();
 
-                    // 1. Filtreleme
                     const filteredMarkers = markers.filter(m => categoryFilter === "Tümü" || m.category === categoryFilter);
 
-                    // 2. Rota Çizme (Zaman Sırasına Göre)
                     if (showRoute && filteredMarkers.length > 1) {
                         const sortedMarkers = [...filteredMarkers].sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
                         const latlngs = sortedMarkers.map(m => [m.lat, m.lng]);
@@ -644,39 +640,28 @@
                     geoJsonLayer.eachLayer(layer => {
                         const cityName = layer.feature.properties.name;
                         const marker = filteredMarkers.find(m => m.cityName === cityName);
-                        
-                        let color = '#9ca3af';
-                        let opacity = 0.5;
+                        let color = '#9ca3af'; let opacity = 0.5;
 
                         if (marker) {
-                            if (marker.status === 'bucket') {
-                                color = '#eab308'; // Sarı
-                                opacity = 0.8;
-                            } else {
-                                color = activeTab === 'couple' ? '#ec4899' : '#ef4444'; // Kırmızı/Pembe
-                                opacity = 0.9;
-                            }
+                            if (marker.status === 'bucket') { color = '#eab308'; opacity = 0.8; }
+                            else { color = activeTab === 'couple' ? '#ec4899' : '#ef4444'; opacity = 0.9; }
                         }
 
                         layer.setStyle({ fillColor: color, fillOpacity: opacity, color: 'white', weight: 1 });
 
-                        // Etiket
                         let labelContent = `<div class="city-label">${cityName}</div>`;
                         if (marker && marker.status !== 'bucket') {
                             const progress = calculateProgress(cityName, marker.checkedPlaces);
-                            if (progress > 0) {
-                                labelContent = `<div class="city-label"><div>${cityName}</div><div class="city-label-progress">%${progress}</div></div>`;
-                            }
+                            if (progress > 0) labelContent = `<div class="city-label"><div>${cityName}</div><div class="city-label-progress">%${progress}</div></div>`;
                         }
                         
                         L.marker(layer.getBounds().getCenter(), { icon: L.divIcon({className: 'hidden'}), interactive: false })
-                         .bindTooltip(labelContent, { permanent: true, direction: 'center', className: '' })
-                         .addTo(labelLayerRef.current);
+                         .bindTooltip(labelContent, { permanent: true, direction: 'center', className: '' }).addTo(labelLayerRef.current);
                     });
                 }
             }, [markers, geoJsonLayer, activeTab, categoryFilter, showRoute]);
 
-            // Harita Init (Değişmedi)
+            // Harita Init
             useEffect(() => {
                 if (mapRef.current) return;
                 const container = document.getElementById('map-container');
@@ -721,14 +706,15 @@
             }, []);
 
             const mainColor = activeTab === 'couple' ? 'bg-pink-600' : 'bg-red-600';
-            
-            // Filtrelenmiş ve Sıralanmış Markerlar (Timeline için)
+            const subColor = activeTab === 'couple' ? 'bg-pink-500' : 'bg-red-500';
+            const lightColor = activeTab === 'couple' ? 'bg-pink-50' : 'bg-red-50';
+
             const getFilteredMarkers = () => {
                 let filtered = markers.filter(m => categoryFilter === "Tümü" || m.category === categoryFilter);
                 if (viewMode === 'timeline') {
-                    return filtered.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)); // En yeni en üstte
+                    return filtered.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)); 
                 }
-                return filtered; // Harita modu (sıralama önemsiz)
+                return filtered; 
             };
 
             const displayMarkers = getFilteredMarkers();
@@ -749,9 +735,7 @@
                                     </div>
                                     <div>
                                         <h1 className="text-lg leading-tight">@{currentUsername}</h1>
-                                        <div className="text-xs opacity-80 font-normal flex items-center gap-1">
-                                            <Icon name={rank.icon} className="w-3 h-3"/> {rank.title}
-                                        </div>
+                                        <div className="text-xs opacity-80 font-normal flex items-center gap-1"><Icon name={rank.icon} className="w-3 h-3"/> {rank.title}</div>
                                     </div>
                                 </div>
                                 <div className="flex gap-2 items-center">
@@ -761,6 +745,12 @@
                                             {notifications.length > 0 && <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-yellow-400 rounded-full border-2 border-red-600"></span>}
                                         </button>
                                     </div>
+                                    
+                                    {/* FEED BUTTON */}
+                                    <button onClick={()=>setFeedOpen(!feedOpen)} className={`p-1.5 rounded-full transition-colors ${feedOpen ? 'bg-white text-red-600' : 'bg-white/20 text-white hover:bg-white/30'}`} title="Akış">
+                                        <Icon name="activity" className="w-5 h-5"/>
+                                    </button>
+
                                     {isReadOnly ? <button onClick={()=>onViewChange(myUsername)} className="bg-white text-red-600 px-2 rounded text-xs font-bold">Profilim</button> : <div className="flex gap-2"><button onClick={()=>setViewMode(viewMode==='friends'?'map':'friends')} className="bg-white/20 p-1 rounded hover:bg-white/30"><Icon name="users" className="w-5 h-5"/></button><button onClick={onLogout} className="bg-white/20 p-1 rounded hover:bg-white/30"><Icon name="log-out" className="w-5 h-5"/></button></div>}
                                     <button onClick={()=>setSidebarOpen(false)}><Icon name="chevrons-left" className="w-6 h-6"/></button>
                                 </div>
@@ -780,7 +770,6 @@
                             {isReadOnly && !friends.includes(currentUsername) && <button onClick={()=>addFriend(currentUsername)} className="mt-2 w-full bg-white text-red-600 font-bold text-xs py-1 rounded flex items-center justify-center gap-1"><Icon name="user-plus" className="w-3 h-3"/> Ekle</button>}
                         </div>
 
-                        {/* MENÜ İÇERİĞİ */}
                         {viewMode === 'friends' && !isReadOnly ? (
                              <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
                                 <h2 className="font-bold text-gray-700 mb-3 flex items-center gap-2"><Icon name="users" className="w-4 h-4"/> Arkadaşlarım ({friends.length})</h2>
@@ -788,17 +777,19 @@
                             </div>
                         ) : (
                             <>
+                                <div className={`p-4 ${lightColor} border-b transition-colors duration-500`}>
+                                    <div className={`flex justify-between mb-1 text-sm font-bold ${activeTab === 'couple' ? 'text-pink-800' : 'text-red-800'}`}><span>Gezilen: {markers.length} / 81</span><span>{activeTab === 'couple' ? '❤️ Bizim Haritamız' : ''}</span></div>
+                                    <div className="w-full bg-gray-200 h-2 rounded-full"><div className={`h-2 rounded-full ${subColor}`} style={{width: `${(markers.length/81)*100}%`}}></div></div>
+                                    {isReadOnly && <div className="mt-2 text-xs bg-blue-100 text-blue-700 p-1 rounded text-center flex items-center justify-center gap-1"><Icon name="eye" className="w-3 h-3"/> Görüntüleme Modu</div>}
+                                </div>
+
                                 <div className="p-2 bg-gray-50 border-b flex gap-2 overflow-x-auto">
                                     <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="text-xs border rounded p-1 bg-white">
                                         <option value="Tümü">Tüm Kategoriler</option>
                                         {categories.map(c => <option key={c} value={c}>{c}</option>)}
                                     </select>
-                                    <button onClick={() => setShowRoute(!showRoute)} className={`text-xs px-2 py-1 rounded border flex items-center gap-1 ${showRoute ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-white'}`}>
-                                        <Icon name="route" className="w-3 h-3"/> Rota
-                                    </button>
-                                    <button onClick={() => setViewMode(viewMode === 'timeline' ? 'map' : 'timeline')} className={`text-xs px-2 py-1 rounded border flex items-center gap-1 ${viewMode === 'timeline' ? 'bg-purple-100 text-purple-700 border-purple-200' : 'bg-white'}`}>
-                                        <Icon name="clock" className="w-3 h-3"/> Zaman
-                                    </button>
+                                    <button onClick={() => setShowRoute(!showRoute)} className={`text-xs px-2 py-1 rounded border flex items-center gap-1 ${showRoute ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-white'}`}><Icon name="route" className="w-3 h-3"/> Rota</button>
+                                    <button onClick={() => setViewMode(viewMode === 'timeline' ? 'map' : 'timeline')} className={`text-xs px-2 py-1 rounded border flex items-center gap-1 ${viewMode === 'timeline' ? 'bg-purple-100 text-purple-700 border-purple-200' : 'bg-white'}`}><Icon name="clock" className="w-3 h-3"/> Zaman</button>
                                 </div>
 
                                 <div className="flex-1 overflow-y-auto p-2 space-y-3 bg-gray-50">
@@ -810,34 +801,13 @@
                                         return (
                                             <div key={m.id} onClick={()=> { if(mapRef.current) mapRef.current.flyTo([m.lat, m.lng], 8); }} className={`bg-white p-3 rounded border shadow-sm hover:shadow-md cursor-pointer relative group ${isBucket ? 'border-yellow-200 bg-yellow-50' : ''}`}>
                                                 {viewMode === 'timeline' && <div className="absolute -left-2 top-4 w-4 h-0.5 bg-gray-300"></div>} 
-                                                
                                                 <div className="flex justify-between font-bold text-gray-800 items-center">
-                                                    <span className="flex items-center gap-1">
-                                                        {isBucket ? <Icon name="flag" className="w-4 h-4 text-yellow-600"/> : null}
-                                                        {m.cityName}
-                                                        {progress === 100 && <span className="text-[10px] bg-green-100 text-green-600 px-1 rounded border border-green-200">Tamamlandı</span>}
-                                                    </span>
+                                                    <span className="flex items-center gap-1">{isBucket ? <Icon name="flag" className="w-4 h-4 text-yellow-600"/> : null}{m.cityName}{progress === 100 && <span className="text-[10px] bg-green-100 text-green-600 px-1 rounded border border-green-200">Tamamlandı</span>}</span>
                                                     {!isReadOnly && <button onClick={(e)=>{e.stopPropagation(); handleDelete(m.cityName)}} className="text-gray-400 hover:text-red-500"><Icon name="trash-2" className="w-4 h-4"/></button>}
                                                 </div>
-                                                
-                                                <div className="text-[10px] text-gray-400 mb-2 flex justify-between">
-                                                    <span>{m.date}</span>
-                                                    <span className="bg-gray-100 px-1 rounded text-gray-600">{m.category}</span>
-                                                </div>
-
-                                                {!isBucket && (
-                                                    <div className="mt-1 mb-2">
-                                                         <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden"><div className={`h-1.5 ${progress===100?'bg-green-500':'bg-blue-500'}`} style={{width: `${progress}%`}}></div></div>
-                                                    </div>
-                                                )}
-
-                                                {coverImage && (
-                                                    <div className="relative w-full h-32 rounded overflow-hidden mt-2 border border-gray-100">
-                                                        <img src={coverImage} className="w-full h-full object-cover" />
-                                                        {m.images.length > 1 && <div className="absolute bottom-1 right-1 bg-black/50 text-white text-xs px-1 rounded">+{m.images.length - 1}</div>}
-                                                    </div>
-                                                )}
-                                                
+                                                <div className="text-[10px] text-gray-400 mb-2 flex justify-between"><span>{m.date}</span><span className="bg-gray-100 px-1 rounded text-gray-600">{m.category}</span></div>
+                                                {!isBucket && <div className="mt-1 mb-2"><div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden"><div className={`h-1.5 ${progress===100?'bg-green-500':'bg-blue-500'}`} style={{width: `${progress}%`}}></div></div></div>}
+                                                {coverImage && <div className="relative w-full h-32 rounded overflow-hidden mt-2 border border-gray-100"><img src={coverImage} className="w-full h-full object-cover" />{m.images.length > 1 && <div className="absolute bottom-1 right-1 bg-black/50 text-white text-xs px-1 rounded">+{m.images.length - 1}</div>}</div>}
                                                 {m.note && <p className="text-xs text-gray-500 italic mt-2 line-clamp-2">"{m.note}"</p>}
                                             </div>
                                         );
@@ -848,21 +818,52 @@
                     </div>
 
                     {!sidebarOpen && <button onClick={()=>setSidebarOpen(true)} className={`absolute top-4 left-4 z-10 bg-white p-2 rounded shadow ${activeTab === 'couple' ? 'text-pink-600' : 'text-red-600'}`}><Icon name="menu" className="w-6 h-6"/></button>}
+                    
+                    {/* FEED PANEL */}
+                    {feedOpen && (
+                        <div className="absolute top-0 right-0 h-full w-80 bg-white shadow-2xl z-20 flex flex-col border-l border-gray-200 animate-fadeIn">
+                            <div className="p-3 bg-indigo-600 text-white flex justify-between items-center">
+                                <h3 className="font-bold flex items-center gap-2"><Icon name="activity" className="w-5 h-5"/> Arkadaş Akışı</h3>
+                                <button onClick={()=>setFeedOpen(false)}><Icon name="x" className="w-5 h-5"/></button>
+                            </div>
+                            <div className="flex-1 overflow-y-auto p-3 space-y-4 bg-gray-50">
+                                {feedItems.length === 0 && <p className="text-center text-gray-400 text-sm mt-10">Henüz bir hareket yok.</p>}
+                                {feedItems.map((item, i) => (
+                                    <div key={i} className="bg-white p-3 rounded-lg shadow-sm border cursor-pointer hover:border-indigo-300" onClick={() => {
+                                        onViewChange(item.username);
+                                        if(mapRef.current) mapRef.current.flyTo([item.lat, item.lng], 9);
+                                        // Modal açabiliriz ama state yönetimi karışır, sadece oraya gitmek yeterli.
+                                    }}>
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xs border border-indigo-200">
+                                                {item.username.substring(0,2).toUpperCase()}
+                                            </div>
+                                            <div>
+                                                <div className="text-sm font-bold text-gray-800">@{item.username}</div>
+                                                <div className="text-[10px] text-gray-500">{item.date}</div>
+                                            </div>
+                                        </div>
+                                        <div className="mb-2">
+                                            <span className="font-bold text-indigo-600">{item.cityName}</span> şehrini ziyaret etti.
+                                            {item.status === 'bucket' && <span className="text-xs bg-yellow-100 text-yellow-700 px-1 ml-1 rounded">Hedef 🎯</span>}
+                                        </div>
+                                        {item.images && item.images.length > 0 && (
+                                            <div className="h-24 w-full rounded-md overflow-hidden border border-gray-100 mb-2">
+                                                <img src={item.favoriteImage || item.images[0]} className="w-full h-full object-cover"/>
+                                            </div>
+                                        )}
+                                        {item.note && <p className="text-xs text-gray-600 italic line-clamp-2">"{item.note}"</p>}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     <div id="map-container" className="flex-1 z-0 relative">{loading && <div className="absolute inset-0 flex items-center justify-center bg-white z-[999] opacity-80">Yükleniyor...</div>}</div>
                     
                     {zoomedImage && <div className="fixed inset-0 z-[2000] bg-black bg-opacity-90 flex items-center justify-center p-4" onClick={() => setZoomedImage(null)}><img src={zoomedImage} className="max-h-full max-w-full rounded shadow-2xl animate-fadeIn" /><button className="absolute top-4 right-4 text-white bg-gray-800 p-2 rounded-full hover:bg-gray-700"><Icon name="x" className="w-6 h-6"/></button></div>}
-                    
-                    {isNotifOpen && (
-                        <NotificationModal 
-                            notifications={notifications} 
-                            onClose={()=>setIsNotifOpen(false)}
-                            onAccept={handleAcceptNotif}
-                            onReject={handleRejectNotif}
-                        />
-                    )}
-
+                    {isNotifOpen && <NotificationModal notifications={notifications} onClose={()=>setIsNotifOpen(false)} onAccept={handleAcceptNotif} onReject={handleRejectNotif}/>}
                     {isPartnerModalOpen && <PartnerModal myUsername={myUsername} currentPartner={partner} onClose={() => setIsPartnerModalOpen(false)} onLink={linkPartner}/>}
-
                     {isModalOpen && (
                         <div className="fixed inset-0 z-[1000] bg-black bg-opacity-50 flex items-center justify-center p-4">
                             <div className="bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col">
@@ -871,8 +872,6 @@
                                     <button onClick={()=>setIsModalOpen(false)}><Icon name="x" className="w-5 h-5"/></button>
                                 </div>
                                 <div className="p-4 overflow-y-auto flex-1 custom-scrollbar">
-                                    
-                                    {/* Durum ve Kategori Seçimi */}
                                     {!isReadOnly && (
                                         <div className="flex gap-2 mb-4">
                                             <select value={status} onChange={(e) => setStatus(e.target.value)} className="flex-1 border rounded p-2 text-sm bg-gray-50">
@@ -884,18 +883,14 @@
                                             </select>
                                         </div>
                                     )}
-
-                                    {/* Checklist (Sadece Gezildiyse Göster) */}
                                     {status === 'visited' && (
                                         <div className="bg-orange-50 border border-orange-100 rounded p-3 mb-4">
                                             <div className="flex justify-between items-center mb-2"><h4 className="text-sm font-bold text-orange-800 flex gap-2 items-center"><Icon name="list-checks" className="w-4 h-4"/> 3 Öneri</h4><span className="text-xs font-bold bg-white px-2 py-0.5 rounded text-orange-600 border border-orange-200">%{calculateProgress(selectedCity?.name, checkedPlaces)}</span></div>
                                             <div className="space-y-1">{(citySuggestionsData[selectedCity?.name] || ["Müze", "Tarihi Çarşı", "Şehir Parkı"]).map((place, idx) => { const isChecked = checkedPlaces.includes(place); return (<div key={idx} onClick={()=>toggleCheckedPlace(place)} className={`flex items-center gap-2 p-2 rounded border cursor-pointer transition-all ${isChecked ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200 hover:border-orange-300'}`}><div className={`w-4 h-4 rounded border flex items-center justify-center ${isChecked ? 'bg-green-500 border-green-500' : 'bg-white border-gray-300'}`}>{isChecked && <Icon name="check" className="w-3 h-3 text-white"/>}</div><span className={`text-xs ${isChecked ? 'text-green-800 font-bold' : 'text-gray-700'}`}>{place}</span></div>); })}</div>
                                         </div>
                                     )}
-
                                     {!isReadOnly && <button onClick={generateGuide} disabled={isGeneratingGuide} className="w-full bg-gradient-to-r from-purple-500 to-indigo-500 text-white py-2 rounded mb-4 font-bold flex justify-center gap-2 shadow hover:shadow-md transition-all">{isGeneratingGuide ? "Hazırlanıyor..." : <><Icon name="sparkles" className="w-4 h-4"/> AI Rehber Oluştur</>}</button>}
                                     {guideContent && <div className="bg-purple-50 p-3 rounded text-sm mb-4 text-gray-700 ai-content shadow-inner border border-purple-100">{formatAI(guideContent)}</div>}
-                                    
                                     <div className="mb-4">
                                         <div className="font-bold text-sm mb-2 text-gray-700 flex items-center gap-2"><Icon name="image" className="w-4 h-4"/> Fotoğraflar</div>
                                         <div className="flex flex-wrap gap-2 mb-2">
@@ -909,13 +904,10 @@
                                         </div>
                                         {!isReadOnly && <label className="block w-full border-2 border-dashed border-gray-300 p-4 text-center cursor-pointer text-gray-500 text-sm hover:bg-gray-50 hover:border-gray-400 rounded transition-all">+ Fotoğraf Ekle <input type="file" multiple className="hidden" onChange={handleImage}/></label>}
                                     </div>
-
                                     <div className="mb-4">
                                         <div className="flex justify-between mb-1 items-center"><label className="font-bold text-sm text-gray-700 flex items-center gap-2"><Icon name="edit-3" className="w-4 h-4"/> Notlar</label>{!isReadOnly && <button onClick={enhanceNote} disabled={isEnhancingNote || !note} className="text-xs text-purple-600 font-bold flex gap-1 items-center hover:text-purple-800 disabled:opacity-50"><Icon name="wand-2" className="w-3 h-3"/> Güzelleştir</button>}</div>
                                         {isReadOnly ? <div className="p-3 bg-gray-50 border rounded text-sm min-h-[60px] italic text-gray-600">{note || "Not yok."}</div> : <textarea className="w-full border rounded p-3 text-sm focus:outline-none focus:ring-1 focus:ring-red-500" rows="3" value={note} onChange={e=>setNote(e.target.value)} placeholder="Buraya anılarınızı yazın..."></textarea>}
                                     </div>
-                                    
-                                    {/* Yorumlar */}
                                     <div className="mt-6 pt-4 border-t border-gray-200">
                                         <h4 className="font-bold text-sm text-gray-700 flex items-center gap-2 mb-3"><Icon name="message-circle" className="w-4 h-4"/> Yorumlar</h4>
                                         <div className="space-y-3 mb-4 max-h-40 overflow-y-auto">{comments.map(c => (<div key={c.id} className="bg-gray-50 p-2 rounded text-sm border border-gray-100"><div className="flex justify-between items-start mb-1"><span className="font-bold text-xs text-gray-800">@{c.user}</span><span className="text-[10px] text-gray-400">{c.date}</span></div><p className="text-gray-600 text-xs">{c.text}</p></div>))}</div>
