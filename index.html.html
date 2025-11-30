@@ -1262,7 +1262,7 @@
             if (!isFirebaseReady) return <ConfigWarning />;
             if (!user) return <div className="h-screen flex items-center justify-center text-red-600 font-bold animate-pulse">Harita Yükleniyor...</div>;
             if (!myUsername) return <LoginScreen onLogin={(u) => { setMyUsername(u); localStorage.setItem('my_username', u); }} />;
-            return <MainaApp myUsername={myUsername} currentUsername={viewUser || myUsername} onViewChange={setViewUser} onLogout={()=>{ localStorage.removeItem('my_username'); setMyUsername(null); setViewUser(null); }} />;
+            return <MainApp myUsername={myUsername} currentUsername={viewUser || myUsername} onViewChange={setViewUser} onLogout={()=>{ localStorage.removeItem('my_username'); setMyUsername(null); setViewUser(null); }} />;
         };
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
