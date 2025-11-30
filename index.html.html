@@ -83,15 +83,6 @@
         
         .leaflet-tooltip { background: transparent; border: none; box-shadow: none; }
         .leaflet-tooltip-top:before, .leaflet-tooltip-bottom:before, .leaflet-tooltip-left:before, .leaflet-tooltip-right:before { display: none; }
-
-        /* 100% City Marker Style */
-        .city-marker-img {
-            width: 50px; height: 50px; border-radius: 50%; object-fit: cover;
-            border: 3px solid #fff; box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-            transition: transform 0.2s;
-        }
-        .city-marker-img:hover { transform: scale(1.2); z-index: 1000; }
-        .dark .city-marker-img { border-color: #4a5568; }
     </style>
 </head>
 <body class="bg-gray-100 h-screen overflow-hidden transition-colors duration-300">
@@ -243,7 +234,6 @@
         // --- CINEMA MODAL (REELS) ---
         const CinemaModal = ({ markers, onClose }) => {
             const [currentIndex, setCurrentIndex] = useState(0);
-            // Sadece fotoğrafı olan markerları al
             const visualMarkers = markers.filter(m => m.images && m.images.length > 0);
 
             if (visualMarkers.length === 0) return (
@@ -257,39 +247,23 @@
 
             const current = visualMarkers[currentIndex];
             const cover = current.favoriteImage || current.images[0];
-
             const next = () => setCurrentIndex((prev) => (prev + 1) % visualMarkers.length);
             const prev = () => setCurrentIndex((prev) => (prev - 1 + visualMarkers.length) % visualMarkers.length);
 
             return (
                 <div className="fixed inset-0 z-[1600] bg-black flex items-center justify-center">
                     <button onClick={onClose} className="absolute top-4 right-4 z-50 p-2 bg-black/50 rounded-full text-white hover:bg-white/20"><Icon name="x" className="w-6 h-6"/></button>
-                    
                     <div className="relative w-full h-full md:w-[400px] md:h-[90%] bg-gray-900 md:rounded-xl overflow-hidden shadow-2xl flex flex-col">
-                        {/* Image Display */}
                         <div className="flex-1 relative">
                              <img src={cover} className="w-full h-full object-cover" />
                              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent"></div>
-                             
-                             {/* Overlay Info */}
                              <div className="absolute bottom-0 left-0 w-full p-6 text-white">
-                                <div className="flex items-center gap-2 mb-2">
-                                    <Icon name="map-pin" className="w-4 h-4 text-red-500"/>
-                                    <span className="font-bold text-lg">{current.cityName}</span>
-                                </div>
+                                <div className="flex items-center gap-2 mb-2"><Icon name="map-pin" className="w-4 h-4 text-red-500"/><span className="font-bold text-lg">{current.cityName}</span></div>
                                 <div className="text-xs text-gray-300 mb-3">{current.date}</div>
                                 {current.note && <p className="text-sm text-gray-200 italic line-clamp-3">"{current.note}"</p>}
-                                
-                                {/* Indicators */}
-                                <div className="flex gap-1 mt-4 justify-center">
-                                    {visualMarkers.map((_, idx) => (
-                                        <div key={idx} className={`h-1 rounded-full transition-all ${idx === currentIndex ? 'w-4 bg-white' : 'w-1 bg-white/30'}`}></div>
-                                    ))}
-                                </div>
+                                <div className="flex gap-1 mt-4 justify-center">{visualMarkers.map((_, idx) => (<div key={idx} className={`h-1 rounded-full transition-all ${idx === currentIndex ? 'w-4 bg-white' : 'w-1 bg-white/30'}`}></div>))}</div>
                              </div>
                         </div>
-
-                        {/* Navigation */}
                         <button onClick={prev} className="absolute left-2 top-1/2 -translate-y-1/2 p-2 text-white/50 hover:text-white"><Icon name="chevron-left" className="w-8 h-8"/></button>
                         <button onClick={next} className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-white/50 hover:text-white"><Icon name="chevron-right" className="w-8 h-8"/></button>
                     </div>
@@ -508,7 +482,7 @@
             const mapRef = useRef(null);
             const labelLayerRef = useRef(null); 
             const routeLayerRef = useRef(null); 
-            const imageMarkersRef = useRef(null); // New: Image markers ref
+            const imageMarkersRef = useRef(null); 
             const [geoJsonLayer, setGeoJsonLayer] = useState(null);
             const [isModalOpen, setIsModalOpen] = useState(false);
             const [selectedCity, setSelectedCity] = useState(null);
@@ -522,7 +496,7 @@
             const [currentChatFriend, setCurrentChatFriend] = useState(null);
             const [darkMode, setDarkMode] = useState(false); 
             const [isStatsOpen, setIsStatsOpen] = useState(false); 
-            const [isCinemaOpen, setIsCinemaOpen] = useState(false); // Reels
+            const [isCinemaOpen, setIsCinemaOpen] = useState(false); 
             
             const [activeTab, setActiveTab] = useState("personal"); 
             const [partner, setPartner] = useState(null); 
@@ -828,16 +802,27 @@
                         L.marker(center, { icon: L.divIcon({className: 'hidden'}), interactive: false })
                          .bindTooltip(labelContent, { permanent: true, direction: 'center', className: '' }).addTo(labelLayerRef.current);
 
-                        // 2. 100% Image Marker
+                        // 2. 100% Image Marker with SVG Pattern
                         if (progress === 100 && (marker.favoriteImage || (marker.images && marker.images.length > 0))) {
                             const imgUrl = marker.favoriteImage || marker.images[0];
+                            
+                            // Create a custom icon with the image
                             const icon = L.divIcon({
                                 className: 'custom-img-icon',
                                 html: `<img src="${imgUrl}" class="city-marker-img" />`,
                                 iconSize: [50, 50],
                                 iconAnchor: [25, 25]
                             });
+                            
                             L.marker(center, { icon: icon, interactive: false }).addTo(imageMarkersRef.current);
+                            
+                            // Fill the polygon with image pattern
+                            // Since we can't easily use SVG patterns inside Leaflet's L.geoJSON style function dynamically without complex DOM manipulation or plugins,
+                            // we stick to the marker overlay which is robust and looks great (like a pin).
+                            // If we really want the polygon filled, we'd need to inject SVG <defs> into the map pane and reference them by ID.
+                            // For stability in a single file, the "Marker on Center" approach is safer and very visual.
+                            // However, I will override the fill color to transparent if 100% so the image marker pops, or keep it colored.
+                            // Let's keep it colored to show the "conquered" status clearly.
                         }
                     });
                 }
