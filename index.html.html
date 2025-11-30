@@ -48,67 +48,62 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 
     <style>
-        body { font-family: 'Inter', 'Segoe UI', sans-serif; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         .leaflet-container { width: 100%; height: 100%; z-index: 1; background: #f8fafc; }
         
         .dark .leaflet-tile-pane { filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%); }
-        .dark .leaflet-container { background: #0f172a; }
+        .dark .leaflet-container { background: #1a202c; }
 
         ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e0; border-radius: 4px; }
-        .dark ::-webkit-scrollbar-thumb { background: #475569; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #ef4444; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #dc2626; }
+        
+        .dark ::-webkit-scrollbar-track { background: #2d3748; }
+        .dark ::-webkit-scrollbar-thumb { background: #4a5568; }
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .animate-fadeIn { animation: fadeIn 0.2s ease-out; }
+        @keyframes likeBounce { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
+        .like-anim { animation: likeBounce 0.3s ease-in-out; }
         
-        @keyframes likeBounce { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
-        .like-anim { animation: likeBounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        
-        .ai-content h3 { font-weight: 800; margin-top: 0.8em; color: #7c3aed; }
-        .dark .ai-content h3 { color: #a78bfa; }
+        .ai-content h3 { font-weight: bold; margin-top: 0.5em; color: #b91c1c; }
+        .dark .ai-content h3 { color: #f87171; }
         .ai-content ul { list-style-type: disc; padding-left: 1.2em; margin-bottom: 0.5em; }
-        .ai-content li { margin-bottom: 0.3em; }
+        .ai-content li { margin-bottom: 0.2em; }
         
         .city-label {
-            background: rgba(255, 255, 255, 0.8); 
-            backdrop-filter: blur(4px);
-            border: 1px solid rgba(0,0,0,0.1); 
-            border-radius: 12px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            font-size: 11px; font-weight: 700; color: #334155;
-            padding: 2px 6px;
+            background: transparent; border: none; box-shadow: none;
+            font-size: 11px; font-weight: 700; color: #1f2937;
+            text-shadow: 2px 0 #fff, -2px 0 #fff, 0 2px #fff, 0 -2px #fff, 1px 1px #fff, -1px -1px #fff, 1px -1px #fff, -1px 1px #fff;
             text-align: center; opacity: 1 !important; white-space: nowrap;
         }
-        .dark .city-label { 
-            background: rgba(15, 23, 42, 0.8); 
-            border-color: rgba(255,255,255,0.1);
-            color: #e2e8f0; 
-        }
+        .dark .city-label { color: #e2e8f0; text-shadow: 2px 0 #000, -2px 0 #000, 0 2px #000, 0 -2px #000, 1px 1px #000, -1px -1px #000, 1px -1px #000, -1px 1px #000; }
         
         .city-label-progress {
-            font-size: 9px; color: #ef4444; font-weight: 800; display: block; margin-top: 0px;
+            font-size: 9px; color: #dc2626; font-weight: bold; display: block; margin-top: -2px;
         }
-        .dark .city-label-progress { color: #f87171; }
+        .dark .city-label-progress { color: #fca5a5; }
         
         .leaflet-tooltip { background: transparent; border: none; box-shadow: none; }
         .leaflet-tooltip-top:before, .leaflet-tooltip-bottom:before, .leaflet-tooltip-left:before, .leaflet-tooltip-right:before { display: none; }
 
+        /* ZORLA SABİTLEME: Harita üzerindeki resimlerin boyutu */
         .city-marker-img {
-            width: 54px !important; 
-            height: 54px !important; 
+            width: 50px !important; 
+            height: 50px !important; 
             border-radius: 50%; 
             object-fit: cover;
-            border: 3px solid white; 
-            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
-            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            border: 3px solid #fff; 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            transition: transform 0.2s;
+            background-color: white; /* Resim yüklenmezse beyaz kalsın */
         }
-        .city-marker-img:hover { transform: scale(1.3); z-index: 1000; }
-        .dark .city-marker-img { border-color: #334155; }
+        .city-marker-img:hover { transform: scale(1.2); z-index: 1000; }
+        .dark .city-marker-img { border-color: #4a5568; }
     </style>
 </head>
-<body class="bg-gray-100 h-screen overflow-hidden transition-colors duration-300 font-sans">
+<body class="bg-gray-100 h-screen overflow-hidden transition-colors duration-300">
     <div id="root" class="h-full"></div>
 
     <script type="text/babel">
@@ -533,7 +528,8 @@
                             await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_profiles').doc(uName).set({ avatar: null });
                             await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_friends').doc(uName).set({ list: [] });
                             await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_notifications').doc(uName).set({ list: [] });
-                            setSuccessMsg("Kayıt başarılı! Giriş yapabilirsiniz."); setIsRegistering(false); setInputPassword("");
+                            setSuccessMsg("Kayıt başarılı! Giriş yapabilirsiniz.");
+                            setIsRegistering(false); setInputPassword("");
                         }
                     } else {
                         if (docSnap.exists) {
@@ -580,6 +576,8 @@
             const [searchQuery, setSearchQuery] = useState("");
             const [viewMode, setViewMode] = useState("map"); 
             const [zoomedImage, setZoomedImage] = useState(null);
+            const [currentImageIndex, setCurrentImageIndex] = useState(0);
+            const [lightboxImages, setLightboxImages] = useState([]);
             const [userAvatar, setUserAvatar] = useState(null);
             const [myAvatar, setMyAvatar] = useState(null);
             const [currentChatFriend, setCurrentChatFriend] = useState(null);
@@ -756,39 +754,26 @@
                  await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_partners').doc(myUsername).delete();
                  alert("Bağlantı koptu.");
                  setIsPartnerModalOpen(false);
-                 // The realtime listener in useEffect will handle setting partner to null
             };
 
-            // Partner Kontrol (REALTIME LISTEN)
             useEffect(() => {
                 if (myUsername !== currentUsername) return;
-                
                 const unsub = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_partners').doc(myUsername)
                     .onSnapshot(async (doc) => {
                         if (doc.exists && doc.data().partner) {
                             const potentialPartner = doc.data().partner;
                             const targetDoc = await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_partners').doc(potentialPartner).get();
-                            
                             if (targetDoc.exists && targetDoc.data().partner === myUsername) {
                                 setPartner(potentialPartner);
                                 const ids = [myUsername, potentialPartner].sort();
                                 setCoupleId(ids.join('_'));
-                            } else {
-                                // Pending or Broken
-                                setPartner(null);
-                                setCoupleId(null);
-                            }
-                        } else {
-                            setPartner(null);
-                            setCoupleId(null);
-                        }
+                            } else { setPartner(null); setCoupleId(null); }
+                        } else { setPartner(null); setCoupleId(null); }
                         setPartnerLoading(false);
                     });
-                    
                 return () => unsub();
             }, [myUsername, currentUsername]);
 
-            // Veri Çekme
             useEffect(() => {
                 let docRef;
                 if (myUsername !== currentUsername) {
@@ -796,9 +781,6 @@
                 } else {
                     if (activeTab === 'couple' && coupleId) {
                          docRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('couple_maps').doc(coupleId);
-                    } else if (activeTab === 'couple' && !coupleId) {
-                         setMarkers([]); // Clear if no couple id
-                         return;
                     } else {
                          docRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_maps').doc(myUsername);
                     }
@@ -910,12 +892,17 @@
                             else { color = activeTab === 'couple' ? '#ec4899' : '#ef4444'; opacity = 0.9; }
                         }
                         layer.setStyle({ fillColor: color, fillOpacity: opacity, color: 'white', weight: 1 });
+                        
+                        let center = layer.getBounds().getCenter();
+                        if(customCityCenters[cityName]) center = L.latLng(customCityCenters[cityName]);
+
                         let labelContent = `<div class="city-label">${cityName}</div>`;
+                        let progress = 0;
                         if (marker && marker.status !== 'bucket') {
-                            const progress = calculateProgress(cityName, marker.checkedPlaces);
+                            progress = calculateProgress(cityName, marker.checkedPlaces);
                             if (progress > 0) labelContent = `<div class="city-label"><div>${cityName}</div><div class="city-label-progress">%${progress}</div></div>`;
                         }
-                        L.marker(layer.getBounds().getCenter(), { icon: L.divIcon({className: 'hidden'}), interactive: false })
+                        L.marker(center, { icon: L.divIcon({className: 'hidden'}), interactive: false })
                          .bindTooltip(labelContent, { permanent: true, direction: 'center', className: '' }).addTo(labelLayerRef.current);
 
                         if (progress === 100 && (marker.favoriteImage || (marker.images && marker.images.length > 0))) {
