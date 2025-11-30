@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Türkiye Gezi Günlüğü (Ultimate)</title>
+    <title>Türkiye Gezi Günlüğü (Sosyal & AI)</title>
     
     <!-- React & ReactDOM (Global) -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -36,9 +36,8 @@
         ::-webkit-scrollbar-thumb:hover { background: #dc2626; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .animate-fadeIn { animation: fadeIn 0.2s ease-out; }
-        @keyframes likeBounce { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
-        .like-anim { animation: likeBounce 0.3s ease-in-out; }
         
+        /* AI Metin Stilleri */
         .ai-content h3 { font-weight: bold; margin-top: 0.5em; color: #b91c1c; }
         .ai-content ul { list-style-type: disc; padding-left: 1.2em; margin-bottom: 0.5em; }
         .ai-content li { margin-bottom: 0.2em; }
@@ -136,14 +135,15 @@
         const callGeminiAPI = async (prompt) => {
             if (!finalApiKey) return "Hata: API anahtarı eksik.";
             try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${finalApiKey}`, {
+                // Model güncellendi: gemini-1.5-flash (daha kararlı)
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${finalApiKey}`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
-                if (!response.ok) throw new Error('API Hatası');
+                if (!response.ok) throw new Error('API Hatası: ' + response.statusText);
                 const data = await response.json();
                 return data.candidates?.[0]?.content?.parts?.[0]?.text || "Yanıt alınamadı.";
-            } catch (error) { return "Yapay zeka servisine ulaşılamıyor."; }
+            } catch (error) { return "Yapay zeka şu an meşgul, lütfen tekrar deneyin."; }
         };
 
         const compressImage = (file) => {
@@ -155,7 +155,7 @@
                     img.src = event.target.result;
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
-                        const MAX_WIDTH = 200;
+                        const MAX_WIDTH = 400; // Chat için biraz daha büyük olabilir
                         const scaleSize = MAX_WIDTH / img.width;
                         canvas.width = MAX_WIDTH;
                         canvas.height = img.height * scaleSize;
@@ -191,6 +191,88 @@
             if (count >= 10) return { title: "Kâşif", icon: "map", color: "text-blue-600" };
             if (count >= 5) return { title: "Gezgin", icon: "backpack", color: "text-green-600" };
             return { title: "Çırak", icon: "footprints", color: "text-gray-500" };
+        };
+
+        // --- CHAT MODAL ---
+        const ChatModal = ({ myUsername, friendUsername, onClose }) => {
+            const [messages, setMessages] = useState([]);
+            const [newMessage, setNewMessage] = useState("");
+            const chatId = [myUsername, friendUsername].sort().join('_');
+            const scrollRef = useRef(null);
+
+            useEffect(() => {
+                const chatRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('direct_messages').doc(chatId);
+                const unsub = chatRef.onSnapshot(doc => {
+                    if (doc.exists) setMessages(doc.data().msgs || []);
+                    else setMessages([]);
+                });
+                return () => unsub();
+            }, [chatId]);
+
+            useEffect(() => {
+                if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+            }, [messages]);
+
+            const sendMessage = async (text = null, image = null) => {
+                if (!text && !image) return;
+                const msg = {
+                    id: Date.now(),
+                    sender: myUsername,
+                    text: text,
+                    image: image,
+                    timestamp: Date.now()
+                };
+                const chatRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('direct_messages').doc(chatId);
+                const doc = await chatRef.get();
+                let currentMsgs = doc.exists ? doc.data().msgs : [];
+                currentMsgs.push(msg);
+                await chatRef.set({ msgs: currentMsgs }, { merge: true });
+                setNewMessage("");
+            };
+
+            const handleImageSend = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const base64 = await compressImage(file);
+                sendMessage(null, base64);
+            };
+
+            return (
+                <div className="fixed bottom-4 right-4 w-80 bg-white rounded-t-xl shadow-2xl border border-gray-200 z-[1400] flex flex-col h-96 animate-fadeIn">
+                    <div className="bg-indigo-600 p-3 text-white rounded-t-xl flex justify-between items-center">
+                        <div className="font-bold flex items-center gap-2"><Icon name="message-circle" className="w-4 h-4"/> {friendUsername}</div>
+                        <button onClick={onClose}><Icon name="x" className="w-4 h-4"/></button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-3 bg-gray-50 space-y-2" ref={scrollRef}>
+                        {messages.length === 0 && <p className="text-center text-xs text-gray-400 mt-4">Sohbeti başlatın...</p>}
+                        {messages.map((m, i) => (
+                            <div key={i} className={`flex ${m.sender === myUsername ? 'justify-end' : 'justify-start'}`}>
+                                <div className={`max-w-[80%] rounded-lg p-2 text-xs ${m.sender === myUsername ? 'bg-indigo-100 text-indigo-900' : 'bg-white border border-gray-200 text-gray-800'}`}>
+                                    {m.image && <img src={m.image} className="rounded mb-1 max-w-full" />}
+                                    {m.text && <p>{m.text}</p>}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="p-2 border-t bg-white flex gap-2 items-center">
+                        <label className="cursor-pointer text-gray-500 hover:text-indigo-600 p-1">
+                            <Icon name="image" className="w-5 h-5"/>
+                            <input type="file" className="hidden" accept="image/*" onChange={handleImageSend}/>
+                        </label>
+                        <input 
+                            type="text" 
+                            value={newMessage} 
+                            onChange={(e) => setNewMessage(e.target.value)} 
+                            onKeyDown={(e) => e.key === 'Enter' && sendMessage(newMessage)}
+                            className="flex-1 border rounded px-2 py-1.5 text-sm focus:outline-none focus:border-indigo-500"
+                            placeholder="Mesaj..."
+                        />
+                        <button onClick={() => sendMessage(newMessage)} className="text-indigo-600 hover:text-indigo-800 p-1">
+                            <Icon name="send" className="w-5 h-5"/>
+                        </button>
+                    </div>
+                </div>
+            );
         };
 
         // --- NOTIFICATION MODAL ---
@@ -335,15 +417,13 @@
             const [isModalOpen, setIsModalOpen] = useState(false);
             const [selectedCity, setSelectedCity] = useState(null);
             const [sidebarOpen, setSidebarOpen] = useState(true);
-            const [feedOpen, setFeedOpen] = useState(false); 
-            const [feedItems, setFeedItems] = useState([]); 
-            const [feedCommentInputs, setFeedCommentInputs] = useState({}); // NEW: Inputs for feed items
             const [loading, setLoading] = useState(true);
             const [searchQuery, setSearchQuery] = useState("");
             const [viewMode, setViewMode] = useState("map"); 
             const [zoomedImage, setZoomedImage] = useState(null);
             const [userAvatar, setUserAvatar] = useState(null);
             const [myAvatar, setMyAvatar] = useState(null);
+            const [currentChatFriend, setCurrentChatFriend] = useState(null); // Chat state
             
             const [activeTab, setActiveTab] = useState("personal"); 
             const [partner, setPartner] = useState(null); 
@@ -371,6 +451,11 @@
             const [newComment, setNewComment] = useState("");
             const [status, setStatus] = useState("visited"); 
             const [category, setCategory] = useState("Genel"); 
+
+            // Feed States
+            const [feedOpen, setFeedOpen] = useState(false); 
+            const [feedItems, setFeedItems] = useState([]); 
+            const [feedCommentInputs, setFeedCommentInputs] = useState({});
 
             const isReadOnly = (myUsername !== currentUsername) && (activeTab === "personal");
             const markersRef = useRef(markers);
@@ -849,7 +934,16 @@
                         {viewMode === 'friends' && !isReadOnly ? (
                              <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
                                 <h2 className="font-bold text-gray-700 mb-3 flex items-center gap-2"><Icon name="users" className="w-4 h-4"/> Arkadaşlarım ({friends.length})</h2>
-                                {friends.map((f, i) => <div key={i} onClick={()=>{onViewChange(f); setViewMode('map'); setActiveTab('personal');}} className="bg-white p-3 rounded border mb-2 flex justify-between items-center cursor-pointer hover:shadow-md"><span className="font-bold text-gray-800">@{f}</span><Icon name="chevron-right" className="w-4 h-4 text-gray-400"/></div>)}
+                                {friends.map((f, i) => (
+                                    <div key={i} className="bg-white p-3 rounded border mb-2 flex justify-between items-center cursor-pointer hover:shadow-md">
+                                        <div className="flex items-center gap-3" onClick={()=>{onViewChange(f); setViewMode('map'); setActiveTab('personal');}}>
+                                            <span className="font-bold text-gray-800">@{f}</span>
+                                        </div>
+                                        <button onClick={() => setCurrentChatFriend(f)} className="text-indigo-600 hover:text-indigo-800 bg-indigo-50 p-2 rounded-full">
+                                            <Icon name="message-circle" className="w-4 h-4"/>
+                                        </button>
+                                    </div>
+                                ))}
                             </div>
                         ) : (
                             <>
@@ -895,7 +989,7 @@
 
                     {!sidebarOpen && <button onClick={()=>setSidebarOpen(true)} className={`absolute top-4 left-4 z-10 bg-white p-2 rounded shadow ${activeTab === 'couple' ? 'text-pink-600' : 'text-red-600'}`}><Icon name="menu" className="w-6 h-6"/></button>}
                     
-                    {/* FEED PANEL (GÜNCELLENDİ: YORUM EKLEME) */}
+                    {/* FEED PANEL */}
                     {feedOpen && (
                         <div className="absolute top-0 right-0 h-full w-80 bg-white shadow-2xl z-20 flex flex-col border-l border-gray-200 animate-fadeIn">
                             <div className="p-3 bg-indigo-600 text-white flex justify-between items-center">
@@ -979,6 +1073,14 @@
                                 ))}
                             </div>
                         </div>
+                    )}
+                    
+                    {currentChatFriend && (
+                        <ChatModal 
+                            myUsername={myUsername} 
+                            friendUsername={currentChatFriend} 
+                            onClose={() => setCurrentChatFriend(null)} 
+                        />
                     )}
 
                     <div id="map-container" className="flex-1 z-0 relative">{loading && <div className="absolute inset-0 flex items-center justify-center bg-white z-[999] opacity-80">Yükleniyor...</div>}</div>
