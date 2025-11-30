@@ -546,7 +546,7 @@
 
             return (
                 <div className="flex h-screen w-full items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
-                    <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-2xl w-full max-w-sm text-center">
+                    <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-2xl w-full max-w-sm text-center transition-all duration-300">
                         <div className="mb-6 flex justify-center"><div className="bg-red-100 p-4 rounded-full"><Icon name="map" className="w-12 h-12 text-red-600" /></div></div>
                         <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-1">Türkiye Gezi Günlüğü</h1>
                         <div className="flex border-b border-gray-200 dark:border-gray-700 mb-4">
@@ -580,8 +580,6 @@
             const [searchQuery, setSearchQuery] = useState("");
             const [viewMode, setViewMode] = useState("map"); 
             const [zoomedImage, setZoomedImage] = useState(null);
-            const [currentImageIndex, setCurrentImageIndex] = useState(0);
-            const [lightboxImages, setLightboxImages] = useState([]);
             const [userAvatar, setUserAvatar] = useState(null);
             const [myAvatar, setMyAvatar] = useState(null);
             const [currentChatFriend, setCurrentChatFriend] = useState(null);
@@ -985,6 +983,7 @@
                 }
                 return filtered; 
             };
+
             const displayMarkers = getFilteredMarkers();
 
             return (
@@ -1003,6 +1002,7 @@
                                     </div>
                                     <div>
                                         <h1 className="text-lg leading-tight">@{currentUsername}</h1>
+                                        {activeTab === 'couple' && partner && <span className="block text-sm font-normal text-white/90 flex items-center gap-1"><Icon name="heart" className="w-3 h-3 fill-current"/> & @{partner}</span>}
                                         <div className="text-xs opacity-80 font-normal flex items-center gap-1"><Icon name={rank.icon} className="w-3 h-3"/> {rank.title}</div>
                                     </div>
                                 </div>
@@ -1262,7 +1262,7 @@
             if (!isFirebaseReady) return <ConfigWarning />;
             if (!user) return <div className="h-screen flex items-center justify-center text-red-600 font-bold animate-pulse">Harita Yükleniyor...</div>;
             if (!myUsername) return <LoginScreen onLogin={(u) => { setMyUsername(u); localStorage.setItem('my_username', u); }} />;
-            return <MainApp myUsername={myUsername} currentUsername={viewUser || myUsername} onViewChange={setViewUser} onLogout={()=>{ localStorage.removeItem('my_username'); setMyUsername(null); setViewUser(null); }} />;
+            return <MainaApp myUsername={myUsername} currentUsername={viewUser || myUsername} onViewChange={setViewUser} onLogout={()=>{ localStorage.removeItem('my_username'); setMyUsername(null); setViewUser(null); }} />;
         };
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
