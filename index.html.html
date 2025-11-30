@@ -580,8 +580,6 @@
             const [searchQuery, setSearchQuery] = useState("");
             const [viewMode, setViewMode] = useState("map"); 
             const [zoomedImage, setZoomedImage] = useState(null);
-            const [currentImageIndex, setCurrentImageIndex] = useState(0);
-            const [lightboxImages, setLightboxImages] = useState([]);
             const [userAvatar, setUserAvatar] = useState(null);
             const [myAvatar, setMyAvatar] = useState(null);
             const [currentChatFriend, setCurrentChatFriend] = useState(null);
@@ -907,35 +905,22 @@
                         const cityName = layer.feature.properties.name;
                         const marker = filteredMarkers.find(m => m.cityName === cityName);
                         let color = '#9ca3af'; let opacity = 0.5;
-
                         if (marker) {
                             if (marker.status === 'bucket') { color = '#eab308'; opacity = 0.8; }
                             else { color = activeTab === 'couple' ? '#ec4899' : '#ef4444'; opacity = 0.9; }
                         }
-
                         layer.setStyle({ fillColor: color, fillOpacity: opacity, color: 'white', weight: 1 });
-
                         let labelContent = `<div class="city-label">${cityName}</div>`;
                         if (marker && marker.status !== 'bucket') {
                             const progress = calculateProgress(cityName, marker.checkedPlaces);
                             if (progress > 0) labelContent = `<div class="city-label"><div>${cityName}</div><div class="city-label-progress">%${progress}</div></div>`;
                         }
-                        
                         L.marker(layer.getBounds().getCenter(), { icon: L.divIcon({className: 'hidden'}), interactive: false })
                          .bindTooltip(labelContent, { permanent: true, direction: 'center', className: '' }).addTo(labelLayerRef.current);
 
-                        // 2. 100% Image Marker with SVG Pattern
                         if (progress === 100 && (marker.favoriteImage || (marker.images && marker.images.length > 0))) {
                             const imgUrl = marker.favoriteImage || marker.images[0];
-                            
-                            // Create a custom icon with the image
-                            const icon = L.divIcon({
-                                className: 'custom-img-icon',
-                                html: `<img src="${imgUrl}" class="city-marker-img" />`,
-                                iconSize: [50, 50],
-                                iconAnchor: [25, 25]
-                            });
-                            
+                            const icon = L.divIcon({ className: 'custom-img-icon', html: `<img src="${imgUrl}" class="city-marker-img" />`, iconSize: [50, 50], iconAnchor: [25, 25] });
                             L.marker(layer.getBounds().getCenter(), { icon: icon, interactive: false }).addTo(imageMarkersRef.current);
                         }
                     });
@@ -1197,7 +1182,12 @@
 
                     <div id="map-container" className="flex-1 z-0 relative">{loading && <div className="absolute inset-0 flex items-center justify-center bg-white z-[999] opacity-80">Yükleniyor...</div>}</div>
                     
-                    {zoomedImage && <div className="fixed inset-0 z-[2000] bg-black bg-opacity-90 flex items-center justify-center p-4" onClick={() => setZoomedImage(null)}><img src={zoomedImage} className="max-h-full max-w-full rounded shadow-2xl animate-fadeIn" /><button className="absolute top-4 right-4 text-white bg-gray-800 p-2 rounded-full hover:bg-gray-700"><Icon name="x" className="w-6 h-6"/></button></div>}
+                    {zoomedImage && <div className="fixed inset-0 z-[2000] bg-black bg-opacity-90 flex items-center justify-center p-4" onClick={() => setZoomedImage(null)}>
+                        <button className="absolute left-4 top-1/2 text-white bg-gray-800 p-2 rounded-full hover:bg-gray-700 transition-transform hover:scale-110" onClick={prevLightbox}><Icon name="chevron-left" className="w-6 h-6"/></button>
+                        <img src={zoomedImage} className="max-h-full max-w-full rounded-lg shadow-2xl animate-fadeIn" />
+                        <button className="absolute right-4 top-1/2 text-white bg-gray-800 p-2 rounded-full hover:bg-gray-700 transition-transform hover:scale-110" onClick={nextLightbox}><Icon name="chevron-right" className="w-6 h-6"/></button>
+                        <button className="absolute top-4 right-4 text-white bg-gray-800 p-2 rounded-full hover:bg-gray-700 transition-transform hover:scale-110" onClick={(e) => { e.stopPropagation(); setZoomedImage(null); }}><Icon name="x" className="w-6 h-6"/></button>
+                    </div>}
                     {isNotifOpen && <NotificationModal notifications={notifications} onClose={()=>setIsNotifOpen(false)} onAccept={handleAcceptNotif} onReject={handleRejectNotif}/>}
                     {isPartnerModalOpen && <PartnerModal myUsername={myUsername} currentPartner={partner} onClose={() => setIsPartnerModalOpen(false)} onLink={linkPartner} onBreakUp={breakUpPartner}/>}
                     {isModalOpen && (
