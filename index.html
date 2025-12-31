@@ -79,6 +79,11 @@
         @keyframes likeBounce { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
         .like-anim { animation: likeBounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         
+        .ai-content h3 { font-weight: 800; margin-top: 0.8em; color: #7c3aed; }
+        .dark .ai-content h3 { color: #a78bfa; }
+        .ai-content ul { list-style-type: disc; padding-left: 1.2em; margin-bottom: 0.5em; }
+        .ai-content li { margin-bottom: 0.3em; }
+        
         .city-label {
             background: rgba(255, 255, 255, 0.8); 
             backdrop-filter: blur(4px);
@@ -104,14 +109,14 @@
         .leaflet-tooltip-top:before, .leaflet-tooltip-bottom:before, .leaflet-tooltip-left:before, .leaflet-tooltip-right:before { display: none; }
 
         .city-marker-img {
-            width: 50px !important; 
-            height: 50px !important; 
+            width: 54px !important; 
+            height: 54px !important; 
             border-radius: 50%; 
             object-fit: cover;
             border: 3px solid white; 
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-            transition: transform 0.2s;
-            background-color: white; 
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            background-color: white;
         }
         .city-marker-img:hover { transform: scale(1.3); z-index: 1000; }
         .dark .city-marker-img { border-color: #334155; }
@@ -229,11 +234,87 @@
         };
 
         const citySuggestionsData = {
-            "İstanbul": ["Ayasofya", "Topkapı Sarayı", "Galata Kulesi"],
+            "Adana": ["Taş Köprü", "Sabancı Merkez Camii", "Kazancılar Çarşısı"],
+            "Adıyaman": ["Nemrut Dağı", "Cendere Köprüsü", "Perre Antik Kenti"],
+            "Afyonkarahisar": ["Afyon Kalesi", "İscehisar Peribacaları", "Ulu Camii"],
+            "Ağrı": ["İshak Paşa Sarayı", "Ağrı Dağı", "Meteor Çukuru"],
+            "Aksaray": ["Ihlara Vadisi", "Sultanhanı Kervansarayı", "Hasan Dağı"],
+            "Amasya": ["Kral Kaya Mezarları", "Yalıboyu Evleri", "Amasya Kalesi"],
             "Ankara": ["Anıtkabir", "Ankara Kalesi", "Anadolu Medeniyetleri Müzesi"],
-            "İzmir": ["Efes Antik Kenti", "Saat Kulesi", "Şirince"],
-            "Antalya": ["Kaleiçi", "Düden Şelalesi", "Aspendos"],
-            "Bursa": ["Ulu Camii", "Yeşil Türbe", "Cumalıkızık"],
+            "Antalya": ["Kaleiçi", "Düden Şelalesi", "Aspendos Antik Tiyatrosu"],
+            "Ardahan": ["Çıldır Gölü", "Şeytan Kalesi", "Ardahan Kalesi"],
+            "Artvin": ["Karagöl", "Mençuna Şelalesi", "Maral Şelalesi"],
+            "Aydın": ["Afrodisias Antik Kenti", "Didim Apollon Tapınağı", "Güvercinada Kalesi"],
+            "Balıkesir": ["Cunda Adası", "Kaz Dağları", "Manyas Kuş Cenneti"],
+            "Bartın": ["Amasra Kalesi", "Güzelcehisar Lav Sütunları", "İnkumu"],
+            "Batman": ["Hasankeyf", "Malabadi Köprüsü", "Mor Kiryakus Manastırı"],
+            "Bayburt": ["Baksı Müzesi", "Bayburt Kalesi", "Aydıntepe Yeraltı Şehri"],
+            "Bilecik": ["Şeyh Edebali Türbesi", "Ertuğrul Gazi Türbesi", "Metristepe Zafer Anıtı"],
+            "Bingöl": ["Yüzen Adalar", "Çır Şelalesi", "Kral Kızı Kalesi"],
+            "Bitlis": ["Ahlat Selçuklu Mezarlığı", "Nemrut Krater Gölü", "İhlasiye Medresesi"],
+            "Bolu": ["Yedigöller", "Abant Gölü", "Gölcük Tabiat Parkı"],
+            "Burdur": ["Salda Gölü", "Sagalassos Antik Kenti", "İnsuyu Mağarası"],
+            "Bursa": ["Ulu Camii", "Yeşil Türbe", "Cumalıkızık Köyü"],
+            "Çanakkale": ["Gelibolu Yarımadası", "Truva Antik Kenti", "Aynalı Çarşı"],
+            "Çankırı": ["Tuz Mağarası", "Çankırı Kalesi", "Taş Mescit"],
+            "Çorum": ["Hattuşaş Antik Kenti", "Alacahöyük", "Çorum Müzesi"],
+            "Denizli": ["Pamukkale Travertenleri", "Hierapolis Antik Kenti", "Keloğlan Mağarası"],
+            "Diyarbakır": ["Diyarbakır Surları", "Ulu Camii", "Hevsel Bahçeleri"],
+            "Düzce": ["Güzeldere Şelalesi", "Fakıllı Mağarası", "Prusias ad Hypium"],
+            "Edirne": ["Selimiye Camii", "Meriç Köprüsü", "Karaağaç"],
+            "Elazığ": ["Harput Kalesi", "Keban Barajı", "Hazar Gölü"],
+            "Erzincan": ["Girlevik Şelalesi", "Karanlık Kanyon", "Mama Hatun Türbesi"],
+            "Erzurum": ["Çifte Minareli Medrese", "Palandöken", "Üç Kümbetler"],
+            "Eskişehir": ["Odunpazarı Evleri", "Porsuk Çayı", "Sazova Parkı"],
+            "Gaziantep": ["Zeugma Mozaik Müzesi", "Bakırcılar Çarşısı", "Gaziantep Kalesi"],
+            "Giresun": ["Giresun Adası", "Giresun Kalesi", "Kümbet Yaylası"],
+            "Gümüşhane": ["Karaca Mağarası", "Tomara Şelalesi", "Santa Harabeleri"],
+            "Hakkari": ["Cilo Dağları", "Zap Vadisi", "Meydan Medresesi"],
+            "Hatay": ["Hatay Arkeoloji Müzesi", "Saint Pierre Kilisesi", "Titus Tüneli"],
+            "Iğdır": ["Ağrı Dağı", "Tuzluca Tuz Mağaraları", "Meteor Çukuru"],
+            "Isparta": ["Lavanta Bahçeleri", "Eğirdir Gölü", "Yazılı Kanyon"],
+            "İstanbul": ["Ayasofya", "Topkapı Sarayı", "Galata Kulesi"],
+            "İzmir": ["Efes Antik Kenti", "Saat Kulesi", "Şirince Köyü"],
+            "Kahramanmaraş": ["Taş Köprü", "Yedikuyular Kayak Merkezi", "Kapalı Çarşı"],
+            "Karabük": ["Safranbolu Evleri", "Kristal Teras", "Bulak Mencilis Mağarası"],
+            "Karaman": ["Karaman Kalesi", "Manazan Mağaraları", "Binbirkilise"],
+            "Kars": ["Ani Harabeleri", "Çıldır Gölü", "Kars Kalesi"],
+            "Kastamonu": ["Kastamonu Kalesi", "Valla Kanyonu", "Ilıca Şelalesi"],
+            "Kayseri": ["Erciyes Dağı", "Kapuzbaşı Şelaleleri", "Hunat Hatun Külliyesi"],
+            "Kırıkkale": ["Silah Müzesi", "Çeşnigir Köprüsü", "Karaahmetli Tabiat Parkı"],
+            "Kırklareli": ["Dupnisa Mağarası", "İğneada Longoz Ormanları", "Kıyıköy"],
+            "Kırşehir": ["Cacabey Medresesi", "Ahi Evran Türbesi", "Seyfe Gölü"],
+            "Kilis": ["Ravanda Kalesi", "Oylum Höyük", "Şeyh Mansur Türbesi"],
+            "Kocaeli": ["Ormanya", "Maşukiye", "Kartepe"],
+            "Konya": ["Mevlana Müzesi", "Çatalhöyük", "Kelebekler Vadisi"],
+            "Kütahya": ["Aizanoi Antik Kenti", "Kütahya Kalesi", "Çini Müzesi"],
+            "Malatya": ["Arslantepe Höyüğü", "Günpınar Şelalesi", "Levent Vadisi"],
+            "Manisa": ["Sardes Antik Kenti", "Spil Dağı", "Kula Peribacaları"],
+            "Mardin": ["Deyrulzafaran Manastırı", "Mardin Evleri", "Kasımiye Medresesi"],
+            "Mersin": ["Kızkalesi", "Cennet-Cehennem Obrukları", "Yerköprü Şelalesi"],
+            "Muğla": ["Ölüdeniz", "Kelebekler Vadisi", "Bodrum Kalesi"],
+            "Muş": ["Murat Köprüsü", "Muş Kalesi", "Haspet Kalesi"],
+            "Nevşehir": ["Kapadokya", "Göreme Açık Hava Müzesi", "Ihlara Vadisi"],
+            "Niğde": ["Niğde Kalesi", "Gümüşler Manastırı", "Aladağlar"],
+            "Ordu": ["Boztepe", "Yason Burnu", "Çambaşı Yaylası"],
+            "Osmaniye": ["Karatepe Aslantaş", "Toprakkale Kalesi", "Zorkun Yaylası"],
+            "Rize": ["Ayder Yaylası", "Zilkale", "Fırtına Deresi"],
+            "Sakarya": ["Sapanca Gölü", "Acarlar Longozu", "Justinianus Köprüsü"],
+            "Samsun": ["Bandırma Vapuru", "Amisos Tepesi", "Şahinkaya Kanyonu"],
+            "Siirt": ["Tillo Kalesi", "Veysel Karani Türbesi", "Botan Vadisi"],
+            "Sinop": ["Hamsilos Koyu", "Tarihi Sinop Cezaevi", "Erfelek Şelaleleri"],
+            "Sivas": ["Divriği Ulu Camii", "Çifte Minareli Medrese", "Gökpınar Gölü"],
+            "Şanlıurfa": ["Göbeklitepe", "Balıklıgöl", "Harran Evleri"],
+            "Şırnak": ["Cudi Dağı", "Mem u Zin Türbesi", "Kırmızı Medrese"],
+            "Tekirdağ": ["Rüstem Paşa Camii", "Rakoczi Müzesi", "Uçmakdere"],
+            "Tokat": ["Ballıca Mağarası", "Tokat Kalesi", "Taşhan"],
+            "Trabzon": ["Sümela Manastırı", "Uzungöl", "Atatürk Köşkü"],
+            "Tunceli": ["Munzur Vadisi", "Pertek Kalesi", "Ovacık Gözeleri"],
+            "Uşak": ["Ulubey Kanyonu", "Karun Hazineleri", "Clandras Köprüsü"],
+            "Van": ["Akdamar Adası", "Van Kalesi", "Muradiye Şelalesi"],
+            "Yalova": ["Yürüyen Köşk", "Sudüşen Şelalesi", "Termal Kaplıcaları"],
+            "Yozgat": ["Yozgat Çamlığı", "Basilica Therma", "Saat Kulesi"],
+            "Zonguldak": ["Gökgöl Mağarası", "Filyos Kalesi", "Maden Müzesi"]
         };
 
         const customCityCenters = {
@@ -575,8 +656,8 @@
 
         const MainApp = ({ myUsername, currentUsername, onViewChange, onLogout }) => {
             const [markers, setMarkers] = useState([]);
-            const [friends, setFriends] = useState([]); // Stores simple list of usernames
-            const [friendDetails, setFriendDetails] = useState({}); // Stores details like lastActive, avatar
+            const [friends, setFriends] = useState([]); 
+            const [friendDetails, setFriendDetails] = useState({}); 
             const mapRef = useRef(null);
             const labelLayerRef = useRef(null); 
             const routeLayerRef = useRef(null); 
@@ -634,7 +715,6 @@
                 else document.documentElement.classList.remove('dark');
             };
 
-            // Update Last Active on Mount
             useEffect(() => {
                 const updateLastActive = async () => {
                     await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_profiles').doc(myUsername).set({
@@ -644,7 +724,6 @@
                 updateLastActive();
             }, [myUsername]);
 
-            // Lightbox logic
             const openLightbox = (imgSrc, allImages) => {
                 setLightboxImages(allImages || [imgSrc]);
                 setCurrentImageIndex(allImages ? allImages.indexOf(imgSrc) : 0);
@@ -667,7 +746,6 @@
             useEffect(() => {
                 if(!friends.length) return;
                 
-                // Feed fetch logic...
                 const fetchFeed = async () => {
                     let allItems = [];
                     for (const friend of friends) {
@@ -685,7 +763,6 @@
                 };
                 fetchFeed();
 
-                // Fetch Friend Details (Last Active)
                 const fetchFriendDetails = async () => {
                     const details = {};
                     for (const friend of friends) {
@@ -792,7 +869,6 @@
                  setIsPartnerModalOpen(false);
             };
 
-            // Partner Kontrol (REALTIME LISTEN)
             useEffect(() => {
                 if (myUsername !== currentUsername) return;
                 
@@ -807,7 +883,6 @@
                                 const ids = [myUsername, potentialPartner].sort();
                                 setCoupleId(ids.join('_'));
                             } else {
-                                // Pending or Broken
                                 setPartner(null);
                                 setCoupleId(null);
                             }
@@ -821,7 +896,6 @@
                 return () => unsub();
             }, [myUsername, currentUsername]);
 
-            // Veri Çekme
             useEffect(() => {
                 let docRef;
                 if (myUsername !== currentUsername) {
@@ -974,9 +1048,23 @@
                 const container = document.getElementById('map-container');
                 if(!container) return;
                 if(container._leaflet_id) { container._leaflet_id = null; container.innerHTML = ""; }
-                const mapInstance = L.map('map-container', { preferCanvas: true, minZoom: 5, maxBounds: [[35, 25], [43, 45]], maxBoundsViscosity: 1.0 }).setView([39.0, 35.5], 6);
+                // Optimization: preferCanvas for performance, bounds restrict
+                const mapInstance = L.map('map-container', { 
+                    preferCanvas: true, 
+                    minZoom: 5, 
+                    maxBounds: [[35, 25], [43, 45]],
+                    maxBoundsViscosity: 1.0 
+                }).setView([39.0, 35.5], 6);
+                
                 mapRef.current = mapInstance;
-                L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles &copy; Esri', maxZoom: 16, noWrap: true, bounds: [[-90, -180], [90, 180]] }).addTo(mapInstance);
+                // NoWrap prevents repeating world
+                L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', { 
+                    attribution: 'Tiles &copy; Esri', 
+                    maxZoom: 16,
+                    noWrap: true,
+                    bounds: [[-90, -180], [90, 180]]
+                }).addTo(mapInstance);
+                
                 const labelLayer = L.layerGroup().addTo(mapInstance);
                 labelLayerRef.current = labelLayer;
                 const routeLayer = L.layerGroup().addTo(mapInstance);
@@ -996,10 +1084,10 @@
                                 setSelectedCity({ name: cityName, latlng: center });
                                 const existing = markersRef.current.find(m => m.cityName === cityName);
                                 if(existing) {
-                                    setNote(existing.note || ""); setImages(existing.images || []); setCheckedPlaces(existing.checkedPlaces || []); setGuideContent(null); setComments(existing.comments || []); setFavoriteImage(existing.favoriteImage || null);
+                                    setNote(existing.note || ""); setImages(existing.images || []); setCheckedPlaces(existing.checkedPlaces || []); setComments(existing.comments || []); setFavoriteImage(existing.favoriteImage || null);
                                     setStatus(existing.status || "visited"); setCategory(existing.category || "Genel");
                                 } else {
-                                    setNote(""); setImages([]); setCheckedPlaces([]); setGuideContent(null); setComments([]); setFavoriteImage(null);
+                                    setNote(""); setImages([]); setCheckedPlaces([]); setComments([]); setFavoriteImage(null);
                                     setStatus("visited"); setCategory("Genel");
                                 }
                                 setIsModalOpen(true);
@@ -1265,9 +1353,6 @@
                                             <div className="space-y-2">{(citySuggestionsData[selectedCity?.name] || ["Müze", "Tarihi Çarşı", "Şehir Parkı"]).map((place, idx) => { const isChecked = checkedPlaces.includes(place); return (<div key={idx} onClick={()=>toggleCheckedPlace(place)} className={`flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer transition-all shadow-sm hover:shadow-md ${isChecked ? 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800/50' : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 hover:border-orange-300'}`}><div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${isChecked ? 'bg-green-500 border-green-500' : 'bg-white dark:bg-gray-600 border-gray-300'}`}>{isChecked && <Icon name="check" className="w-3 h-3 text-white"/>}</div><span className={`text-sm ${isChecked ? 'text-green-800 dark:text-green-300 font-bold' : 'text-gray-700 dark:text-gray-300'}`}>{place}</span></div>); })}</div>
                                         </div>
                                     )}
-                                    
-                                    {/* GENERATE GUIDE REMOVED AS PER USER REQUEST */}
-                                    {guideContent && <div className="bg-purple-50 dark:bg-gray-700/50 p-4 rounded-lg text-sm mb-5 text-gray-700 dark:text-gray-200 ai-content shadow-inner border border-purple-100 dark:border-gray-600/50 leading-relaxed">{formatAI(guideContent)}</div>}
                                     
                                     <div className="mb-5">
                                         <div className="font-bold text-sm mb-3 text-gray-700 dark:text-gray-300 flex items-center gap-2"><Icon name="image" className="w-4 h-4"/> Fotoğraflar</div>
