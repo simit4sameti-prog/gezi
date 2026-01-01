@@ -63,7 +63,7 @@
             touch-action: none; 
         }
 
-        .leaflet-container { width: 100%; height: 100%; z-index: 1; background: #f8fafc; touch-action: none; }
+        .leaflet-container { width: 100%; height: 100%; z-index: 1; background: #aad3df; touch-action: none; }
         
         .dark .leaflet-tile-pane { filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%); }
         .dark .leaflet-container { background: #1a202c; }
@@ -210,19 +210,6 @@
                 </div>
             </div>
         );
-
-        const callGeminiAPI = async (prompt) => {
-            if (!finalApiKey) return "Hata: API anahtarı eksik.";
-            try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${finalApiKey}`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-                });
-                if (!response.ok) throw new Error('API Hatası');
-                const data = await response.json();
-                return data.candidates?.[0]?.content?.parts?.[0]?.text || "Yanıt alınamadı.";
-            } catch (error) { return "Yapay zeka servisine ulaşılamıyor."; }
-        };
 
         const compressImage = (file) => {
             return new Promise((resolve) => {
@@ -633,7 +620,6 @@
             const [currentChatFriend, setCurrentChatFriend] = useState(null);
             const [darkMode, setDarkMode] = useState(false); 
             const [isStatsOpen, setIsStatsOpen] = useState(false); 
-            const [isCinemaOpen, setIsCinemaOpen] = useState(false); 
             
             const [activeTab, setActiveTab] = useState("personal"); 
             const [partner, setPartner] = useState(null); 
@@ -671,7 +657,6 @@
                 else document.documentElement.classList.remove('dark');
             };
 
-            // Update Last Active on Mount
             useEffect(() => {
                 const updateLastActive = async () => {
                     await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_profiles').doc(myUsername).set({
@@ -681,7 +666,6 @@
                 updateLastActive();
             }, [myUsername]);
 
-            // Lightbox logic
             const openLightbox = (imgSrc, allImages) => {
                 setLightboxImages(allImages || [imgSrc]);
                 setCurrentImageIndex(allImages ? allImages.indexOf(imgSrc) : 0);
@@ -918,6 +902,23 @@
                 setIsModalOpen(false);
             };
 
+            const handleAddComment = () => {
+                if (!newComment.trim()) return;
+                const cleanText = filterProfanity(newComment);
+                const commentObj = { id: Date.now(), user: myUsername, text: cleanText, date: new Date().toLocaleDateString('tr-TR') };
+                const updatedComments = [...comments, commentObj];
+                setComments(updatedComments);
+                setNewComment("");
+                const originalMarker = markers.find(m => m.cityName === selectedCity.name) || {};
+                const newMarker = {
+                    id: originalMarker.id || Date.now(), lat: selectedCity.latlng.lat, lng: selectedCity.latlng.lng,
+                    cityName: selectedCity.name, note: note, images: images, checkedPlaces: checkedPlaces,
+                    comments: updatedComments, favoriteImage: favoriteImage,
+                    status: status, category: category, date: new Date().toLocaleDateString('tr-TR'), timestamp: Date.now(), likes: originalMarker.likes || []
+                };
+                const updatedMarkers = [...markers.filter(m => m.cityName !== selectedCity.name), newMarker];
+                saveMarkersToUser(currentUsername, updatedMarkers, activeTab === 'couple');
+            };
             const handleAvatarUpload = async (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
@@ -932,8 +933,6 @@
             const handleDelete = (name) => { if(confirm("Silmek istediğinize emin misiniz?")) { const updated = markers.filter(m => m.cityName !== name); setMarkers(updated); saveMarkersToUser(currentUsername, updated, activeTab === 'couple'); } };
             const handleImage = (e) => { const files = Array.from(e.target.files); files.forEach(f => { const reader = new FileReader(); reader.onloadend = () => { setImages(prev => { const newImages = [...prev, reader.result]; if (!favoriteImage && newImages.length > 0) setFavoriteImage(newImages[0]); return newImages; }); }; reader.readAsDataURL(f); }); };
             const toggleCheckedPlace = (place) => { if(isReadOnly) return; setCheckedPlaces(prev => prev.includes(place) ? prev.filter(p=>p!==place) : [...prev, place]); };
-            const generateGuide = async () => { setIsGeneratingGuide(true); const res = await callGeminiAPI(`${selectedCity.name} için 3 gizli yer ve 3 yerel lezzet önerisi yap.`); setGuideContent(res); setIsGeneratingGuide(false); };
-            const enhanceNote = async () => { setIsEnhancingNote(true); const res = await callGeminiAPI(`Bu notu edebi bir dille yeniden yaz: "${note}"`); setNote(res); setIsEnhancingNote(false); };
             const handleSearch = async (e) => { e.preventDefault(); if(!searchQuery.trim()) return; const target = searchQuery.trim().toLowerCase(); try { const doc = await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_credentials').doc(target).get(); if(doc.exists) { onViewChange(target); setSearchQuery(""); setViewMode('map'); setActiveTab('personal'); if(window.innerWidth < 768) setSidebarOpen(false); } else alert("Kullanıcı bulunamadı!"); } catch(e) { alert("Hata."); } };
             const calculateProgress = (cityName, visitedPlaces) => { const visitedCount = visitedPlaces ? visitedPlaces.length : 0; return Math.min(100, Math.round((visitedCount / 3) * 100)); };
 
@@ -1003,4 +1002,351 @@
                 
                 mapRef.current = mapInstance;
                 // NoWrap prevents repeating world
-                L.tileLayer('
+                L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', { 
+                    attribution: 'Tiles &copy; Esri', 
+                    maxZoom: 16,
+                    noWrap: true,
+                    bounds: [[-90, -180], [90, 180]]
+                }).addTo(mapInstance);
+                
+                const labelLayer = L.layerGroup().addTo(mapInstance);
+                labelLayerRef.current = labelLayer;
+                const routeLayer = L.layerGroup().addTo(mapInstance);
+                routeLayerRef.current = routeLayer;
+                const imageLayer = L.layerGroup().addTo(mapInstance);
+                imageMarkersRef.current = imageLayer;
+
+                fetch('https://raw.githubusercontent.com/codeforgermany/click_that_hood/main/public/data/turkey.geojson').then(res => res.json()).then(data => {
+                    const layer = L.geoJSON(data, {
+                        style: () => ({ fillColor: '#9ca3af', weight: 1, opacity: 0.5, color: 'white', fillOpacity: 0.5 }),
+                        onEachFeature: (feature, layer) => {
+                            const cityName = feature.properties.name;
+                            let center = layer.getBounds().getCenter();
+                            if(customCityCenters[cityName]) center = L.latLng(customCityCenters[cityName]);
+                            
+                            layer.on('click', () => {
+                                setSelectedCity({ name: cityName, latlng: center });
+                                const existing = markersRef.current.find(m => m.cityName === cityName);
+                                if(existing) {
+                                    setNote(existing.note || ""); setImages(existing.images || []); setCheckedPlaces(existing.checkedPlaces || []); setComments(existing.comments || []); setFavoriteImage(existing.favoriteImage || null);
+                                    setStatus(existing.status || "visited"); setCategory(existing.category || "Genel");
+                                } else {
+                                    setNote(""); setImages([]); setCheckedPlaces([]); setComments([]); setFavoriteImage(null);
+                                    setStatus("visited"); setCategory("Genel");
+                                }
+                                setIsModalOpen(true);
+                            });
+                            layer.on('mouseover', function() { this.setStyle({ weight: 3, color: '#333', fillOpacity: 0.7 }); });
+                            layer.on('mouseout', function() { });
+                        }
+                    }).addTo(mapInstance);
+                    setGeoJsonLayer(layer);
+                    setLoading(false);
+                });
+                return () => { if(mapRef.current) { mapRef.current.remove(); mapRef.current = null; } };
+            }, []);
+
+            const mainColor = activeTab === 'couple' ? 'bg-pink-600' : 'bg-red-600';
+            const subColor = activeTab === 'couple' ? 'bg-pink-500' : 'bg-red-500';
+            const lightColor = activeTab === 'couple' ? 'bg-pink-50' : 'bg-red-50';
+
+            const getFilteredMarkers = () => {
+                let filtered = markers.filter(m => categoryFilter === "Tümü" || m.category === categoryFilter);
+                if (viewMode === 'timeline') {
+                    return filtered.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)); 
+                }
+                return filtered; 
+            };
+
+            const displayMarkers = getFilteredMarkers();
+
+            return (
+                <div className={`flex h-full relative ${darkMode ? 'dark' : ''}`}>
+                    <div className={`absolute md:relative z-20 h-full bg-white dark:bg-gray-800 shadow-xl transition-all flex flex-col ${sidebarOpen ? 'w-full md:w-96' : 'w-0 overflow-hidden'}`}>
+                        <div className={`p-4 ${mainColor} text-white shadow-md transition-colors duration-500`}>
+                             <div className="flex justify-between items-center mb-4">
+                                <div className="flex items-center gap-3 font-bold cursor-pointer" onClick={() => setViewMode('map')}>
+                                    <div className="relative group">
+                                        <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center overflow-hidden border-2 border-white/50">
+                                            {userAvatar ? <img src={userAvatar} className="w-full h-full object-cover" /> : <Icon name="user" className="w-6 h-6"/>}
+                                        </div>
+                                        {!isReadOnly && activeTab === 'personal' && (
+                                            <label className="absolute bottom-0 right-0 bg-white text-black rounded-full p-0.5 cursor-pointer shadow-md hover:bg-gray-100"><Icon name="camera" className="w-3 h-3"/><input type="file" className="hidden" accept="image/*" onChange={handleAvatarUpload} /></label>
+                                        )}
+                                    </div>
+                                    <div>
+                                        <h1 className="text-lg leading-tight">@{currentUsername}</h1>
+                                        {activeTab === 'couple' && partner && <span className="block text-sm font-normal text-white/90 flex items-center gap-1"><Icon name="heart" className="w-3 h-3 fill-current"/> & @{partner}</span>}
+                                        <div className="text-xs opacity-80 font-normal flex items-center gap-1"><Icon name={rank.icon} className="w-3 h-3"/> {rank.title}</div>
+                                    </div>
+                                </div>
+                                <div className="flex gap-2 items-center">
+                                    <div className="relative">
+                                        <button onClick={()=>setIsNotifOpen(!isNotifOpen)} className="bg-white/20 p-1.5 rounded-full hover:bg-white/30 relative">
+                                            <Icon name="bell" className="w-5 h-5"/>
+                                            {notifications.length > 0 && <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-yellow-400 rounded-full border-2 border-red-600"></span>}
+                                        </button>
+                                    </div>
+                                    <button onClick={()=>setFeedOpen(!feedOpen)} className={`p-1.5 rounded-full transition-colors ${feedOpen ? 'bg-white text-red-600' : 'bg-white/20 text-white hover:bg-white/30'}`} title="Akış">
+                                        <Icon name="activity" className="w-5 h-5"/>
+                                    </button>
+                                    <button onClick={()=>setIsStatsOpen(true)} className="bg-white/20 p-1.5 rounded-full hover:bg-white/30" title="İstatistikler"><Icon name="bar-chart-2" className="w-5 h-5"/></button>
+                                    <button onClick={toggleDarkMode} className="bg-white/20 p-1.5 rounded-full hover:bg-white/30" title="Gece Modu"><Icon name={darkMode ? "sun" : "moon"} className="w-5 h-5"/></button>
+                                    <button onClick={()=>setSidebarOpen(false)}><Icon name="chevrons-left" className="w-6 h-6"/></button>
+                                    <div className="flex gap-1 ml-1">
+                                        {isReadOnly ? 
+                                            <button onClick={()=>onViewChange(myUsername)} className="bg-white text-red-600 px-2 py-1 rounded text-xs font-bold hover:bg-gray-100" title="Profilime Dön"><Icon name="user" className="w-4 h-4"/></button> 
+                                            : <button onClick={onLogout} className="bg-red-800 p-1.5 rounded hover:bg-red-900 transition-colors" title="Çıkış Yap"><Icon name="log-out" className="w-4 h-4"/></button>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Navigation Tabs */}
+                            {!isReadOnly && (
+                                <div className="flex bg-black/20 rounded-lg p-1 mb-3">
+                                    <button onClick={() => setActiveTab('personal')} className={`flex-1 py-1.5 rounded-md text-xs font-bold flex items-center justify-center gap-1 transition-all ${activeTab === 'personal' && viewMode === 'map' ? 'bg-white text-red-600 shadow' : 'text-white hover:bg-white/10'}`}><Icon name="user" className="w-3 h-3"/> Bireysel</button>
+                                    <button onClick={() => {!partner ? setIsPartnerModalOpen(true) : setActiveTab('couple'); setViewMode('map');}} className={`flex-1 py-1.5 rounded-md text-xs font-bold flex items-center justify-center gap-1 transition-all ${activeTab === 'couple' && viewMode === 'map' ? 'bg-white text-pink-600 shadow' : 'text-white hover:bg-white/10'}`}><Icon name="heart" className={`w-3 h-3 ${partner ? 'fill-current' : ''}`}/> Sevgili</button>
+                                    <button onClick={() => setViewMode('friends')} className={`flex-1 py-1.5 rounded-md text-xs font-bold flex items-center justify-center gap-1 transition-all ${viewMode === 'friends' ? 'bg-white text-indigo-600 shadow' : 'text-white hover:bg-white/10'}`}><Icon name="users" className="w-3 h-3"/> Arkadaşlar</button>
+                                </div>
+                            )}
+
+                            <form onSubmit={handleSearch} className="relative">
+                                <input className="w-full pl-8 py-1 rounded text-black text-sm" placeholder="Kullanıcı ara..." value={searchQuery} onChange={e=>setSearchQuery(e.target.value)}/>
+                                <Icon name="search" className="w-4 h-4 text-gray-500 absolute left-2 top-2"/>
+                            </form>
+                            {isReadOnly && !friends.includes(currentUsername) && <button onClick={()=>addFriend(currentUsername)} className="mt-2 w-full bg-white text-red-600 font-bold text-xs py-1 rounded flex items-center justify-center gap-1"><Icon name="user-plus" className="w-3 h-3"/> Ekle</button>}
+                        </div>
+
+                        {/* VIEW MODE */}
+                        {viewMode === 'friends' && !isReadOnly ? (
+                             <div className="flex-1 overflow-y-auto p-4 bg-gray-50 dark:bg-gray-900 custom-scrollbar">
+                                <h2 className="font-bold text-gray-700 dark:text-white mb-3 flex items-center gap-2"><Icon name="users" className="w-4 h-4"/> Arkadaşlarım ({friends.length})</h2>
+                                {friends.map((f, i) => (
+                                    <div key={i} className="bg-white dark:bg-gray-700 p-3 rounded-lg border dark:border-gray-600 mb-2 flex justify-between items-center cursor-pointer hover:shadow-md transition-shadow">
+                                        <div className="flex items-center gap-3" onClick={()=>{onViewChange(f); setViewMode('map'); setActiveTab('personal');}}>
+                                            <span className="font-bold text-gray-800 dark:text-white">@{f}</span>
+                                            {friendDetails[f]?.lastActive && (
+                                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                                                    formatTimeAgo(friendDetails[f].lastActive) === "Şimdi" || formatTimeAgo(friendDetails[f].lastActive).includes("dk") ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                                                }`}>
+                                                    {formatTimeAgo(friendDetails[f].lastActive) === "Şimdi" ? "🟢 Çevrimiçi" : `⚫ ${formatTimeAgo(friendDetails[f].lastActive)}`}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <button onClick={() => setCurrentChatFriend(f)} className="text-indigo-600 hover:text-indigo-800 bg-indigo-50 dark:bg-indigo-900 dark:text-indigo-200 p-2 rounded-full transition-colors hover:bg-indigo-100 dark:hover:bg-indigo-800">
+                                            <Icon name="message-circle" className="w-4 h-4"/>
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <>
+                                <div className={`p-4 ${lightColor} dark:bg-gray-800 border-b dark:border-gray-700 transition-colors duration-500 shadow-sm relative z-10`}>
+                                    <div className={`flex justify-between mb-1 text-sm font-bold ${activeTab === 'couple' ? 'text-pink-800 dark:text-pink-300' : 'text-red-800 dark:text-red-300'}`}><span>Gezilen: {markers.length} / 81</span><span>{activeTab === 'couple' ? '❤️ Bizim Haritamız' : ''}</span></div>
+                                    <div className="w-full bg-gray-200 dark:bg-gray-600 h-2 rounded-full overflow-hidden shadow-inner"><div className={`h-2 rounded-full ${subColor}`} style={{width: `${(markers.length/81)*100}%`}}></div></div>
+                                    {isReadOnly && <div className="mt-2 text-xs bg-blue-100 text-blue-700 p-1 rounded text-center flex items-center justify-center gap-1"><Icon name="eye" className="w-3 h-3"/> Görüntüleme Modu</div>}
+                                </div>
+
+                                <div className="p-2 bg-gray-50 dark:bg-gray-900 border-b dark:border-gray-700 flex gap-2 overflow-x-auto custom-scrollbar shadow-sm z-10 relative">
+                                    <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="text-xs border dark:border-gray-600 rounded-lg p-1.5 bg-white dark:bg-gray-700 dark:text-white focus:outline-none focus:border-blue-500 transition-colors shadow-sm">
+                                        <option value="Tümü">Tüm Kategoriler</option>
+                                        {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                                    </select>
+                                    <button onClick={() => setShowRoute(!showRoute)} className={`text-xs px-2.5 py-1.5 rounded-lg border flex items-center gap-1 transition-all shadow-sm ${showRoute ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-white dark:bg-gray-700 dark:text-white dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600'}`}><Icon name="route" className="w-3.5 h-3.5"/> Rota</button>
+                                    <button onClick={() => setViewMode(viewMode === 'timeline' ? 'map' : 'timeline')} className={`text-xs px-2.5 py-1.5 rounded-lg border flex items-center gap-1 transition-all shadow-sm ${viewMode === 'timeline' ? 'bg-purple-100 text-purple-700 border-purple-200' : 'bg-white dark:bg-gray-700 dark:text-white dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600'}`}><Icon name="clock" className="w-3.5 h-3.5"/> Zaman</button>
+                                </div>
+
+                                <div className="flex-1 overflow-y-auto p-2 space-y-3 bg-gray-50 dark:bg-gray-900 custom-scrollbar z-0">
+                                    {displayMarkers.map((m, idx) => {
+                                        const progress = calculateProgress(m.cityName, m.checkedPlaces);
+                                        const coverImage = m.favoriteImage || (m.images && m.images.length > 0 ? m.images[0] : null);
+                                        const isBucket = m.status === 'bucket';
+                                        
+                                        return (
+                                            <div key={m.id} onClick={()=> { if(mapRef.current) mapRef.current.flyTo([m.lat, m.lng], 8); }} className={`bg-white dark:bg-gray-700 p-3 rounded-lg border dark:border-gray-600 shadow-sm hover:shadow-md cursor-pointer relative group transition-all ${isBucket ? 'border-yellow-200 bg-yellow-50 dark:bg-yellow-900 dark:border-yellow-700' : ''}`}>
+                                                {viewMode === 'timeline' && <div className="absolute -left-2 top-4 w-4 h-0.5 bg-gray-300 dark:bg-gray-600"></div>} 
+                                                <div className="flex justify-between font-bold text-gray-800 dark:text-white items-center">
+                                                    <span className="flex items-center gap-1">{isBucket ? <Icon name="flag" className="w-4 h-4 text-yellow-600"/> : null}{m.cityName}{progress === 100 && <span className="text-[10px] bg-green-100 text-green-600 px-1.5 py-0.5 rounded-full border border-green-200 shadow-sm">Tamamlandı</span>}</span>
+                                                    {!isReadOnly && <button onClick={(e)=>{e.stopPropagation(); handleDelete(m.cityName)}} className="text-gray-400 hover:text-red-500 transition-colors p-1 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20"><Icon name="trash-2" className="w-4 h-4"/></button>}
+                                                </div>
+                                                <div className="text-[10px] text-gray-400 dark:text-gray-400 mb-2 flex justify-between"><span>{m.date}</span><span className="bg-gray-100 dark:bg-gray-600 dark:text-gray-200 px-1.5 py-0.5 rounded-full text-gray-600 shadow-sm">{m.category}</span></div>
+                                                {!isBucket && <div className="mt-1 mb-2"><div className="w-full bg-gray-200 dark:bg-gray-600 h-1.5 rounded-full overflow-hidden shadow-inner"><div className={`h-1.5 ${progress===100?'bg-green-500':'bg-blue-500'}`} style={{width: `${progress}%`}}></div></div></div>}
+                                                {coverImage && <div className="relative w-full h-32 rounded-lg overflow-hidden mt-2 border border-gray-100 dark:border-gray-600 shadow-sm"><img src={coverImage} className="w-full h-full object-cover transition-transform group-hover:scale-105" />{m.images.length > 1 && <div className="absolute bottom-1 right-1 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded-full backdrop-blur-sm">+{m.images.length - 1}</div>}</div>}
+                                                {m.note && <p className="text-xs text-gray-500 dark:text-gray-300 italic mt-2 line-clamp-2 leading-relaxed">"{m.note}"</p>}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </>
+                        )}
+                    </div>
+
+                    {!sidebarOpen && <button onClick={()=>setSidebarOpen(true)} className={`absolute top-4 left-4 z-10 bg-white dark:bg-gray-700 p-2 rounded-full shadow-md transition-transform hover:scale-105 ${activeTab === 'couple' ? 'text-pink-600' : 'text-red-600'}`}><Icon name="menu" className="w-6 h-6"/></button>}
+                    
+                    {feedOpen && (
+                        <div className="absolute top-0 right-0 h-full w-80 bg-white dark:bg-gray-800 shadow-2xl z-20 flex flex-col border-l border-gray-200 dark:border-gray-700 animate-fadeIn custom-scrollbar">
+                            <div className="p-3 bg-indigo-600 text-white flex justify-between items-center shadow-md">
+                                <h3 className="font-bold flex items-center gap-2"><Icon name="activity" className="w-5 h-5"/> Arkadaş Akışı</h3>
+                                <button onClick={()=>setFeedOpen(false)} className="hover:bg-white/20 p-1 rounded-full transition-colors"><Icon name="x" className="w-5 h-5"/></button>
+                            </div>
+                            <div className="flex-1 overflow-y-auto p-3 space-y-4 bg-gray-50 dark:bg-gray-900 custom-scrollbar">
+                                {feedItems.length === 0 && <p className="text-center text-gray-400 text-sm mt-10">Henüz bir hareket yok.</p>}
+                                {feedItems.map((item, i) => (
+                                    <div key={i} className="bg-white dark:bg-gray-700 p-3 rounded-lg shadow-sm border dark:border-gray-600 cursor-pointer hover:border-indigo-300 transition-all" onClick={() => {
+                                        onViewChange(item.username);
+                                        if(mapRef.current) mapRef.current.flyTo([item.lat, item.lng], 9);
+                                    }}>
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xs border border-indigo-200 shadow-sm overflow-hidden">
+                                                {item.userAvatar ? <img src={item.userAvatar} className="w-full h-full object-cover"/> : item.username.substring(0,2).toUpperCase()}
+                                            </div>
+                                            <div>
+                                                <div className="text-sm font-bold text-gray-800 dark:text-white">@{item.username}</div>
+                                                <div className="text-[10px] text-gray-500 dark:text-gray-400">{item.date}</div>
+                                            </div>
+                                        </div>
+                                        <div className="mb-2 text-gray-800 dark:text-gray-200">
+                                            <span className="font-bold text-indigo-600 dark:text-indigo-400">{item.cityName}</span> şehrini ziyaret etti.
+                                            {item.status === 'bucket' && <span className="text-xs bg-yellow-100 text-yellow-700 px-1.5 py-0.5 ml-1 rounded-full shadow-sm">Hedef 🎯</span>}
+                                        </div>
+                                        {item.images && item.images.length > 0 && (
+                                            <div className="h-24 w-full rounded-lg overflow-hidden border border-gray-100 mb-2 shadow-sm">
+                                                <img src={item.favoriteImage || item.images[0]} className="w-full h-full object-cover transition-transform hover:scale-105"/>
+                                            </div>
+                                        )}
+                                        {item.note && <p className="text-xs text-gray-600 dark:text-gray-400 italic line-clamp-2 leading-relaxed">"{item.note}"</p>}
+
+                                        <div className="mt-2 flex items-center gap-1 text-gray-500 dark:text-gray-400">
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); toggleLike(item.username, item.id); }}
+                                                className={`p-1 rounded-full hover:bg-red-50 dark:hover:bg-gray-600 transition-colors ${item.likes && item.likes.includes(myUsername) ? 'text-red-500 like-anim' : 'text-gray-400'}`}
+                                            >
+                                                <Icon name="heart" className={`w-4 h-4 ${item.likes && item.likes.includes(myUsername) ? 'fill-current' : ''}`} />
+                                            </button>
+                                            <span className="text-xs">{item.likes ? item.likes.length : 0}</span>
+                                        </div>
+                                        
+                                        {/* Feed Yorum Alanı */}
+                                        <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-600" onClick={(e) => e.stopPropagation()}>
+                                            {item.comments && item.comments.length > 0 && (
+                                                <div className="space-y-1 mb-2">
+                                                    {item.comments.slice(-2).map(c => (
+                                                        <div key={c.id} className="text-xs text-gray-600 dark:text-gray-400">
+                                                            <span className="font-bold text-gray-800 dark:text-gray-300">@{c.user}</span> {c.text}
+                                                        </div>
+                                                    ))}
+                                                    {item.comments.length > 2 && <div className="text-[10px] text-gray-400 cursor-pointer hover:text-indigo-500 transition-colors">Tümünü gör...</div>}
+                                                </div>
+                                            )}
+                                            <div className="flex gap-1">
+                                                <input 
+                                                    type="text" 
+                                                    className="flex-1 border dark:border-gray-600 rounded-full px-3 py-1.5 text-xs focus:outline-none focus:border-indigo-500 dark:bg-gray-800 dark:text-white shadow-sm transition-all"
+                                                    placeholder="Yorum yaz..."
+                                                    value={feedCommentInputs[item.id] || ""}
+                                                    onChange={(e) => setFeedInput(item.id, e.target.value)}
+                                                    onKeyDown={(e) => { if (e.key === 'Enter') submitFeedComment(item.username, item.id); }}
+                                                />
+                                                <button className="bg-indigo-600 text-white p-1.5 rounded-full text-xs hover:bg-indigo-700 transition-colors shadow-sm" onClick={() => submitFeedComment(item.username, item.id)}><Icon name="send" className="w-3.5 h-3.5"/></button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                    
+                    {currentChatFriend && <ChatModal myUsername={myUsername} friendUsername={currentChatFriend} onClose={() => setCurrentChatFriend(null)} sendNotif={sendNotification} />}
+                    {isStatsOpen && <StatsModal markers={markers} onClose={() => setIsStatsOpen(false)} />}
+                    {/* isCinemaOpen kaldırıldı */}
+
+                    <div id="map-container" className="flex-1 z-0 relative">{loading && <div className="absolute inset-0 flex items-center justify-center bg-white z-[999] opacity-80">Yükleniyor...</div>}</div>
+                    
+                    {zoomedImage && <div className="fixed inset-0 z-[2000] bg-black bg-opacity-90 flex items-center justify-center p-4" onClick={() => setZoomedImage(null)}>
+                        <button className="absolute left-4 top-1/2 text-white bg-gray-800 p-2 rounded-full hover:bg-gray-700 transition-transform hover:scale-110" onClick={prevLightbox}><Icon name="chevron-left" className="w-6 h-6"/></button>
+                        <img src={zoomedImage} className="max-h-full max-w-full rounded-lg shadow-2xl animate-fadeIn" />
+                        <button className="absolute right-4 top-1/2 text-white bg-gray-800 p-2 rounded-full hover:bg-gray-700 transition-transform hover:scale-110" onClick={nextLightbox}><Icon name="chevron-right" className="w-6 h-6"/></button>
+                        <button className="absolute top-4 right-4 text-white bg-gray-800 p-2 rounded-full hover:bg-gray-700 transition-transform hover:scale-110" onClick={(e) => { e.stopPropagation(); setZoomedImage(null); }}><Icon name="x" className="w-6 h-6"/></button>
+                    </div>}
+                    {isNotifOpen && <NotificationModal notifications={notifications} onClose={()=>setIsNotifOpen(false)} onAccept={handleAcceptNotif} onReject={handleRejectNotif}/>}
+                    {isPartnerModalOpen && <PartnerModal myUsername={myUsername} currentPartner={partner} onClose={() => setIsPartnerModalOpen(false)} onLink={linkPartner} onBreakUp={breakUpPartner}/>}
+                    {isModalOpen && (
+                        <div className="fixed inset-0 z-[1000] bg-black bg-opacity-50 flex items-center justify-center p-4">
+                            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col animate-fadeIn overflow-hidden">
+                                <div className={`${activeTab === 'couple' ? 'bg-gradient-to-r from-pink-500 to-rose-500' : 'bg-gradient-to-r from-red-500 to-orange-500'} p-4 text-white flex justify-between items-center shadow-md`}>
+                                    <span className="font-bold flex gap-2 items-center text-lg"><Icon name="map-pin" className="w-5 h-5"/> {selectedCity?.name}</span>
+                                    <button onClick={()=>setIsModalOpen(false)} className="hover:bg-white/20 p-1 rounded-full transition-colors"><Icon name="x" className="w-5 h-5"/></button>
+                                </div>
+                                <div className="p-5 overflow-y-auto flex-1 custom-scrollbar">
+                                    {!isReadOnly && (
+                                        <div className="flex gap-3 mb-5">
+                                            <select value={status} onChange={(e) => setStatus(e.target.value)} className="flex-1 border dark:border-gray-600 rounded-lg p-2.5 text-sm bg-gray-50 dark:bg-gray-700 dark:text-white focus:outline-none focus:border-blue-500 transition-colors shadow-sm">
+                                                <option value="visited">Gezildi ✅</option>
+                                                <option value="bucket">Gideceğim (Bucket List) 🎯</option>
+                                            </select>
+                                            <select value={category} onChange={(e) => setCategory(e.target.value)} className="flex-1 border dark:border-gray-600 rounded-lg p-2.5 text-sm bg-gray-50 dark:bg-gray-700 dark:text-white focus:outline-none focus:border-blue-500 transition-colors shadow-sm">
+                                                {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                                            </select>
+                                        </div>
+                                    )}
+                                    {status === 'visited' && (
+                                        <div className="bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800/50 rounded-lg p-4 mb-5 shadow-sm">
+                                            <div className="flex justify-between items-center mb-3"><h4 className="text-sm font-bold text-orange-800 dark:text-orange-300 flex gap-2 items-center"><Icon name="list-checks" className="w-4 h-4"/> 3 Öneri</h4><span className="text-xs font-bold bg-white dark:bg-gray-800 px-2.5 py-1 rounded-full text-orange-600 border border-orange-200 shadow-sm">%{calculateProgress(selectedCity?.name, checkedPlaces)}</span></div>
+                                            <div className="space-y-2">{(citySuggestionsData[selectedCity?.name] || ["Müze", "Tarihi Çarşı", "Şehir Parkı"]).map((place, idx) => { const isChecked = checkedPlaces.includes(place); return (<div key={idx} onClick={()=>toggleCheckedPlace(place)} className={`flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer transition-all shadow-sm hover:shadow-md ${isChecked ? 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800/50' : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 hover:border-orange-300'}`}><div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${isChecked ? 'bg-green-500 border-green-500' : 'bg-white dark:bg-gray-600 border-gray-300'}`}>{isChecked && <Icon name="check" className="w-3 h-3 text-white"/>}</div><span className={`text-sm ${isChecked ? 'text-green-800 dark:text-green-300 font-bold' : 'text-gray-700 dark:text-gray-300'}`}>{place}</span></div>); })}</div>
+                                        </div>
+                                    )}
+                                    
+                                    <div className="mb-5">
+                                        <div className="font-bold text-sm mb-3 text-gray-700 dark:text-gray-300 flex items-center gap-2"><Icon name="image" className="w-4 h-4"/> Fotoğraflar</div>
+                                        <div className="flex flex-wrap gap-3 mb-3">
+                                            {images.map((img,i) => (
+                                                <div key={i} className="relative w-24 h-24 group rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all">
+                                                    <img src={img} className="w-full h-full object-cover cursor-zoom-in hover:opacity-90 transition-opacity" onClick={() => openLightbox(img, images)}/>
+                                                    {!isReadOnly && <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity"><button onClick={()=>setFavoriteImage(img)} className={`p-1 rounded-full bg-white/80 shadow-sm hover:bg-white ${favoriteImage === img ? 'text-yellow-500' : 'text-gray-500'}`} title="Kapak Yap"><Icon name="star" className="w-3.5 h-3.5 fill-current"/></button><button onClick={()=>setImages(images.filter((_,x)=>x!==i))} className="bg-red-500/80 text-white rounded-full p-1 shadow-sm hover:bg-red-600"><Icon name="x" className="w-3.5 h-3.5"/></button></div>}
+                                                    {favoriteImage === img && <div className="absolute bottom-0 left-0 w-full bg-yellow-500/90 text-white text-[9px] text-center font-bold py-0.5 backdrop-blur-sm">KAPAK</div>}
+                                                </div>
+                                            ))}
+                                        </div>
+                                        {!isReadOnly && <label className="block w-full border-2 border-dashed border-gray-300 dark:border-gray-600 p-6 text-center cursor-pointer text-gray-500 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-all hover:border-blue-400 flex flex-col items-center gap-2"><Icon name="image-plus" className="w-6 h-6 text-gray-400"/> Fotoğraf Ekle <input type="file" multiple className="hidden" onChange={handleImage}/></label>}
+                                    </div>
+                                    <div className="mb-5">
+                                        <div className="flex justify-between mb-2 items-center"><label className="font-bold text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"><Icon name="edit-3" className="w-4 h-4"/> Notlar</label>{!isReadOnly && <button onClick={enhanceNote} disabled={isEnhancingNote || !note} className="text-xs text-purple-600 font-bold flex gap-1 items-center hover:text-purple-800 disabled:opacity-50 transition-colors bg-purple-50 dark:bg-purple-900/30 px-2 py-1 rounded-full"><Icon name="wand-2" className="w-3 h-3"/> Güzelleştir</button>}</div>
+                                        {isReadOnly ? <div className="p-4 bg-gray-50 dark:bg-gray-700/50 border dark:border-gray-600/50 rounded-lg text-sm min-h-[80px] italic text-gray-600 dark:text-gray-300 shadow-inner leading-relaxed">{note || "Not yok."}</div> : <textarea className="w-full border dark:border-gray-600 rounded-lg p-4 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:text-white shadow-sm transition-all resize-none" rows="4" value={note} onChange={e=>setNote(e.target.value)} placeholder="Buraya anılarınızı yazın..."></textarea>}
+                                    </div>
+                                    <div className="mt-8 pt-5 border-t border-gray-200 dark:border-gray-700">
+                                        <h4 className="font-bold text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2 mb-4"><Icon name="message-circle" className="w-4 h-4"/> Yorumlar</h4>
+                                        <div className="space-y-3 mb-5 max-h-48 overflow-y-auto custom-scrollbar pr-1">{comments.map(c => (<div key={c.id} className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg text-sm border border-gray-100 dark:border-gray-600/50 shadow-sm"><div className="flex justify-between items-start mb-1"><span className="font-bold text-xs text-gray-800 dark:text-white">@{c.user}</span><span className="text-[10px] text-gray-400">{c.date}</span></div><p className="text-gray-600 dark:text-gray-300 text-xs leading-relaxed">{c.text}</p></div>))}</div>
+                                        <div className="flex gap-2"><input type="text" value={newComment} onChange={e=>setNewComment(e.target.value)} placeholder="Yorum yaz..." className="flex-1 border dark:border-gray-600 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white shadow-sm transition-all"/><button onClick={handleAddComment} className="bg-blue-600 text-white p-2 rounded-full text-sm font-bold hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg"><Icon name="send" className="w-4 h-4"/></button></div>
+                                    </div>
+                                </div>
+                                <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex justify-end gap-3 rounded-b-xl shadow-inner-soft"><button onClick={()=>setIsModalOpen(false)} className="px-5 py-2.5 border dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-300 text-sm font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors shadow-sm">Kapat</button>{!isReadOnly && <button onClick={handleSave} className={`px-5 py-2.5 text-white rounded-lg text-sm font-bold shadow-md hover:shadow-lg transition-all ${activeTab === 'couple' ? 'bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700' : 'bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700'}`}>Kaydet</button>}</div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const Root = () => {
+            const [user, setUser] = useState(null);
+            const [myUsername, setMyUsername] = useState(localStorage.getItem('my_username'));
+            const [viewUser, setViewUser] = useState(null);
+
+            useEffect(() => {
+                if(!isFirebaseReady) return;
+                const unsub = auth.onAuthStateChanged(u => { if(u) setUser(u); else auth.signInAnonymously(); });
+                return () => unsub();
+            }, []);
+
+            if (!isFirebaseReady) return <ConfigWarning />;
+            if (!user) return <div className="h-screen flex items-center justify-center text-red-600 font-bold animate-pulse">Harita Yükleniyor...</div>;
+            if (!myUsername) return <LoginScreen onLogin={(u) => { setMyUsername(u); localStorage.setItem('my_username', u); }} />;
+            return <MainApp myUsername={myUsername} currentUsername={viewUser || myUsername} onViewChange={setViewUser} onLogout={()=>{ localStorage.removeItem('my_username'); setMyUsername(null); setViewUser(null); }} />;
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<Root />);
+    </script>
+</body>
+</html>
