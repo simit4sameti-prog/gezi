@@ -31,8 +31,7 @@
                     },
                     boxShadow: {
                         'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.1)',
-                        'glow': '0 0 15px rgba(99, 102, 241, 0.3)',
-                        'up': '0 -4px 6px -1px rgba(0, 0, 0, 0.1)'
+                        'glow': '0 0 15px rgba(99, 102, 241, 0.3)'
                     }
                 }
             }
@@ -63,7 +62,7 @@
             touch-action: none; 
         }
 
-        .leaflet-container { width: 100%; height: 100%; z-index: 1; background: #aad3df; touch-action: none; }
+        .leaflet-container { width: 100%; height: 100%; z-index: 1; background: #f8fafc; touch-action: none; }
         
         .dark .leaflet-tile-pane { filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%); }
         .dark .leaflet-container { background: #1a202c; }
@@ -110,26 +109,17 @@
         .leaflet-tooltip-top:before, .leaflet-tooltip-bottom:before, .leaflet-tooltip-left:before, .leaflet-tooltip-right:before { display: none; }
 
         .city-marker-img {
-            width: 54px !important; 
-            height: 54px !important; 
+            width: 50px !important; 
+            height: 50px !important; 
             border-radius: 50%; 
             object-fit: cover;
             border: 3px solid white; 
-            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
-            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-            background-color: white;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            transition: transform 0.2s;
+            background-color: white; 
         }
         .city-marker-img:hover { transform: scale(1.3); z-index: 1000; }
         .dark .city-marker-img { border-color: #334155; }
-
-        /* Custom Scrollbar for the sidebar content */
-        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e0; border-radius: 10px; }
-        .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #4a5568; }
-        
-        /* Mobile Safe Area */
-        .safe-area-pb { padding-bottom: env(safe-area-inset-bottom); }
     </style>
 </head>
 <body class="bg-gray-100 h-screen overflow-hidden transition-colors duration-300 font-sans">
@@ -211,6 +201,19 @@
             </div>
         );
 
+        const callGeminiAPI = async (prompt) => {
+            if (!finalApiKey) return "Hata: API anahtarı eksik.";
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${finalApiKey}`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                if (!response.ok) throw new Error('API Hatası');
+                const data = await response.json();
+                return data.candidates?.[0]?.content?.parts?.[0]?.text || "Yanıt alınamadı.";
+            } catch (error) { return "Yapay zeka servisine ulaşılamıyor."; }
+        };
+
         const compressImage = (file) => {
             return new Promise((resolve) => {
                 const reader = new FileReader();
@@ -247,11 +250,87 @@
         };
 
         const citySuggestionsData = {
-            "İstanbul": ["Ayasofya", "Topkapı Sarayı", "Galata Kulesi"],
+            "Adana": ["Taş Köprü", "Sabancı Merkez Camii", "Kazancılar Çarşısı"],
+            "Adıyaman": ["Nemrut Dağı", "Cendere Köprüsü", "Perre Antik Kenti"],
+            "Afyonkarahisar": ["Afyon Kalesi", "İscehisar Peribacaları", "Ulu Camii"],
+            "Ağrı": ["İshak Paşa Sarayı", "Ağrı Dağı", "Meteor Çukuru"],
+            "Aksaray": ["Ihlara Vadisi", "Sultanhanı Kervansarayı", "Hasan Dağı"],
+            "Amasya": ["Kral Kaya Mezarları", "Yalıboyu Evleri", "Amasya Kalesi"],
             "Ankara": ["Anıtkabir", "Ankara Kalesi", "Anadolu Medeniyetleri Müzesi"],
-            "İzmir": ["Efes Antik Kenti", "Saat Kulesi", "Şirince"],
-            "Antalya": ["Kaleiçi", "Düden Şelalesi", "Aspendos"],
-            "Bursa": ["Ulu Camii", "Yeşil Türbe", "Cumalıkızık"],
+            "Antalya": ["Kaleiçi", "Düden Şelalesi", "Aspendos Antik Tiyatrosu"],
+            "Ardahan": ["Çıldır Gölü", "Şeytan Kalesi", "Ardahan Kalesi"],
+            "Artvin": ["Karagöl", "Mençuna Şelalesi", "Maral Şelalesi"],
+            "Aydın": ["Afrodisias Antik Kenti", "Didim Apollon Tapınağı", "Güvercinada Kalesi"],
+            "Balıkesir": ["Cunda Adası", "Kaz Dağları", "Manyas Kuş Cenneti"],
+            "Bartın": ["Amasra Kalesi", "Güzelcehisar Lav Sütunları", "İnkumu"],
+            "Batman": ["Hasankeyf", "Malabadi Köprüsü", "Mor Kiryakus Manastırı"],
+            "Bayburt": ["Baksı Müzesi", "Bayburt Kalesi", "Aydıntepe Yeraltı Şehri"],
+            "Bilecik": ["Şeyh Edebali Türbesi", "Ertuğrul Gazi Türbesi", "Metristepe Zafer Anıtı"],
+            "Bingöl": ["Yüzen Adalar", "Çır Şelalesi", "Kral Kızı Kalesi"],
+            "Bitlis": ["Ahlat Selçuklu Mezarlığı", "Nemrut Krater Gölü", "İhlasiye Medresesi"],
+            "Bolu": ["Yedigöller", "Abant Gölü", "Gölcük Tabiat Parkı"],
+            "Burdur": ["Salda Gölü", "Sagalassos Antik Kenti", "İnsuyu Mağarası"],
+            "Bursa": ["Ulu Camii", "Yeşil Türbe", "Cumalıkızık Köyü"],
+            "Çanakkale": ["Gelibolu Yarımadası", "Truva Antik Kenti", "Aynalı Çarşı"],
+            "Çankırı": ["Tuz Mağarası", "Çankırı Kalesi", "Taş Mescit"],
+            "Çorum": ["Hattuşaş Antik Kenti", "Alacahöyük", "Çorum Müzesi"],
+            "Denizli": ["Pamukkale Travertenleri", "Hierapolis Antik Kenti", "Keloğlan Mağarası"],
+            "Diyarbakır": ["Diyarbakır Surları", "Ulu Camii", "Hevsel Bahçeleri"],
+            "Düzce": ["Güzeldere Şelalesi", "Fakıllı Mağarası", "Prusias ad Hypium"],
+            "Edirne": ["Selimiye Camii", "Meriç Köprüsü", "Karaağaç"],
+            "Elazığ": ["Harput Kalesi", "Keban Barajı", "Hazar Gölü"],
+            "Erzincan": ["Girlevik Şelalesi", "Karanlık Kanyon", "Mama Hatun Türbesi"],
+            "Erzurum": ["Çifte Minareli Medrese", "Palandöken", "Üç Kümbetler"],
+            "Eskişehir": ["Odunpazarı Evleri", "Porsuk Çayı", "Sazova Parkı"],
+            "Gaziantep": ["Zeugma Mozaik Müzesi", "Bakırcılar Çarşısı", "Gaziantep Kalesi"],
+            "Giresun": ["Giresun Adası", "Giresun Kalesi", "Kümbet Yaylası"],
+            "Gümüşhane": ["Karaca Mağarası", "Tomara Şelalesi", "Santa Harabeleri"],
+            "Hakkari": ["Cilo Dağları", "Zap Vadisi", "Meydan Medresesi"],
+            "Hatay": ["Hatay Arkeoloji Müzesi", "Saint Pierre Kilisesi", "Titus Tüneli"],
+            "Iğdır": ["Ağrı Dağı", "Tuzluca Tuz Mağaraları", "Meteor Çukuru"],
+            "Isparta": ["Lavanta Bahçeleri", "Eğirdir Gölü", "Yazılı Kanyon"],
+            "İstanbul": ["Ayasofya", "Topkapı Sarayı", "Galata Kulesi"],
+            "İzmir": ["Efes Antik Kenti", "Saat Kulesi", "Şirince Köyü"],
+            "Kahramanmaraş": ["Taş Köprü", "Yedikuyular Kayak Merkezi", "Kapalı Çarşı"],
+            "Karabük": ["Safranbolu Evleri", "Kristal Teras", "Bulak Mencilis Mağarası"],
+            "Karaman": ["Karaman Kalesi", "Manazan Mağaraları", "Binbirkilise"],
+            "Kars": ["Ani Harabeleri", "Çıldır Gölü", "Kars Kalesi"],
+            "Kastamonu": ["Kastamonu Kalesi", "Valla Kanyonu", "Ilıca Şelalesi"],
+            "Kayseri": ["Erciyes Dağı", "Kapuzbaşı Şelaleleri", "Hunat Hatun Külliyesi"],
+            "Kırıkkale": ["Silah Müzesi", "Çeşnigir Köprüsü", "Karaahmetli Tabiat Parkı"],
+            "Kırklareli": ["Dupnisa Mağarası", "İğneada Longoz Ormanları", "Kıyıköy"],
+            "Kırşehir": ["Cacabey Medresesi", "Ahi Evran Türbesi", "Seyfe Gölü"],
+            "Kilis": ["Ravanda Kalesi", "Oylum Höyük", "Şeyh Mansur Türbesi"],
+            "Kocaeli": ["Ormanya", "Maşukiye", "Kartepe"],
+            "Konya": ["Mevlana Müzesi", "Çatalhöyük", "Kelebekler Vadisi"],
+            "Kütahya": ["Aizanoi Antik Kenti", "Kütahya Kalesi", "Çini Müzesi"],
+            "Malatya": ["Arslantepe Höyüğü", "Günpınar Şelalesi", "Levent Vadisi"],
+            "Manisa": ["Sardes Antik Kenti", "Spil Dağı", "Kula Peribacaları"],
+            "Mardin": ["Deyrulzafaran Manastırı", "Mardin Evleri", "Kasımiye Medresesi"],
+            "Mersin": ["Kızkalesi", "Cennet-Cehennem Obrukları", "Yerköprü Şelalesi"],
+            "Muğla": ["Ölüdeniz", "Kelebekler Vadisi", "Bodrum Kalesi"],
+            "Muş": ["Murat Köprüsü", "Muş Kalesi", "Haspet Kalesi"],
+            "Nevşehir": ["Kapadokya", "Göreme Açık Hava Müzesi", "Ihlara Vadisi"],
+            "Niğde": ["Niğde Kalesi", "Gümüşler Manastırı", "Aladağlar"],
+            "Ordu": ["Boztepe", "Yason Burnu", "Çambaşı Yaylası"],
+            "Osmaniye": ["Karatepe Aslantaş", "Toprakkale Kalesi", "Zorkun Yaylası"],
+            "Rize": ["Ayder Yaylası", "Zilkale", "Fırtına Deresi"],
+            "Sakarya": ["Sapanca Gölü", "Acarlar Longozu", "Justinianus Köprüsü"],
+            "Samsun": ["Bandırma Vapuru", "Amisos Tepesi", "Şahinkaya Kanyonu"],
+            "Siirt": ["Tillo Kalesi", "Veysel Karani Türbesi", "Botan Vadisi"],
+            "Sinop": ["Hamsilos Koyu", "Tarihi Sinop Cezaevi", "Erfelek Şelaleleri"],
+            "Sivas": ["Divriği Ulu Camii", "Çifte Minareli Medrese", "Gökpınar Gölü"],
+            "Şanlıurfa": ["Göbeklitepe", "Balıklıgöl", "Harran Evleri"],
+            "Şırnak": ["Cudi Dağı", "Mem u Zin Türbesi", "Kırmızı Medrese"],
+            "Tekirdağ": ["Rüstem Paşa Camii", "Rakoczi Müzesi", "Uçmakdere"],
+            "Tokat": ["Ballıca Mağarası", "Tokat Kalesi", "Taşhan"],
+            "Trabzon": ["Sümela Manastırı", "Uzungöl", "Atatürk Köşkü"],
+            "Tunceli": ["Munzur Vadisi", "Pertek Kalesi", "Ovacık Gözeleri"],
+            "Uşak": ["Ulubey Kanyonu", "Karun Hazineleri", "Clandras Köprüsü"],
+            "Van": ["Akdamar Adası", "Van Kalesi", "Muradiye Şelalesi"],
+            "Yalova": ["Yürüyen Köşk", "Sudüşen Şelalesi", "Termal Kaplıcaları"],
+            "Yozgat": ["Yozgat Çamlığı", "Basilica Therma", "Saat Kulesi"],
+            "Zonguldak": ["Gökgöl Mağarası", "Filyos Kalesi", "Maden Müzesi"]
         };
 
         const customCityCenters = {
@@ -280,6 +359,68 @@
         };
 
         const EMOJIS = ["😀", "😂", "🥰", "😍", "😎", "🤩", "🤔", "😴", "😭", "😤", "👍", "👎", "❤️", "🔥", "🎉", "✈️", "🗺️", "📸"];
+
+        // --- CINEMA MODAL (REELS) ---
+        const CinemaModal = ({ markers, onClose }) => {
+            const [currentIndex, setCurrentIndex] = useState(0);
+            const visualMarkers = markers.filter(m => m.images && m.images.length > 0);
+
+            if (visualMarkers.length === 0) return (
+                <div className="fixed inset-0 z-[1600] bg-black flex items-center justify-center text-white flex-col p-6">
+                    <Icon name="film" className="w-12 h-12 mb-4 opacity-50"/>
+                    <h2 className="text-xl font-bold">Henüz hiç fotoğraf yok.</h2>
+                    <p className="text-gray-400 text-sm mt-2">Haritaya anı ekleyerek sinemanı oluştur.</p>
+                    <button onClick={onClose} className="mt-6 px-6 py-2 bg-gray-800 rounded-full hover:bg-gray-700">Kapat</button>
+                </div>
+            );
+
+            const current = visualMarkers[currentIndex];
+            const cover = current.favoriteImage || current.images[0];
+            
+            useEffect(() => {
+                const handleKeyDown = (e) => {
+                    if(e.key === 'ArrowRight') next();
+                    if(e.key === 'ArrowLeft') prev();
+                    if(e.key === 'Escape') onClose();
+                };
+                window.addEventListener('keydown', handleKeyDown);
+                return () => window.removeEventListener('keydown', handleKeyDown);
+            }, [currentIndex]);
+
+            const next = () => setCurrentIndex((prev) => (prev + 1) % visualMarkers.length);
+            const prev = () => setCurrentIndex((prev) => (prev - 1 + visualMarkers.length) % visualMarkers.length);
+
+            return (
+                <div className="fixed inset-0 z-[1600] bg-black flex items-center justify-center">
+                    <button onClick={onClose} className="absolute top-4 right-4 z-50 p-2 bg-black/50 rounded-full text-white hover:bg-white/20"><Icon name="x" className="w-6 h-6"/></button>
+                    
+                    <div className="relative w-full h-full md:w-[400px] md:h-[90%] bg-gray-900 md:rounded-xl overflow-hidden shadow-2xl flex flex-col">
+                        <div className="flex-1 relative">
+                             <img src={cover} className="w-full h-full object-cover" />
+                             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent"></div>
+                             
+                             <div className="absolute bottom-0 left-0 w-full p-6 text-white">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Icon name="map-pin" className="w-4 h-4 text-red-500"/>
+                                    <span className="font-bold text-lg">{current.cityName}</span>
+                                    <span className="text-xs bg-white/20 px-2 py-0.5 rounded">@{current.username || "ben"}</span>
+                                </div>
+                                <div className="text-xs text-gray-300 mb-3">{current.date}</div>
+                                {current.note && <p className="text-sm text-gray-200 italic line-clamp-3">"{current.note}"</p>}
+                                <div className="flex gap-1 mt-4 justify-center">
+                                    {visualMarkers.map((_, idx) => (
+                                        <div key={idx} className={`h-1 rounded-full transition-all ${idx === currentIndex ? 'w-4 bg-white' : 'w-1 bg-white/30'}`}></div>
+                                    ))}
+                                </div>
+                             </div>
+                        </div>
+
+                        <button onClick={prev} className="absolute left-2 top-1/2 -translate-y-1/2 p-2 text-white/50 hover:text-white"><Icon name="chevron-left" className="w-8 h-8"/></button>
+                        <button onClick={next} className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-white/50 hover:text-white"><Icon name="chevron-right" className="w-8 h-8"/></button>
+                    </div>
+                </div>
+            );
+        };
 
         // --- STATS MODAL ---
         const StatsModal = ({ markers, onClose }) => {
@@ -354,7 +495,7 @@
             };
 
             return (
-                <div className="fixed bottom-20 right-4 w-80 h-96 bg-white dark:bg-gray-800 rounded-t-xl shadow-2xl border dark:border-gray-700 z-[2000] flex flex-col">
+                <div className="fixed bottom-4 right-4 w-80 bg-white dark:bg-gray-800 rounded-t-xl shadow-2xl border border-gray-200 dark:border-gray-700 z-[1400] flex flex-col h-96 animate-fadeIn">
                     <div className="bg-indigo-600 p-3 text-white rounded-t-xl flex justify-between items-center">
                         <div className="font-bold flex items-center gap-2"><Icon name="message-circle" className="w-4 h-4"/> {friendUsername}</div>
                         <button onClick={onClose}><Icon name="x" className="w-4 h-4"/></button>
@@ -363,25 +504,27 @@
                         {messages.length === 0 && <p className="text-center text-xs text-gray-400 mt-4">Sohbeti başlatın...</p>}
                         {messages.map((m, i) => (
                             <div key={i} className={`flex ${m.sender === myUsername ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`max-w-[80%] p-2 rounded text-xs ${m.sender === myUsername ? 'bg-indigo-100 text-indigo-900 dark:bg-indigo-900 dark:text-indigo-100' : 'bg-white border border-gray-200 text-gray-800 dark:bg-gray-700 dark:border-gray-600 dark:text-white'}`}>
-                                    {m.image && <img src={m.image} className="rounded mb-1 max-w-full"/>}
+                                <div className={`max-w-[80%] rounded-lg p-2 text-xs ${m.sender === myUsername ? 'bg-indigo-100 text-indigo-900 dark:bg-indigo-900 dark:text-indigo-100' : 'bg-white border border-gray-200 text-gray-800 dark:bg-gray-700 dark:border-gray-600 dark:text-white'}`}>
+                                    {m.image && <img src={m.image} className="rounded mb-1 max-w-full" />}
                                     {m.text && <p>{m.text}</p>}
                                 </div>
                             </div>
                         ))}
                     </div>
-                    {showEmojis && (
-                        <div className="absolute bottom-12 left-2 bg-white dark:bg-gray-700 shadow-xl rounded-lg p-2 grid grid-cols-6 gap-1 w-64 h-32 overflow-y-auto border dark:border-gray-600">
-                            {EMOJIS.map(emoji => (
-                                <button key={emoji} onClick={() => addEmoji(emoji)} className="text-lg hover:bg-gray-100 dark:hover:bg-gray-600 p-1 rounded">{emoji}</button>
-                            ))}
+                    <div className="p-2 border-t dark:border-gray-700 bg-white dark:bg-gray-800 relative">
+                        {showEmojis && (
+                            <div className="absolute bottom-12 left-2 bg-white dark:bg-gray-700 shadow-xl rounded-lg p-2 grid grid-cols-6 gap-1 w-64 h-32 overflow-y-auto border dark:border-gray-600">
+                                {EMOJIS.map(emoji => (
+                                    <button key={emoji} onClick={() => addEmoji(emoji)} className="text-lg hover:bg-gray-100 dark:hover:bg-gray-600 p-1 rounded">{emoji}</button>
+                                ))}
+                            </div>
+                        )}
+                        <div className="flex gap-2 items-center">
+                            <button onClick={() => setShowEmojis(!showEmojis)} className="text-gray-500 hover:text-indigo-600 p-1"><Icon name="smile" className="w-5 h-5"/></button>
+                            <label className="cursor-pointer text-gray-500 hover:text-indigo-600 p-1"><Icon name="image" className="w-5 h-5"/><input type="file" className="hidden" accept="image/*" onChange={handleImageSend}/></label>
+                            <input type="text" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && sendMessage(newMessage)} className="flex-1 border dark:border-gray-600 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-indigo-500 dark:bg-gray-700 dark:text-white" placeholder="Mesaj..."/>
+                            <button onClick={() => sendMessage(newMessage)} className="text-indigo-600 hover:text-indigo-800 p-1"><Icon name="send" className="w-5 h-5"/></button>
                         </div>
-                    )}
-                    <div className="p-2 border-t dark:border-gray-700 bg-white dark:bg-gray-800 flex gap-2 items-center">
-                        <button onClick={() => setShowEmojis(!showEmojis)} className="text-gray-500 hover:text-indigo-600 p-1"><Icon name="smile" className="w-5 h-5"/></button>
-                        <label className="cursor-pointer text-gray-500 hover:text-indigo-600 p-1"><Icon name="image" className="w-5 h-5"/><input type="file" className="hidden" accept="image/*" onChange={handleImageSend}/></label>
-                        <input type="text" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && sendMessage(newMessage)} className="flex-1 border dark:border-gray-600 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-indigo-500 dark:bg-gray-700 dark:text-white" placeholder="Mesaj..."/>
-                        <button onClick={() => sendMessage(newMessage)} className="text-indigo-600 hover:text-indigo-800 p-1"><Icon name="send" className="w-5 h-5"/></button>
                     </div>
                 </div>
             );
@@ -620,6 +763,7 @@
             const [currentChatFriend, setCurrentChatFriend] = useState(null);
             const [darkMode, setDarkMode] = useState(false); 
             const [isStatsOpen, setIsStatsOpen] = useState(false); 
+            const [isCinemaOpen, setIsCinemaOpen] = useState(false); 
             
             const [activeTab, setActiveTab] = useState("personal"); 
             const [partner, setPartner] = useState(null); 
@@ -657,6 +801,7 @@
                 else document.documentElement.classList.remove('dark');
             };
 
+            // Update Last Active on Mount
             useEffect(() => {
                 const updateLastActive = async () => {
                     await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_profiles').doc(myUsername).set({
@@ -666,6 +811,7 @@
                 updateLastActive();
             }, [myUsername]);
 
+            // Lightbox logic
             const openLightbox = (imgSrc, allImages) => {
                 setLightboxImages(allImages || [imgSrc]);
                 setCurrentImageIndex(allImages ? allImages.indexOf(imgSrc) : 0);
@@ -1087,6 +1233,7 @@
                                             {notifications.length > 0 && <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-yellow-400 rounded-full border-2 border-red-600"></span>}
                                         </button>
                                     </div>
+                                    <button onClick={()=>setIsCinemaOpen(true)} className="bg-white/20 p-1.5 rounded-full hover:bg-white/30" title="Anı Sineması"><Icon name="play" className="w-5 h-5"/></button>
                                     <button onClick={()=>setFeedOpen(!feedOpen)} className={`p-1.5 rounded-full transition-colors ${feedOpen ? 'bg-white text-red-600' : 'bg-white/20 text-white hover:bg-white/30'}`} title="Akış">
                                         <Icon name="activity" className="w-5 h-5"/>
                                     </button>
@@ -1259,7 +1406,7 @@
                     
                     {currentChatFriend && <ChatModal myUsername={myUsername} friendUsername={currentChatFriend} onClose={() => setCurrentChatFriend(null)} sendNotif={sendNotification} />}
                     {isStatsOpen && <StatsModal markers={markers} onClose={() => setIsStatsOpen(false)} />}
-                    {/* isCinemaOpen kaldırıldı */}
+                    {isCinemaOpen && <CinemaModal markers={markers} onClose={() => setIsCinemaOpen(false)} />}
 
                     <div id="map-container" className="flex-1 z-0 relative">{loading && <div className="absolute inset-0 flex items-center justify-center bg-white z-[999] opacity-80">Yükleniyor...</div>}</div>
                     
