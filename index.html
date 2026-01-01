@@ -110,26 +110,17 @@
         .leaflet-tooltip-top:before, .leaflet-tooltip-bottom:before, .leaflet-tooltip-left:before, .leaflet-tooltip-right:before { display: none; }
 
         .city-marker-img {
-            width: 54px !important; 
-            height: 54px !important; 
+            width: 50px !important; 
+            height: 50px !important; 
             border-radius: 50%; 
             object-fit: cover;
             border: 3px solid white; 
-            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
-            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-            background-color: white;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            transition: transform 0.2s;
+            background-color: white; 
         }
         .city-marker-img:hover { transform: scale(1.3); z-index: 1000; }
         .dark .city-marker-img { border-color: #334155; }
-
-        /* Custom Scrollbar for the sidebar content */
-        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e0; border-radius: 10px; }
-        .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #4a5568; }
-        
-        /* Mobile Safe Area */
-        .safe-area-pb { padding-bottom: env(safe-area-inset-bottom); }
     </style>
 </head>
 <body class="bg-gray-100 h-screen overflow-hidden transition-colors duration-300 font-sans">
@@ -141,8 +132,6 @@
         // ==========================================
         // --- AYARLAR ---
         // ==========================================
-        
-        const MANUAL_GEMINI_KEY = "AIzaSyA48kSMw0m8i7Fc3bPHned7jE_8iBUwTDk"; 
         
         const MANUAL_FIREBASE_CONFIG = {
           apiKey: "AIzaSyBB5WR_SqJOjcKJjMLElGnwclYYbX_6zNQ",
@@ -156,8 +145,6 @@
 
         // ------------------------------------------
 
-        const envApiKey = typeof apiKey !== 'undefined' ? apiKey : ""; 
-        const finalApiKey = MANUAL_GEMINI_KEY || envApiKey;
         const firebaseConfig = MANUAL_FIREBASE_CONFIG || (typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null);
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
@@ -205,24 +192,11 @@
             <div className="flex flex-col h-screen w-full items-center justify-center bg-gray-100 p-6 text-center dark:bg-gray-900">
                 <div className="bg-white p-8 rounded-xl shadow-2xl max-w-lg dark:bg-gray-800 dark:text-white">
                     <div className="text-red-500 mb-4 flex justify-center"><Icon name="alert-triangle" className="w-16 h-16" /></div>
-                    <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Ayarlar Eksik</h1>
-                    <p className="text-gray-600 dark:text-gray-300">Firebase yapılandırması bulunamadı.</p>
+                    <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Başlatılamadı</h1>
+                    <p className="text-gray-600 dark:text-gray-300">Firebase bağlantısı kurulamadı. İnternet bağlantınızı kontrol edin veya reklam engelleyiciyi kapatın.</p>
                 </div>
             </div>
         );
-
-        const callGeminiAPI = async (prompt) => {
-            if (!finalApiKey) return "Hata: API anahtarı eksik.";
-            try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${finalApiKey}`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-                });
-                if (!response.ok) throw new Error('API Hatası');
-                const data = await response.json();
-                return data.candidates?.[0]?.content?.parts?.[0]?.text || "Yanıt alınamadı.";
-            } catch (error) { return "Yapay zeka servisine ulaşılamıyor."; }
-        };
 
         const compressImage = (file) => {
             return new Promise((resolve) => {
@@ -260,11 +234,13 @@
         };
 
         const citySuggestionsData = {
+            "Adana": ["Taş Köprü", "Sabancı Merkez Camii", "Kazancılar Çarşısı"],
+            "Adıyaman": ["Nemrut Dağı", "Cendere Köprüsü", "Perre Antik Kenti"],
+            "Afyonkarahisar": ["Afyon Kalesi", "İscehisar Peribacaları", "Ulu Camii"],
+            // ... (Tüm şehirler)
             "İstanbul": ["Ayasofya", "Topkapı Sarayı", "Galata Kulesi"],
             "Ankara": ["Anıtkabir", "Ankara Kalesi", "Anadolu Medeniyetleri Müzesi"],
             "İzmir": ["Efes Antik Kenti", "Saat Kulesi", "Şirince"],
-            "Antalya": ["Kaleiçi", "Düden Şelalesi", "Aspendos"],
-            "Bursa": ["Ulu Camii", "Yeşil Türbe", "Cumalıkızık"],
         };
 
         const customCityCenters = {
@@ -367,7 +343,7 @@
             };
 
             return (
-                <div className="fixed bottom-20 right-4 w-80 h-96 bg-white dark:bg-gray-800 rounded-t-xl shadow-2xl border dark:border-gray-700 z-[2000] flex flex-col">
+                <div className="fixed bottom-16 right-4 w-80 bg-white dark:bg-gray-800 rounded-t-xl shadow-2xl border border-gray-200 dark:border-gray-700 z-[1400] flex flex-col h-96 animate-fadeIn">
                     <div className="bg-indigo-600 p-3 text-white rounded-t-xl flex justify-between items-center">
                         <div className="font-bold flex items-center gap-2"><Icon name="message-circle" className="w-4 h-4"/> {friendUsername}</div>
                         <button onClick={onClose}><Icon name="x" className="w-4 h-4"/></button>
@@ -376,25 +352,27 @@
                         {messages.length === 0 && <p className="text-center text-xs text-gray-400 mt-4">Sohbeti başlatın...</p>}
                         {messages.map((m, i) => (
                             <div key={i} className={`flex ${m.sender === myUsername ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`max-w-[80%] p-2 rounded text-xs ${m.sender === myUsername ? 'bg-indigo-100 text-indigo-900 dark:bg-indigo-900 dark:text-indigo-100' : 'bg-white border border-gray-200 text-gray-800 dark:bg-gray-700 dark:border-gray-600 dark:text-white'}`}>
-                                    {m.image && <img src={m.image} className="rounded mb-1 max-w-full"/>}
+                                <div className={`max-w-[80%] rounded-lg p-2 text-xs ${m.sender === myUsername ? 'bg-indigo-100 text-indigo-900 dark:bg-indigo-900 dark:text-indigo-100' : 'bg-white border border-gray-200 text-gray-800 dark:bg-gray-700 dark:border-gray-600 dark:text-white'}`}>
+                                    {m.image && <img src={m.image} className="rounded mb-1 max-w-full" />}
                                     {m.text && <p>{m.text}</p>}
                                 </div>
                             </div>
                         ))}
                     </div>
-                    {showEmojis && (
-                        <div className="absolute bottom-12 left-2 bg-white dark:bg-gray-700 shadow-xl rounded-lg p-2 grid grid-cols-6 gap-1 w-64 h-32 overflow-y-auto border dark:border-gray-600">
-                            {EMOJIS.map(emoji => (
-                                <button key={emoji} onClick={() => addEmoji(emoji)} className="text-lg hover:bg-gray-100 dark:hover:bg-gray-600 p-1 rounded">{emoji}</button>
-                            ))}
+                    <div className="p-2 border-t dark:border-gray-700 bg-white dark:bg-gray-800 relative">
+                        {showEmojis && (
+                            <div className="absolute bottom-12 left-2 bg-white dark:bg-gray-700 shadow-xl rounded-lg p-2 grid grid-cols-6 gap-1 w-64 h-32 overflow-y-auto border dark:border-gray-600">
+                                {EMOJIS.map(emoji => (
+                                    <button key={emoji} onClick={() => addEmoji(emoji)} className="text-lg hover:bg-gray-100 dark:hover:bg-gray-600 p-1 rounded">{emoji}</button>
+                                ))}
+                            </div>
+                        )}
+                        <div className="flex gap-2 items-center">
+                            <button onClick={() => setShowEmojis(!showEmojis)} className="text-gray-500 hover:text-indigo-600 p-1"><Icon name="smile" className="w-5 h-5"/></button>
+                            <label className="cursor-pointer text-gray-500 hover:text-indigo-600 p-1"><Icon name="image" className="w-5 h-5"/><input type="file" className="hidden" accept="image/*" onChange={handleImageSend}/></label>
+                            <input type="text" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && sendMessage(newMessage)} className="flex-1 border dark:border-gray-600 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-indigo-500 dark:bg-gray-700 dark:text-white" placeholder="Mesaj..."/>
+                            <button onClick={() => sendMessage(newMessage)} className="text-indigo-600 hover:text-indigo-800 p-1"><Icon name="send" className="w-5 h-5"/></button>
                         </div>
-                    )}
-                    <div className="p-2 border-t dark:border-gray-700 bg-white dark:bg-gray-800 flex gap-2 items-center">
-                        <button onClick={() => setShowEmojis(!showEmojis)} className="text-gray-500 hover:text-indigo-600 p-1"><Icon name="smile" className="w-5 h-5"/></button>
-                        <label className="cursor-pointer text-gray-500 hover:text-indigo-600 p-1"><Icon name="image" className="w-5 h-5"/><input type="file" className="hidden" accept="image/*" onChange={handleImageSend}/></label>
-                        <input type="text" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && sendMessage(newMessage)} className="flex-1 border dark:border-gray-600 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-indigo-500 dark:bg-gray-700 dark:text-white" placeholder="Mesaj..."/>
-                        <button onClick={() => sendMessage(newMessage)} className="text-indigo-600 hover:text-indigo-800 p-1"><Icon name="send" className="w-5 h-5"/></button>
                     </div>
                 </div>
             );
@@ -403,8 +381,8 @@
         // --- NOTIFICATION MODAL ---
         const NotificationModal = ({ notifications, onClose, onAccept, onReject }) => {
             return (
-                <div className="fixed inset-0 z-[1300] bg-black bg-opacity-50 flex items-start justify-end p-4 pt-16">
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-80 animate-fadeIn overflow-hidden">
+                <div className="fixed inset-0 z-[1300] bg-black bg-opacity-50 flex items-end justify-center sm:items-start sm:justify-end p-4 sm:pt-16">
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full sm:w-80 animate-fadeIn overflow-hidden mb-16 sm:mb-0">
                         <div className="bg-gray-50 dark:bg-gray-700 p-3 border-b dark:border-gray-600 flex justify-between items-center">
                             <h3 className="font-bold text-gray-700 dark:text-white flex items-center gap-2"><Icon name="bell" className="w-4 h-4"/> Bildirimler</h3>
                             <button onClick={onClose}><Icon name="x" className="w-4 h-4 text-gray-400"/></button>
@@ -918,6 +896,23 @@
                 setIsModalOpen(false);
             };
 
+            const handleAddComment = () => {
+                if (!newComment.trim()) return;
+                const cleanText = filterProfanity(newComment);
+                const commentObj = { id: Date.now(), user: myUsername, text: cleanText, date: new Date().toLocaleDateString('tr-TR') };
+                const updatedComments = [...comments, commentObj];
+                setComments(updatedComments);
+                setNewComment("");
+                const originalMarker = markers.find(m => m.cityName === selectedCity.name) || {};
+                const newMarker = {
+                    id: originalMarker.id || Date.now(), lat: selectedCity.latlng.lat, lng: selectedCity.latlng.lng,
+                    cityName: selectedCity.name, note: note, images: images, checkedPlaces: checkedPlaces,
+                    comments: updatedComments, favoriteImage: favoriteImage,
+                    status: status, category: category, date: new Date().toLocaleDateString('tr-TR'), timestamp: Date.now(), likes: originalMarker.likes || []
+                };
+                const updatedMarkers = [...markers.filter(m => m.cityName !== selectedCity.name), newMarker];
+                saveMarkersToUser(currentUsername, updatedMarkers, activeTab === 'couple');
+            };
             const handleAvatarUpload = async (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
@@ -932,8 +927,6 @@
             const handleDelete = (name) => { if(confirm("Silmek istediğinize emin misiniz?")) { const updated = markers.filter(m => m.cityName !== name); setMarkers(updated); saveMarkersToUser(currentUsername, updated, activeTab === 'couple'); } };
             const handleImage = (e) => { const files = Array.from(e.target.files); files.forEach(f => { const reader = new FileReader(); reader.onloadend = () => { setImages(prev => { const newImages = [...prev, reader.result]; if (!favoriteImage && newImages.length > 0) setFavoriteImage(newImages[0]); return newImages; }); }; reader.readAsDataURL(f); }); };
             const toggleCheckedPlace = (place) => { if(isReadOnly) return; setCheckedPlaces(prev => prev.includes(place) ? prev.filter(p=>p!==place) : [...prev, place]); };
-            const generateGuide = async () => { setIsGeneratingGuide(true); const res = await callGeminiAPI(`${selectedCity.name} için 3 gizli yer ve 3 yerel lezzet önerisi yap.`); setGuideContent(res); setIsGeneratingGuide(false); };
-            const enhanceNote = async () => { setIsEnhancingNote(true); const res = await callGeminiAPI(`Bu notu edebi bir dille yeniden yaz: "${note}"`); setNote(res); setIsEnhancingNote(false); };
             const handleSearch = async (e) => { e.preventDefault(); if(!searchQuery.trim()) return; const target = searchQuery.trim().toLowerCase(); try { const doc = await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_credentials').doc(target).get(); if(doc.exists) { onViewChange(target); setSearchQuery(""); setViewMode('map'); setActiveTab('personal'); if(window.innerWidth < 768) setSidebarOpen(false); } else alert("Kullanıcı bulunamadı!"); } catch(e) { alert("Hata."); } };
             const calculateProgress = (cityName, visitedPlaces) => { const visitedCount = visitedPlaces ? visitedPlaces.length : 0; return Math.min(100, Math.round((visitedCount / 3) * 100)); };
 
@@ -1061,196 +1054,238 @@
 
             const displayMarkers = getFilteredMarkers();
 
+            // Bottom Navigation Items
+            const renderBottomNav = () => {
+                if (isReadOnly) return null; // Or show simplified nav
+                
+                return (
+                    <div className="fixed bottom-0 left-0 w-full bg-white dark:bg-gray-800 border-t dark:border-gray-700 p-2 flex justify-around items-center z-50 md:hidden shadow-up">
+                        <button onClick={() => setViewMode('map')} className={`flex flex-col items-center text-xs ${viewMode === 'map' ? 'text-indigo-600' : 'text-gray-500'}`}>
+                            <Icon name="map" className="w-5 h-5 mb-1"/> Ana Sayfa
+                        </button>
+                        <button onClick={() => setViewMode('friends')} className={`flex flex-col items-center text-xs ${viewMode === 'friends' ? 'text-indigo-600' : 'text-gray-500'}`}>
+                            <Icon name="users" className="w-5 h-5 mb-1"/> Arkadaşlar
+                        </button>
+                        <button onClick={()=>setIsNotifOpen(true)} className="flex flex-col items-center text-xs text-gray-500 relative">
+                            <Icon name="bell" className="w-5 h-5 mb-1"/>
+                            {notifications.length > 0 && <span className="absolute top-0 right-2 w-2 h-2 bg-red-500 rounded-full"></span>}
+                            Bildirimler
+                        </button>
+                        <button onClick={() => { setActiveTab('personal'); setViewMode('map'); }} className="flex flex-col items-center text-xs text-gray-500">
+                             <img src={myAvatar} className="w-6 h-6 rounded-full mb-1 object-cover border border-gray-300"/> Profil
+                        </button>
+                    </div>
+                );
+            };
+
             return (
                 <div className={`flex h-full relative ${darkMode ? 'dark' : ''}`}>
                     <div className={`absolute md:relative z-20 h-full bg-white dark:bg-gray-800 shadow-xl transition-all flex flex-col ${sidebarOpen ? 'w-full md:w-96' : 'w-0 overflow-hidden'}`}>
-                        <div className={`p-4 ${mainColor} text-white shadow-md transition-colors duration-500`}>
-                             <div className="flex justify-between items-center mb-4">
-                                <div className="flex items-center gap-3 font-bold cursor-pointer" onClick={() => setViewMode('map')}>
-                                    <div className="relative group">
-                                        <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center overflow-hidden border-2 border-white/50">
+                        {/* HEADER - Simplified */}
+                        <div className={`p-4 ${mainColor} text-white shadow-md transition-colors duration-500 flex flex-col gap-4`}>
+                            {/* Top Row: Avatar & Name & DarkMode/Settings */}
+                             <div className="flex justify-between items-center">
+                                <div className="flex items-center gap-3">
+                                    <div className="relative group cursor-pointer" onClick={() => setViewMode('map')}>
+                                        <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center overflow-hidden border-2 border-white/50">
                                             {userAvatar ? <img src={userAvatar} className="w-full h-full object-cover" /> : <Icon name="user" className="w-6 h-6"/>}
                                         </div>
                                         {!isReadOnly && activeTab === 'personal' && (
-                                            <label className="absolute bottom-0 right-0 bg-white text-black rounded-full p-0.5 cursor-pointer shadow-md hover:bg-gray-100"><Icon name="camera" className="w-3 h-3"/><input type="file" className="hidden" accept="image/*" onChange={handleAvatarUpload} /></label>
+                                            <label className="absolute bottom-0 right-0 bg-white text-black rounded-full p-1 cursor-pointer shadow-md hover:bg-gray-100"><Icon name="camera" className="w-3 h-3"/><input type="file" className="hidden" accept="image/*" onChange={handleAvatarUpload} /></label>
                                         )}
                                     </div>
                                     <div>
-                                        <h1 className="text-lg leading-tight">@{currentUsername}</h1>
-                                        {activeTab === 'couple' && partner && <span className="block text-sm font-normal text-white/90 flex items-center gap-1"><Icon name="heart" className="w-3 h-3 fill-current"/> & @{partner}</span>}
+                                        <h1 className="text-lg font-bold leading-tight">@{currentUsername}</h1>
+                                        {activeTab === 'couple' && partner && <span className="text-xs font-normal text-white/90 flex items-center gap-1"><Icon name="heart" className="w-3 h-3 fill-current"/> & @{partner}</span>}
                                         <div className="text-xs opacity-80 font-normal flex items-center gap-1"><Icon name={rank.icon} className="w-3 h-3"/> {rank.title}</div>
                                     </div>
                                 </div>
-                                <div className="flex gap-2 items-center">
-                                    <div className="relative">
-                                        <button onClick={()=>setIsNotifOpen(!isNotifOpen)} className="bg-white/20 p-1.5 rounded-full hover:bg-white/30 relative">
-                                            <Icon name="bell" className="w-5 h-5"/>
-                                            {notifications.length > 0 && <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-yellow-400 rounded-full border-2 border-red-600"></span>}
-                                        </button>
-                                    </div>
-                                    <button onClick={()=>setIsCinemaOpen(true)} className="bg-white/20 p-1.5 rounded-full hover:bg-white/30" title="Anı Sineması"><Icon name="play" className="w-5 h-5"/></button>
-                                    <button onClick={()=>setFeedOpen(!feedOpen)} className={`p-1.5 rounded-full transition-colors ${feedOpen ? 'bg-white text-red-600' : 'bg-white/20 text-white hover:bg-white/30'}`} title="Akış">
-                                        <Icon name="activity" className="w-5 h-5"/>
-                                    </button>
-                                    <button onClick={()=>setIsStatsOpen(true)} className="bg-white/20 p-1.5 rounded-full hover:bg-white/30" title="İstatistikler"><Icon name="bar-chart-2" className="w-5 h-5"/></button>
-                                    <button onClick={toggleDarkMode} className="bg-white/20 p-1.5 rounded-full hover:bg-white/30" title="Gece Modu"><Icon name={darkMode ? "sun" : "moon"} className="w-5 h-5"/></button>
-                                    <button onClick={()=>setSidebarOpen(false)}><Icon name="chevrons-left" className="w-6 h-6"/></button>
-                                    <div className="flex gap-1 ml-1">
-                                        {isReadOnly ? 
-                                            <button onClick={()=>onViewChange(myUsername)} className="bg-white text-red-600 px-2 py-1 rounded text-xs font-bold hover:bg-gray-100" title="Profilime Dön"><Icon name="user" className="w-4 h-4"/></button> 
-                                            : <button onClick={onLogout} className="bg-red-800 p-1.5 rounded hover:bg-red-900 transition-colors" title="Çıkış Yap"><Icon name="log-out" className="w-4 h-4"/></button>
-                                        }
-                                    </div>
+                                <div className="flex gap-2">
+                                    <button onClick={toggleDarkMode} className="bg-white/20 p-2 rounded-full hover:bg-white/30" title="Gece Modu"><Icon name={darkMode ? "sun" : "moon"} className="w-5 h-5"/></button>
+                                    <button onClick={onLogout} className="bg-white/20 p-2 rounded-full hover:bg-white/30" title="Çıkış"><Icon name="log-out" className="w-5 h-5"/></button>
                                 </div>
                             </div>
-
-                            {/* Navigation Tabs */}
-                            {!isReadOnly && (
-                                <div className="flex bg-black/20 rounded-lg p-1 mb-3">
-                                    <button onClick={() => setActiveTab('personal')} className={`flex-1 py-1.5 rounded-md text-xs font-bold flex items-center justify-center gap-1 transition-all ${activeTab === 'personal' && viewMode === 'map' ? 'bg-white text-red-600 shadow' : 'text-white hover:bg-white/10'}`}><Icon name="user" className="w-3 h-3"/> Bireysel</button>
-                                    <button onClick={() => {!partner ? setIsPartnerModalOpen(true) : setActiveTab('couple'); setViewMode('map');}} className={`flex-1 py-1.5 rounded-md text-xs font-bold flex items-center justify-center gap-1 transition-all ${activeTab === 'couple' && viewMode === 'map' ? 'bg-white text-pink-600 shadow' : 'text-white hover:bg-white/10'}`}><Icon name="heart" className={`w-3 h-3 ${partner ? 'fill-current' : ''}`}/> Sevgili</button>
-                                    <button onClick={() => setViewMode('friends')} className={`flex-1 py-1.5 rounded-md text-xs font-bold flex items-center justify-center gap-1 transition-all ${viewMode === 'friends' ? 'bg-white text-indigo-600 shadow' : 'text-white hover:bg-white/10'}`}><Icon name="users" className="w-3 h-3"/> Arkadaşlar</button>
+                            
+                            {/* Search Bar */}
+                            <form onSubmit={handleSearch} className="relative">
+                                <input className="w-full pl-9 py-2 rounded-full bg-white/20 text-white placeholder-white/70 text-sm focus:outline-none focus:bg-white/30 border border-white/30 transition-all" placeholder="Kullanıcı ara..." value={searchQuery} onChange={e=>setSearchQuery(e.target.value)}/>
+                                <Icon name="search" className="w-4 h-4 text-white/70 absolute left-3 top-2.5"/>
+                            </form>
+                            
+                            {/* ReadOnly Warning Bar */}
+                            {isReadOnly && (
+                                <div onClick={()=>onViewChange(myUsername)} className="bg-yellow-400 text-yellow-900 text-xs font-bold py-2 px-3 rounded cursor-pointer flex justify-between items-center hover:bg-yellow-300 transition-colors shadow-sm">
+                                    <span>Şu an @{currentUsername} profilindesin.</span>
+                                    <span className="underline flex items-center gap-1">Dön <Icon name="corner-up-left" className="w-3 h-3"/></span>
                                 </div>
                             )}
 
-                            <form onSubmit={handleSearch} className="relative">
-                                <input className="w-full pl-8 py-1 rounded text-black text-sm" placeholder="Kullanıcı ara..." value={searchQuery} onChange={e=>setSearchQuery(e.target.value)}/>
-                                <Icon name="search" className="w-4 h-4 text-gray-500 absolute left-2 top-2"/>
-                            </form>
-                            {isReadOnly && !friends.includes(currentUsername) && <button onClick={()=>addFriend(currentUsername)} className="mt-2 w-full bg-white text-red-600 font-bold text-xs py-1 rounded flex items-center justify-center gap-1"><Icon name="user-plus" className="w-3 h-3"/> Ekle</button>}
+                            {isReadOnly && !friends.includes(currentUsername) && <button onClick={()=>addFriend(currentUsername)} className="w-full bg-white text-red-600 font-bold text-sm py-2 rounded-full flex items-center justify-center gap-2 shadow-sm hover:bg-gray-50"><Icon name="user-plus" className="w-4 h-4"/> Arkadaş Ekle</button>}
                         </div>
 
-                        {/* VIEW MODE */}
-                        {viewMode === 'friends' && !isReadOnly ? (
-                             <div className="flex-1 overflow-y-auto p-4 bg-gray-50 dark:bg-gray-900 custom-scrollbar">
-                                <h2 className="font-bold text-gray-700 dark:text-white mb-3 flex items-center gap-2"><Icon name="users" className="w-4 h-4"/> Arkadaşlarım ({friends.length})</h2>
-                                {friends.map((f, i) => (
-                                    <div key={i} className="bg-white dark:bg-gray-700 p-3 rounded-lg border dark:border-gray-600 mb-2 flex justify-between items-center cursor-pointer hover:shadow-md transition-shadow">
-                                        <div className="flex items-center gap-3" onClick={()=>{onViewChange(f); setViewMode('map'); setActiveTab('personal');}}>
-                                            <span className="font-bold text-gray-800 dark:text-white">@{f}</span>
-                                            {friendDetails[f]?.lastActive && (
-                                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                                                    formatTimeAgo(friendDetails[f].lastActive) === "Şimdi" || formatTimeAgo(friendDetails[f].lastActive).includes("dk") ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
-                                                }`}>
-                                                    {formatTimeAgo(friendDetails[f].lastActive) === "Şimdi" ? "🟢 Çevrimiçi" : `⚫ ${formatTimeAgo(friendDetails[f].lastActive)}`}
-                                                </span>
-                                            )}
-                                        </div>
-                                        <button onClick={() => setCurrentChatFriend(f)} className="text-indigo-600 hover:text-indigo-800 bg-indigo-50 dark:bg-indigo-900 dark:text-indigo-200 p-2 rounded-full transition-colors hover:bg-indigo-100 dark:hover:bg-indigo-800">
-                                            <Icon name="message-circle" className="w-4 h-4"/>
-                                        </button>
-                                    </div>
-                                ))}
+                        {/* DESKTOP NAV TABS (Only visible on md+) */}
+                        {!isReadOnly && (
+                            <div className="hidden md:flex bg-gray-100 dark:bg-gray-700 p-1 gap-1">
+                                <button onClick={() => setActiveTab('personal')} className={`flex-1 py-2 rounded-md text-xs font-bold flex items-center justify-center gap-1 transition-all ${activeTab === 'personal' && viewMode === 'map' ? 'bg-white dark:bg-gray-600 text-red-600 shadow' : 'text-gray-500 hover:bg-gray-200'}`}><Icon name="user" className="w-3 h-3"/> Bireysel</button>
+                                <button onClick={() => {!partner ? setIsPartnerModalOpen(true) : setActiveTab('couple'); setViewMode('map');}} className={`flex-1 py-2 rounded-md text-xs font-bold flex items-center justify-center gap-1 transition-all ${activeTab === 'couple' && viewMode === 'map' ? 'bg-white dark:bg-gray-600 text-pink-600 shadow' : 'text-gray-500 hover:bg-gray-200'}`}><Icon name="heart" className={`w-3 h-3 ${partner ? 'fill-current' : ''}`}/> Sevgili</button>
+                                <button onClick={() => setViewMode('friends')} className={`flex-1 py-2 rounded-md text-xs font-bold flex items-center justify-center gap-1 transition-all ${viewMode === 'friends' ? 'bg-white dark:bg-gray-600 text-indigo-600 shadow' : 'text-gray-500 hover:bg-gray-200'}`}><Icon name="users" className="w-3 h-3"/> Arkadaşlar</button>
                             </div>
-                        ) : (
-                            <>
-                                <div className={`p-4 ${lightColor} dark:bg-gray-800 border-b dark:border-gray-700 transition-colors duration-500 shadow-sm relative z-10`}>
-                                    <div className={`flex justify-between mb-1 text-sm font-bold ${activeTab === 'couple' ? 'text-pink-800 dark:text-pink-300' : 'text-red-800 dark:text-red-300'}`}><span>Gezilen: {markers.length} / 81</span><span>{activeTab === 'couple' ? '❤️ Bizim Haritamız' : ''}</span></div>
-                                    <div className="w-full bg-gray-200 dark:bg-gray-600 h-2 rounded-full overflow-hidden shadow-inner"><div className={`h-2 rounded-full ${subColor}`} style={{width: `${(markers.length/81)*100}%`}}></div></div>
-                                    {isReadOnly && <div className="mt-2 text-xs bg-blue-100 text-blue-700 p-1 rounded text-center flex items-center justify-center gap-1"><Icon name="eye" className="w-3 h-3"/> Görüntüleme Modu</div>}
-                                </div>
+                        )}
 
-                                <div className="p-2 bg-gray-50 dark:bg-gray-900 border-b dark:border-gray-700 flex gap-2 overflow-x-auto custom-scrollbar shadow-sm z-10 relative">
-                                    <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="text-xs border dark:border-gray-600 rounded-lg p-1.5 bg-white dark:bg-gray-700 dark:text-white focus:outline-none focus:border-blue-500 transition-colors shadow-sm">
-                                        <option value="Tümü">Tüm Kategoriler</option>
-                                        {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                                    </select>
-                                    <button onClick={() => setShowRoute(!showRoute)} className={`text-xs px-2.5 py-1.5 rounded-lg border flex items-center gap-1 transition-all shadow-sm ${showRoute ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-white dark:bg-gray-700 dark:text-white dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600'}`}><Icon name="route" className="w-3.5 h-3.5"/> Rota</button>
-                                    <button onClick={() => setViewMode(viewMode === 'timeline' ? 'map' : 'timeline')} className={`text-xs px-2.5 py-1.5 rounded-lg border flex items-center gap-1 transition-all shadow-sm ${viewMode === 'timeline' ? 'bg-purple-100 text-purple-700 border-purple-200' : 'bg-white dark:bg-gray-700 dark:text-white dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600'}`}><Icon name="clock" className="w-3.5 h-3.5"/> Zaman</button>
+                        {/* CONTENT AREA */}
+                        <div className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900 custom-scrollbar p-3 pb-20 md:pb-4">
+                            {viewMode === 'friends' && !isReadOnly ? (
+                                <div>
+                                    <h2 className="font-bold text-gray-700 dark:text-white mb-3 flex items-center gap-2 text-sm uppercase tracking-wide">Arkadaşlarım ({friends.length})</h2>
+                                    {friends.map((f, i) => (
+                                        <div key={i} className="bg-white dark:bg-gray-700 p-3 rounded-xl border dark:border-gray-600 mb-2 flex justify-between items-center cursor-pointer hover:shadow-md transition-shadow group">
+                                            <div className="flex items-center gap-3" onClick={()=>{onViewChange(f); setViewMode('map'); setActiveTab('personal');}}>
+                                                {/* Friend Avatar Ring */}
+                                                <div className="p-0.5 rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-600">
+                                                    <div className="p-0.5 bg-white dark:bg-gray-700 rounded-full">
+                                                        <img src={friendDetails[f]?.avatar || `https://ui-avatars.com/api/?name=${f}&background=random`} className="w-8 h-8 rounded-full object-cover"/>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <span className="font-bold text-gray-800 dark:text-white block leading-tight">@{f}</span>
+                                                    {friendDetails[f]?.lastActive && <span className="text-[10px] text-gray-400">{formatTimeAgo(friendDetails[f].lastActive)}</span>}
+                                                </div>
+                                            </div>
+                                            <button onClick={() => setCurrentChatFriend(f)} className="text-gray-400 hover:text-indigo-600 p-2 rounded-full hover:bg-indigo-50 dark:hover:bg-indigo-900 transition-colors">
+                                                <Icon name="message-circle" className="w-5 h-5"/>
+                                            </button>
+                                        </div>
+                                    ))}
                                 </div>
-
-                                <div className="flex-1 overflow-y-auto p-2 space-y-3 bg-gray-50 dark:bg-gray-900 custom-scrollbar z-0">
+                            ) : (
+                                // MAP LIST VIEW
+                                <div className="space-y-3">
+                                    <div className="flex justify-between items-center px-1">
+                                        <span className="text-xs font-bold text-gray-500 uppercase">Gezilenler</span>
+                                        <div className="flex gap-2">
+                                            <button onClick={()=>setIsStatsOpen(true)} className="text-gray-400 hover:text-blue-500"><Icon name="bar-chart-2" className="w-4 h-4"/></button>
+                                            <button onClick={()=>setFeedOpen(true)} className="text-gray-400 hover:text-indigo-500 md:hidden"><Icon name="activity" className="w-4 h-4"/></button>
+                                        </div>
+                                    </div>
                                     {displayMarkers.map((m, idx) => {
                                         const progress = calculateProgress(m.cityName, m.checkedPlaces);
                                         const coverImage = m.favoriteImage || (m.images && m.images.length > 0 ? m.images[0] : null);
                                         const isBucket = m.status === 'bucket';
                                         
                                         return (
-                                            <div key={m.id} onClick={()=> { if(mapRef.current) mapRef.current.flyTo([m.lat, m.lng], 8); }} className={`bg-white dark:bg-gray-700 p-3 rounded-lg border dark:border-gray-600 shadow-sm hover:shadow-md cursor-pointer relative group transition-all ${isBucket ? 'border-yellow-200 bg-yellow-50 dark:bg-yellow-900 dark:border-yellow-700' : ''}`}>
-                                                {viewMode === 'timeline' && <div className="absolute -left-2 top-4 w-4 h-0.5 bg-gray-300 dark:bg-gray-600"></div>} 
-                                                <div className="flex justify-between font-bold text-gray-800 dark:text-white items-center">
-                                                    <span className="flex items-center gap-1">{isBucket ? <Icon name="flag" className="w-4 h-4 text-yellow-600"/> : null}{m.cityName}{progress === 100 && <span className="text-[10px] bg-green-100 text-green-600 px-1.5 py-0.5 rounded-full border border-green-200 shadow-sm">Tamamlandı</span>}</span>
-                                                    {!isReadOnly && <button onClick={(e)=>{e.stopPropagation(); handleDelete(m.cityName)}} className="text-gray-400 hover:text-red-500 transition-colors p-1 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20"><Icon name="trash-2" className="w-4 h-4"/></button>}
+                                            <div key={m.id} onClick={()=> { if(mapRef.current) mapRef.current.flyTo([m.lat, m.lng], 8); }} className={`bg-white dark:bg-gray-700 p-3 rounded-xl border dark:border-gray-600 shadow-sm hover:shadow-md cursor-pointer relative group transition-all ${isBucket ? 'border-l-4 border-l-yellow-400' : `border-l-4 ${activeTab==='couple'?'border-l-pink-500':'border-l-red-500'}`}`}>
+                                                <div className="flex justify-between font-bold text-gray-800 dark:text-white items-center mb-1">
+                                                    <span className="flex items-center gap-1.5 text-base">{m.cityName} {progress === 100 && <Icon name="check-circle" className="w-4 h-4 text-green-500"/>}</span>
+                                                    {!isReadOnly && <button onClick={(e)=>{e.stopPropagation(); handleDelete(m.cityName)}} className="text-gray-300 hover:text-red-500"><Icon name="trash-2" className="w-4 h-4"/></button>}
                                                 </div>
-                                                <div className="text-[10px] text-gray-400 dark:text-gray-400 mb-2 flex justify-between"><span>{m.date}</span><span className="bg-gray-100 dark:bg-gray-600 dark:text-gray-200 px-1.5 py-0.5 rounded-full text-gray-600 shadow-sm">{m.category}</span></div>
-                                                {!isBucket && <div className="mt-1 mb-2"><div className="w-full bg-gray-200 dark:bg-gray-600 h-1.5 rounded-full overflow-hidden shadow-inner"><div className={`h-1.5 ${progress===100?'bg-green-500':'bg-blue-500'}`} style={{width: `${progress}%`}}></div></div></div>}
-                                                {coverImage && <div className="relative w-full h-32 rounded-lg overflow-hidden mt-2 border border-gray-100 dark:border-gray-600 shadow-sm"><img src={coverImage} className="w-full h-full object-cover transition-transform group-hover:scale-105" />{m.images.length > 1 && <div className="absolute bottom-1 right-1 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded-full backdrop-blur-sm">+{m.images.length - 1}</div>}</div>}
-                                                {m.note && <p className="text-xs text-gray-500 dark:text-gray-300 italic mt-2 line-clamp-2 leading-relaxed">"{m.note}"</p>}
+                                                <div className="flex justify-between items-center text-[10px] text-gray-400 dark:text-gray-400 mb-2">
+                                                    <span>{m.date}</span>
+                                                    <span className="bg-gray-100 dark:bg-gray-600 px-1.5 py-0.5 rounded text-gray-600 dark:text-gray-300 font-medium">{m.category}</span>
+                                                </div>
+                                                
+                                                {/* Progress Bar */}
+                                                {!isBucket && <div className="w-full bg-gray-100 dark:bg-gray-600 h-1.5 rounded-full overflow-hidden mb-2"><div className={`h-full ${progress===100?'bg-green-500':(activeTab==='couple'?'bg-pink-500':'bg-red-500')}`} style={{width: `${progress}%`}}></div></div>}
+                                                
+                                                {/* Cover Image */}
+                                                {coverImage && (
+                                                    <div className="relative w-full h-32 rounded-lg overflow-hidden mt-2 shadow-inner">
+                                                        <img src={coverImage} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                                                        <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors"></div>
+                                                        {m.images.length > 1 && <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded-md backdrop-blur-sm">+{m.images.length - 1}</div>}
+                                                    </div>
+                                                )}
+                                                
+                                                {m.note && <p className="text-xs text-gray-500 dark:text-gray-300 italic mt-2 line-clamp-2 border-l-2 border-gray-200 dark:border-gray-600 pl-2">"{m.note}"</p>}
                                             </div>
                                         );
                                     })}
                                 </div>
-                            </>
-                        )}
+                            )}
+                        </div>
+
+                        {/* BOTTOM NAV BAR (Mobile Only) */}
+                        {renderBottomNav()}
                     </div>
 
-                    {!sidebarOpen && <button onClick={()=>setSidebarOpen(true)} className={`absolute top-4 left-4 z-10 bg-white dark:bg-gray-700 p-2 rounded-full shadow-md transition-transform hover:scale-105 ${activeTab === 'couple' ? 'text-pink-600' : 'text-red-600'}`}><Icon name="menu" className="w-6 h-6"/></button>}
+                    {!sidebarOpen && <button onClick={()=>setSidebarOpen(true)} className={`absolute top-4 left-4 z-10 bg-white dark:bg-gray-700 p-3 rounded-full shadow-lg transition-transform hover:scale-110 ${activeTab === 'couple' ? 'text-pink-600' : 'text-red-600'}`}><Icon name="menu" className="w-6 h-6"/></button>}
                     
                     {feedOpen && (
                         <div className="absolute top-0 right-0 h-full w-80 bg-white dark:bg-gray-800 shadow-2xl z-20 flex flex-col border-l border-gray-200 dark:border-gray-700 animate-fadeIn custom-scrollbar">
-                            <div className="p-3 bg-indigo-600 text-white flex justify-between items-center shadow-md">
+                            <div className="p-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white flex justify-between items-center shadow-md">
                                 <h3 className="font-bold flex items-center gap-2"><Icon name="activity" className="w-5 h-5"/> Arkadaş Akışı</h3>
                                 <button onClick={()=>setFeedOpen(false)} className="hover:bg-white/20 p-1 rounded-full transition-colors"><Icon name="x" className="w-5 h-5"/></button>
                             </div>
-                            <div className="flex-1 overflow-y-auto p-3 space-y-4 bg-gray-50 dark:bg-gray-900 custom-scrollbar">
+                            <div className="flex-1 overflow-y-auto p-4 space-y-5 bg-gray-50 dark:bg-gray-900 custom-scrollbar pb-20 md:pb-4">
                                 {feedItems.length === 0 && <p className="text-center text-gray-400 text-sm mt-10">Henüz bir hareket yok.</p>}
                                 {feedItems.map((item, i) => (
-                                    <div key={i} className="bg-white dark:bg-gray-700 p-3 rounded-lg shadow-sm border dark:border-gray-600 cursor-pointer hover:border-indigo-300 transition-all" onClick={() => {
+                                    <div key={i} className="bg-white dark:bg-gray-700 rounded-xl shadow-soft border dark:border-gray-600 overflow-hidden" onClick={() => {
                                         onViewChange(item.username);
                                         if(mapRef.current) mapRef.current.flyTo([item.lat, item.lng], 9);
                                     }}>
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xs border border-indigo-200 shadow-sm overflow-hidden">
-                                                {item.userAvatar ? <img src={item.userAvatar} className="w-full h-full object-cover"/> : item.username.substring(0,2).toUpperCase()}
+                                        {/* Feed Header */}
+                                        <div className="p-3 flex items-center gap-3">
+                                            <div className="p-[2px] rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-600">
+                                                <div className="p-0.5 bg-white dark:bg-gray-700 rounded-full">
+                                                    <img src={item.userAvatar || `https://ui-avatars.com/api/?name=${item.username}&background=random`} className="w-8 h-8 rounded-full object-cover"/>
+                                                </div>
                                             </div>
                                             <div>
                                                 <div className="text-sm font-bold text-gray-800 dark:text-white">@{item.username}</div>
-                                                <div className="text-[10px] text-gray-500 dark:text-gray-400">{item.date}</div>
+                                                <div className="text-[10px] text-gray-500 dark:text-gray-400">{item.date} • {item.cityName}</div>
                                             </div>
                                         </div>
-                                        <div className="mb-2 text-gray-800 dark:text-gray-200">
-                                            <span className="font-bold text-indigo-600 dark:text-indigo-400">{item.cityName}</span> şehrini ziyaret etti.
-                                            {item.status === 'bucket' && <span className="text-xs bg-yellow-100 text-yellow-700 px-1.5 py-0.5 ml-1 rounded-full shadow-sm">Hedef 🎯</span>}
-                                        </div>
-                                        {item.images && item.images.length > 0 && (
-                                            <div className="h-24 w-full rounded-lg overflow-hidden border border-gray-100 mb-2 shadow-sm">
-                                                <img src={item.favoriteImage || item.images[0]} className="w-full h-full object-cover transition-transform hover:scale-105"/>
+
+                                        {/* Feed Image */}
+                                        {(item.favoriteImage || (item.images && item.images.length > 0)) && (
+                                            <div className="w-full h-48 bg-gray-100 dark:bg-gray-800">
+                                                <img src={item.favoriteImage || item.images[0]} className="w-full h-full object-cover"/>
                                             </div>
                                         )}
-                                        {item.note && <p className="text-xs text-gray-600 dark:text-gray-400 italic line-clamp-2 leading-relaxed">"{item.note}"</p>}
 
-                                        <div className="mt-2 flex items-center gap-1 text-gray-500 dark:text-gray-400">
-                                            <button 
-                                                onClick={(e) => { e.stopPropagation(); toggleLike(item.username, item.id); }}
-                                                className={`p-1 rounded-full hover:bg-red-50 dark:hover:bg-gray-600 transition-colors ${item.likes && item.likes.includes(myUsername) ? 'text-red-500 like-anim' : 'text-gray-400'}`}
-                                            >
-                                                <Icon name="heart" className={`w-4 h-4 ${item.likes && item.likes.includes(myUsername) ? 'fill-current' : ''}`} />
-                                            </button>
-                                            <span className="text-xs">{item.likes ? item.likes.length : 0}</span>
-                                        </div>
-                                        
-                                        {/* Feed Yorum Alanı */}
-                                        <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-600" onClick={(e) => e.stopPropagation()}>
+                                        {/* Feed Actions & Note */}
+                                        <div className="p-3">
+                                            <div className="flex gap-4 mb-2">
+                                                <button 
+                                                    onClick={(e) => { e.stopPropagation(); toggleLike(item.username, item.id); }}
+                                                    className={`transition-transform active:scale-90 ${item.likes && item.likes.includes(myUsername) ? 'text-red-500' : 'text-gray-800 dark:text-white'}`}
+                                                >
+                                                    <Icon name="heart" className={`w-6 h-6 ${item.likes && item.likes.includes(myUsername) ? 'fill-current' : ''}`} />
+                                                </button>
+                                                <button className="text-gray-800 dark:text-white"><Icon name="message-circle" className="w-6 h-6"/></button>
+                                                <button className="text-gray-800 dark:text-white ml-auto"><Icon name="bookmark" className="w-6 h-6"/></button>
+                                            </div>
+                                            
+                                            {item.likes && item.likes.length > 0 && <div className="text-sm font-bold text-gray-800 dark:text-white mb-1">{item.likes.length} beğenme</div>}
+                                            
+                                            {item.note && (
+                                                <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
+                                                    <span className="font-bold mr-1">@{item.username}</span>{item.note}
+                                                </p>
+                                            )}
+
+                                            {/* Comments Preview */}
                                             {item.comments && item.comments.length > 0 && (
                                                 <div className="space-y-1 mb-2">
                                                     {item.comments.slice(-2).map(c => (
-                                                        <div key={c.id} className="text-xs text-gray-600 dark:text-gray-400">
-                                                            <span className="font-bold text-gray-800 dark:text-gray-300">@{c.user}</span> {c.text}
+                                                        <div key={c.id} className="text-xs">
+                                                            <span className="font-bold text-gray-800 dark:text-white mr-1">{c.user}</span>
+                                                            <span className="text-gray-600 dark:text-gray-400">{c.text}</span>
                                                         </div>
                                                     ))}
-                                                    {item.comments.length > 2 && <div className="text-[10px] text-gray-400 cursor-pointer hover:text-indigo-500 transition-colors">Tümünü gör...</div>}
+                                                    {item.comments.length > 2 && <div className="text-[10px] text-gray-400 cursor-pointer">Tüm {item.comments.length} yorumu gör</div>}
                                                 </div>
                                             )}
-                                            <div className="flex gap-1">
+                                            
+                                            <div className="flex gap-2 mt-2 pt-2 border-t dark:border-gray-600" onClick={(e) => e.stopPropagation()}>
                                                 <input 
                                                     type="text" 
-                                                    className="flex-1 border dark:border-gray-600 rounded-full px-3 py-1.5 text-xs focus:outline-none focus:border-indigo-500 dark:bg-gray-800 dark:text-white shadow-sm transition-all"
-                                                    placeholder="Yorum yaz..."
+                                                    className="flex-1 bg-transparent text-xs focus:outline-none dark:text-white"
+                                                    placeholder="Yorum ekle..."
                                                     value={feedCommentInputs[item.id] || ""}
                                                     onChange={(e) => setFeedInput(item.id, e.target.value)}
                                                     onKeyDown={(e) => { if (e.key === 'Enter') submitFeedComment(item.username, item.id); }}
                                                 />
-                                                <button className="bg-indigo-600 text-white p-1.5 rounded-full text-xs hover:bg-indigo-700 transition-colors shadow-sm" onClick={() => submitFeedComment(item.username, item.id)}><Icon name="send" className="w-3.5 h-3.5"/></button>
+                                                <button className="text-indigo-600 text-xs font-bold" onClick={() => submitFeedComment(item.username, item.id)}>Paylaş</button>
                                             </div>
                                         </div>
                                     </div>
@@ -1261,18 +1296,6 @@
                     
                     {currentChatFriend && <ChatModal myUsername={myUsername} friendUsername={currentChatFriend} onClose={() => setCurrentChatFriend(null)} sendNotif={sendNotification} />}
                     {isStatsOpen && <StatsModal markers={markers} onClose={() => setIsStatsOpen(false)} />}
-                    {isCinemaOpen && <CinemaModal markers={markers} onClose={() => setIsCinemaOpen(false)} />}
-
-                    <div id="map-container" className="flex-1 z-0 relative">{loading && <div className="absolute inset-0 flex items-center justify-center bg-white z-[999] opacity-80">Yükleniyor...</div>}</div>
-                    
-                    {zoomedImage && <div className="fixed inset-0 z-[2000] bg-black bg-opacity-90 flex items-center justify-center p-4" onClick={() => setZoomedImage(null)}>
-                        <button className="absolute left-4 top-1/2 text-white bg-gray-800 p-2 rounded-full hover:bg-gray-700 transition-transform hover:scale-110" onClick={prevLightbox}><Icon name="chevron-left" className="w-6 h-6"/></button>
-                        <img src={zoomedImage} className="max-h-full max-w-full rounded-lg shadow-2xl animate-fadeIn" />
-                        <button className="absolute right-4 top-1/2 text-white bg-gray-800 p-2 rounded-full hover:bg-gray-700 transition-transform hover:scale-110" onClick={nextLightbox}><Icon name="chevron-right" className="w-6 h-6"/></button>
-                        <button className="absolute top-4 right-4 text-white bg-gray-800 p-2 rounded-full hover:bg-gray-700 transition-transform hover:scale-110" onClick={(e) => { e.stopPropagation(); setZoomedImage(null); }}><Icon name="x" className="w-6 h-6"/></button>
-                    </div>}
-                    {isNotifOpen && <NotificationModal notifications={notifications} onClose={()=>setIsNotifOpen(false)} onAccept={handleAcceptNotif} onReject={handleRejectNotif}/>}
-                    {isPartnerModalOpen && <PartnerModal myUsername={myUsername} currentPartner={partner} onClose={() => setIsPartnerModalOpen(false)} onLink={linkPartner} onBreakUp={breakUpPartner}/>}
                     {isModalOpen && (
                         <div className="fixed inset-0 z-[1000] bg-black bg-opacity-50 flex items-center justify-center p-4">
                             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col animate-fadeIn overflow-hidden">
@@ -1313,7 +1336,7 @@
                                         {!isReadOnly && <label className="block w-full border-2 border-dashed border-gray-300 dark:border-gray-600 p-6 text-center cursor-pointer text-gray-500 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-all hover:border-blue-400 flex flex-col items-center gap-2"><Icon name="image-plus" className="w-6 h-6 text-gray-400"/> Fotoğraf Ekle <input type="file" multiple className="hidden" onChange={handleImage}/></label>}
                                     </div>
                                     <div className="mb-5">
-                                        <div className="flex justify-between mb-2 items-center"><label className="font-bold text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"><Icon name="edit-3" className="w-4 h-4"/> Notlar</label>{!isReadOnly && <button onClick={enhanceNote} disabled={isEnhancingNote || !note} className="text-xs text-purple-600 font-bold flex gap-1 items-center hover:text-purple-800 disabled:opacity-50 transition-colors bg-purple-50 dark:bg-purple-900/30 px-2 py-1 rounded-full"><Icon name="wand-2" className="w-3 h-3"/> Güzelleştir</button>}</div>
+                                        <div className="flex justify-between mb-2 items-center"><label className="font-bold text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2"><Icon name="edit-3" className="w-4 h-4"/> Notlar</label></div>
                                         {isReadOnly ? <div className="p-4 bg-gray-50 dark:bg-gray-700/50 border dark:border-gray-600/50 rounded-lg text-sm min-h-[80px] italic text-gray-600 dark:text-gray-300 shadow-inner leading-relaxed">{note || "Not yok."}</div> : <textarea className="w-full border dark:border-gray-600 rounded-lg p-4 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:text-white shadow-sm transition-all resize-none" rows="4" value={note} onChange={e=>setNote(e.target.value)} placeholder="Buraya anılarınızı yazın..."></textarea>}
                                     </div>
                                     <div className="mt-8 pt-5 border-t border-gray-200 dark:border-gray-700">
@@ -1326,6 +1349,16 @@
                             </div>
                         </div>
                     )}
+
+                    {isNotifOpen && <NotificationModal notifications={notifications} onClose={()=>setIsNotifOpen(false)} onAccept={handleAcceptNotif} onReject={handleRejectNotif}/>}
+                    {isPartnerModalOpen && <PartnerModal myUsername={myUsername} currentPartner={partner} onClose={() => setIsPartnerModalOpen(false)} onLink={linkPartner} onBreakUp={breakUpPartner}/>}
+                    
+                    {zoomedImage && <div className="fixed inset-0 z-[2000] bg-black bg-opacity-90 flex items-center justify-center p-4" onClick={() => setZoomedImage(null)}>
+                        <button className="absolute left-4 top-1/2 text-white bg-gray-800 p-2 rounded-full hover:bg-gray-700 transition-transform hover:scale-110" onClick={prevLightbox}><Icon name="chevron-left" className="w-6 h-6"/></button>
+                        <img src={zoomedImage} className="max-h-full max-w-full rounded-lg shadow-2xl animate-fadeIn" />
+                        <button className="absolute right-4 top-1/2 text-white bg-gray-800 p-2 rounded-full hover:bg-gray-700 transition-transform hover:scale-110" onClick={nextLightbox}><Icon name="chevron-right" className="w-6 h-6"/></button>
+                        <button className="absolute top-4 right-4 text-white bg-gray-800 p-2 rounded-full hover:bg-gray-700 transition-transform hover:scale-110" onClick={(e) => { e.stopPropagation(); setZoomedImage(null); }}><Icon name="x" className="w-6 h-6"/></button>
+                    </div>}
                 </div>
             );
         };
