@@ -96,7 +96,7 @@
             font-size: 11px; font-weight: 700; color: #334155;
             padding: 2px 6px;
             text-align: center; opacity: 1 !important; white-space: nowrap;
-            /* ÖNEMLİ DÜZELTME: Etiketlerin tıklamayı engellemesini önler */
+            /* ÖNEMLİ: Etiketlerin tıklamayı engellemesini önler */
             pointer-events: none;
         }
         .dark .city-label { 
@@ -819,6 +819,15 @@
                 updateLastActive();
             }, [myUsername]);
 
+            // Resize map on sidebar toggle
+            useEffect(() => {
+                if (mapRef.current) {
+                    setTimeout(() => {
+                        mapRef.current.invalidateSize();
+                    }, 300); // Wait for transition
+                }
+            }, [sidebarOpen]);
+
             const enhanceNote = async () => {
                 if (!note || !note.trim()) return;
                 setIsEnhancingNote(true);
@@ -1181,41 +1190,51 @@
                 const imageLayer = L.layerGroup().addTo(mapInstance);
                 imageMarkersRef.current = imageLayer;
 
-                fetch('https://raw.githubusercontent.com/codeforgermany/click_that_hood/main/public/data/turkey.geojson').then(res => res.json()).then(data => {
-                    const layer = L.geoJSON(data, {
-                        interactive: true,
-                        style: () => ({ 
-                            fillColor: '#9ca3af', 
-                            weight: 1, 
-                            opacity: 0.5, 
-                            color: 'white', 
-                            fillOpacity: 0.5,
-                            className: 'cursor-pointer'
-                        }),
-                        onEachFeature: (feature, layer) => {
-                            const cityName = feature.properties.name;
-                            let center = layer.getBounds().getCenter();
-                            if(customCityCenters[cityName]) center = L.latLng(customCityCenters[cityName]);
-                            
-                            layer.on('click', () => {
-                                setSelectedCity({ name: cityName, latlng: center });
-                                const existing = markersRef.current.find(m => m.cityName === cityName);
-                                if(existing) {
-                                    setNote(existing.note || ""); setImages(existing.images || []); setCheckedPlaces(existing.checkedPlaces || []); setComments(existing.comments || []); setFavoriteImage(existing.favoriteImage || null);
-                                    setStatus(existing.status || "visited"); setCategory(existing.category || "Genel");
-                                } else {
-                                    setNote(""); setImages([]); setCheckedPlaces([]); setComments([]); setFavoriteImage(null);
-                                    setStatus("visited"); setCategory("Genel");
-                                }
-                                setIsModalOpen(true);
-                            });
-                            layer.on('mouseover', function() { this.setStyle({ weight: 3, color: '#333', fillOpacity: 0.7 }); });
-                            layer.on('mouseout', function() { });
-                        }
-                    }).addTo(mapInstance);
-                    setGeoJsonLayer(layer);
-                    setLoading(false);
-                });
+                fetch('https://raw.githubusercontent.com/codeforgermany/click_that_hood/main/public/data/turkey.geojson')
+                    .then(res => {
+                        if (!res.ok) throw new Error("Network response was not ok");
+                        return res.json();
+                    })
+                    .then(data => {
+                        const layer = L.geoJSON(data, {
+                            interactive: true,
+                            style: () => ({ 
+                                fillColor: '#9ca3af', 
+                                weight: 1, 
+                                opacity: 0.5, 
+                                color: 'white', 
+                                fillOpacity: 0.5,
+                                className: 'cursor-pointer'
+                            }),
+                            onEachFeature: (feature, layer) => {
+                                const cityName = feature.properties.name;
+                                let center = layer.getBounds().getCenter();
+                                if(customCityCenters[cityName]) center = L.latLng(customCityCenters[cityName]);
+                                
+                                layer.on('click', () => {
+                                    setSelectedCity({ name: cityName, latlng: center });
+                                    const existing = markersRef.current.find(m => m.cityName === cityName);
+                                    if(existing) {
+                                        setNote(existing.note || ""); setImages(existing.images || []); setCheckedPlaces(existing.checkedPlaces || []); setComments(existing.comments || []); setFavoriteImage(existing.favoriteImage || null);
+                                        setStatus(existing.status || "visited"); setCategory(existing.category || "Genel");
+                                    } else {
+                                        setNote(""); setImages([]); setCheckedPlaces([]); setComments([]); setFavoriteImage(null);
+                                        setStatus("visited"); setCategory("Genel");
+                                    }
+                                    setIsModalOpen(true);
+                                });
+                                layer.on('mouseover', function() { this.setStyle({ weight: 3, color: '#333', fillOpacity: 0.7 }); });
+                                layer.on('mouseout', function() { });
+                            }
+                        }).addTo(mapInstance);
+                        setGeoJsonLayer(layer);
+                        setLoading(false);
+                    })
+                    .catch(err => {
+                        console.error("Harita verisi yüklenemedi:", err);
+                        setLoading(false);
+                        alert("Harita verisi yüklenirken bir sorun oluştu. Lütfen sayfayı yenileyin.");
+                    });
                 return () => { if(mapRef.current) { mapRef.current.remove(); mapRef.current = null; } };
             }, []);
 
