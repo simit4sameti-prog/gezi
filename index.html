@@ -200,6 +200,26 @@
             return <span ref={ref} onClick={onClick} className={`inline-flex items-center justify-center ${onClick ? 'cursor-pointer' : ''}`}></span>;
         };
 
+        const StarRating = ({ rating, setRating, readOnly = false, size = "w-5 h-5" }) => {
+            return (
+                <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                            key={star}
+                            onClick={() => !readOnly && setRating(star)}
+                            className={`${readOnly ? 'cursor-default' : 'cursor-pointer hover:scale-110 transition-transform'}`}
+                            disabled={readOnly}
+                        >
+                            <Icon 
+                                name="star" 
+                                className={`${size} ${star <= rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300 dark:text-gray-600'}`} 
+                            />
+                        </button>
+                    ))}
+                </div>
+            );
+        };
+
         const ConfigWarning = () => (
             <div className="flex flex-col h-screen w-full items-center justify-center bg-gray-100 p-6 text-center dark:bg-gray-900">
                 <div className="bg-white p-8 rounded-xl shadow-2xl max-w-lg dark:bg-gray-800 dark:text-white">
@@ -715,6 +735,7 @@
         const MainApp = ({ myUsername, currentUsername, onViewChange, onLogout }) => {
             const [markers, setMarkers] = useState([]);
             const [friends, setFriends] = useState([]); 
+            const [viewedFriendsList, setViewedFriendsList] = useState([]); // viewed user's friends
             const [friendDetails, setFriendDetails] = useState({}); 
             const mapRef = useRef(null);
             const labelLayerRef = useRef(null); 
@@ -747,6 +768,8 @@
             
             const [note, setNote] = useState("");
             const [images, setImages] = useState([]);
+            const [rating, setRating] = useState(0); // City rating state
+            const [cityStats, setCityStats] = useState({ avg: 0, count: 0 }); // Fetched city stats
             const [checkedPlaces, setCheckedPlaces] = useState([]);
             const [favoriteImage, setFavoriteImage] = useState(null); 
             const [comments, setComments] = useState([]);
@@ -793,13 +816,31 @@
                 const fRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_friends').doc(currentUsername);
                 const unsub = fRef.onSnapshot(doc => {
                     if(doc.exists && doc.data().list) {
-                        setViewedUserFriendCount(doc.data().list.length);
+                        const list = doc.data().list;
+                        setViewedUserFriendCount(list.length);
+                        setViewedFriendsList(list);
                     } else {
                         setViewedUserFriendCount(0);
+                        setViewedFriendsList([]);
                     }
                 });
                 return () => unsub();
             }, [currentUsername]);
+
+            // Fetch City Stats when city selected
+            useEffect(() => {
+                if(!selectedCity) return;
+                const cityRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('city_stats').doc(selectedCity.name);
+                cityRef.get().then(doc => {
+                    if(doc.exists) {
+                        const data = doc.data();
+                        const avg = data.count > 0 ? (data.sum / data.count).toFixed(1) : 0;
+                        setCityStats({ avg, count: data.count });
+                    } else {
+                        setCityStats({ avg: 0, count: 0 });
+                    }
+                });
+            }, [selectedCity]);
 
             const enhanceNote = async () => {
                 if (!note || !note.trim()) return;
@@ -857,8 +898,10 @@
                 if (feedOpen) fetchFeed();
 
                 const fetchFriendDetails = async () => {
+                    // Combine lists to fetch details for viewed users too if needed
+                    const usersToFetch = [...new Set([...friends, ...viewedFriendsList])];
                     const details = {};
-                    for (const friend of friends) {
+                    for (const friend of usersToFetch) {
                         const doc = await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_profiles').doc(friend).get();
                         if (doc.exists) {
                             details[friend] = doc.data();
@@ -868,7 +911,7 @@
                 };
                 fetchFriendDetails();
 
-            }, [friends, feedOpen]); 
+            }, [friends, feedOpen, viewedFriendsList]); 
 
             const sendNotification = async (targetUser, type, msg=null) => {
                 const notifRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_notifications').doc(targetUser);
@@ -1038,15 +1081,35 @@
             const handleSave = () => {
                 if (!selectedCity) return;
                 const cleanNote = filterProfanity(note);
+                
+                // Find existing rating to calculate delta
+                const existingMarker = markers.find(m => m.cityName === selectedCity.name);
+                const oldRating = existingMarker ? (existingMarker.rating || 0) : 0;
+                
                 const newMarker = {
                     id: Date.now(), lat: selectedCity.latlng.lat, lng: selectedCity.latlng.lng,
                     cityName: selectedCity.name, note: cleanNote, images: images, checkedPlaces: checkedPlaces,
-                    comments: comments, favoriteImage: favoriteImage,
+                    comments: comments, favoriteImage: favoriteImage, rating: rating,
                     status: status, category: category, date: new Date().toLocaleDateString('tr-TR'), timestamp: Date.now(), likes: [] 
                 };
                 const updated = [...markers.filter(m => m.cityName !== selectedCity.name), newMarker];
                 setMarkers(updated);
                 saveMarkersToUser(currentUsername, updated, activeTab === 'couple');
+                
+                // Update City Stats if rating changed
+                if (rating > 0) {
+                    const cityRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('city_stats').doc(selectedCity.name);
+                    const incrementSum = rating - oldRating;
+                    const incrementCount = oldRating === 0 ? 1 : 0;
+                    
+                    if (incrementSum !== 0 || incrementCount !== 0) {
+                        cityRef.set({
+                            sum: firebase.firestore.FieldValue.increment(incrementSum),
+                            count: firebase.firestore.FieldValue.increment(incrementCount)
+                        }, { merge: true });
+                    }
+                }
+
                 setIsModalOpen(false);
             };
 
@@ -1061,7 +1124,7 @@
                 const newMarker = {
                     id: originalMarker.id || Date.now(), lat: selectedCity.latlng.lat, lng: selectedCity.latlng.lng,
                     cityName: selectedCity.name, note: note, images: images, checkedPlaces: checkedPlaces,
-                    comments: updatedComments, favoriteImage: favoriteImage,
+                    comments: updatedComments, favoriteImage: favoriteImage, rating: rating,
                     status: status, category: category, date: new Date().toLocaleDateString('tr-TR'), timestamp: Date.now(), likes: originalMarker.likes || []
                 };
                 const updatedMarkers = [...markers.filter(m => m.cityName !== selectedCity.name), newMarker];
@@ -1189,10 +1252,10 @@
                                     const existing = markersRef.current.find(m => m.cityName === cityName);
                                     if(existing) {
                                         setNote(existing.note || ""); setImages(existing.images || []); setCheckedPlaces(existing.checkedPlaces || []); setComments(existing.comments || []); setFavoriteImage(existing.favoriteImage || null);
-                                        setStatus(existing.status || "visited"); setCategory(existing.category || "Genel");
+                                        setStatus(existing.status || "visited"); setCategory(existing.category || "Genel"); setRating(existing.rating || 0);
                                     } else {
                                         setNote(""); setImages([]); setCheckedPlaces([]); setComments([]); setFavoriteImage(null);
-                                        setStatus("visited"); setCategory("Genel");
+                                        setStatus("visited"); setCategory("Genel"); setRating(0);
                                     }
                                     setIsModalOpen(true);
                                 });
@@ -1223,6 +1286,9 @@
             };
 
             const displayMarkers = getFilteredMarkers();
+            
+            // Logic to determine which friends to show in list view
+            const friendsListToDisplay = currentUsername === myUsername ? friends : viewedFriendsList;
 
             return (
                 <div className={`flex h-full relative ${darkMode ? 'dark' : ''}`}>
@@ -1274,13 +1340,15 @@
                             </div>
 
                             {/* Navigation Tabs */}
-                            {!isReadOnly && (
-                                <div className="flex bg-black/20 rounded-lg p-1 mb-3">
-                                    <button onClick={() => { setActiveTab('personal'); setViewMode('map'); }} className={`flex-1 py-1.5 rounded-md text-xs font-bold flex items-center justify-center gap-1 transition-all ${activeTab === 'personal' && viewMode === 'map' ? 'bg-white text-red-600 shadow' : 'text-white hover:bg-white/10'}`}><Icon name="user" className="w-3 h-3"/> Bireysel</button>
-                                    <button onClick={() => {!partner ? setIsPartnerModalOpen(true) : setActiveTab('couple'); setViewMode('map');}} className={`flex-1 py-1.5 rounded-md text-xs font-bold flex items-center justify-center gap-1 transition-all ${activeTab === 'couple' && viewMode === 'map' ? 'bg-white text-pink-600 shadow' : 'text-white hover:bg-white/10'}`}><Icon name="heart" className={`w-3 h-3 ${partner ? 'fill-current' : ''}`}/> Sevgili</button>
-                                    <button onClick={() => setViewMode('friends')} className={`flex-1 py-1.5 rounded-md text-xs font-bold flex items-center justify-center gap-1 transition-all ${viewMode === 'friends' ? 'bg-white text-indigo-600 shadow' : 'text-white hover:bg-white/10'}`}><Icon name="users" className="w-3 h-3"/> Arkadaşlar</button>
-                                </div>
-                            )}
+                            <div className="flex bg-black/20 rounded-lg p-1 mb-3">
+                                {!isReadOnly && (
+                                    <>
+                                        <button onClick={() => { setActiveTab('personal'); setViewMode('map'); }} className={`flex-1 py-1.5 rounded-md text-xs font-bold flex items-center justify-center gap-1 transition-all ${activeTab === 'personal' && viewMode === 'map' ? 'bg-white text-red-600 shadow' : 'text-white hover:bg-white/10'}`}><Icon name="user" className="w-3 h-3"/> Bireysel</button>
+                                        <button onClick={() => {!partner ? setIsPartnerModalOpen(true) : setActiveTab('couple'); setViewMode('map');}} className={`flex-1 py-1.5 rounded-md text-xs font-bold flex items-center justify-center gap-1 transition-all ${activeTab === 'couple' && viewMode === 'map' ? 'bg-white text-pink-600 shadow' : 'text-white hover:bg-white/10'}`}><Icon name="heart" className={`w-3 h-3 ${partner ? 'fill-current' : ''}`}/> Sevgili</button>
+                                    </>
+                                )}
+                                <button onClick={() => setViewMode('friends')} className={`flex-1 py-1.5 rounded-md text-xs font-bold flex items-center justify-center gap-1 transition-all ${viewMode === 'friends' ? 'bg-white text-indigo-600 shadow' : 'text-white hover:bg-white/10'}`}><Icon name="users" className="w-3 h-3"/> Arkadaşlar</button>
+                            </div>
 
                             <form onSubmit={handleSearch} className="relative">
                                 <input className="w-full pl-9 py-2 rounded-lg text-black text-sm shadow-sm border-none focus:ring-2 focus:ring-red-300 focus:outline-none" placeholder="Kullanıcı ara..." value={searchQuery} onChange={e=>setSearchQuery(e.target.value)}/>
@@ -1290,11 +1358,11 @@
                         </div>
 
                         {/* VIEW MODE */}
-                        {viewMode === 'friends' && !isReadOnly ? (
+                        {viewMode === 'friends' ? (
                              <div className="flex-1 overflow-y-auto p-4 bg-gray-50 dark:bg-gray-900 custom-scrollbar">
-                                <h2 className="font-bold text-gray-700 dark:text-white mb-3 flex items-center gap-2 text-sm uppercase tracking-wide opacity-70"><Icon name="users" className="w-4 h-4"/> Arkadaşlarım ({friends.length})</h2>
-                                {friends.length === 0 && <p className="text-gray-400 text-sm text-center py-4">Henüz arkadaşın yok.</p>}
-                                {friends.map((f, i) => (
+                                <h2 className="font-bold text-gray-700 dark:text-white mb-3 flex items-center gap-2 text-sm uppercase tracking-wide opacity-70"><Icon name="users" className="w-4 h-4"/> {isReadOnly ? `${currentUsername} Arkadaşları` : 'Arkadaşlarım'} ({friendsListToDisplay.length})</h2>
+                                {friendsListToDisplay.length === 0 && <p className="text-gray-400 text-sm text-center py-4">Henüz arkadaş yok.</p>}
+                                {friendsListToDisplay.map((f, i) => (
                                     <div key={i} className="bg-white dark:bg-gray-700 p-3 rounded-xl border border-gray-100 dark:border-gray-600 mb-2 flex justify-between items-center cursor-pointer hover:shadow-md transition-all hover:border-indigo-200">
                                             <div className="flex items-center gap-3" onClick={()=>{onViewChange(f); setViewMode('map'); setActiveTab('personal');}}>
                                                 <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xs border border-indigo-200">
@@ -1311,9 +1379,9 @@
                                                     )}
                                                 </div>
                                             </div>
-                                            <button onClick={() => setCurrentChatFriend(f)} className="text-indigo-600 hover:text-indigo-800 bg-indigo-50 dark:bg-indigo-900 dark:text-indigo-200 p-2 rounded-full transition-colors hover:bg-indigo-100 dark:hover:bg-indigo-800 shadow-sm">
+                                            {!isReadOnly && <button onClick={() => setCurrentChatFriend(f)} className="text-indigo-600 hover:text-indigo-800 bg-indigo-50 dark:bg-indigo-900 dark:text-indigo-200 p-2 rounded-full transition-colors hover:bg-indigo-100 dark:hover:bg-indigo-800 shadow-sm">
                                                 <Icon name="message-circle" className="w-4 h-4"/>
-                                            </button>
+                                            </button>}
                                     </div>
                                 ))}
                             </div>
@@ -1350,7 +1418,10 @@
                                                 </div>
                                                 <div className="text-[10px] text-gray-400 dark:text-gray-400 mb-2 flex justify-between items-center">
                                                     <span className="flex items-center gap-1"><Icon name="calendar" className="w-3 h-3"/> {m.date}</span>
-                                                    <span className="bg-gray-100 dark:bg-gray-600 dark:text-gray-200 px-2 py-0.5 rounded-full text-gray-600 font-bold uppercase tracking-wider text-[9px]">{m.category}</span>
+                                                    <span className="flex items-center gap-2">
+                                                        {m.rating > 0 && <span className="flex items-center text-yellow-500 gap-0.5"><Icon name="star" className="w-3 h-3 fill-current"/>{m.rating}</span>}
+                                                        <span className="bg-gray-100 dark:bg-gray-600 dark:text-gray-200 px-2 py-0.5 rounded-full text-gray-600 font-bold uppercase tracking-wider text-[9px]">{m.category}</span>
+                                                    </span>
                                                 </div>
                                                 {!isBucket && <div className="mb-2"><div className="w-full bg-gray-100 dark:bg-gray-600 h-1.5 rounded-full overflow-hidden"><div className={`h-1.5 ${progress===100?'bg-green-500':'bg-blue-500'}`} style={{width: `${progress}%`}}></div></div></div>}
                                                 {coverImage && (
@@ -1497,6 +1568,19 @@
                                                 <span className="text-[10px] font-bold bg-white dark:bg-gray-800 px-2.5 py-1 rounded-full text-orange-600 border border-orange-200 shadow-sm">Keşif: %{calculateProgress(selectedCity?.name, checkedPlaces)}</span>
                                             </div>
                                             <div className="space-y-2">{(citySuggestionsData[selectedCity?.name] || ["Şehir Müzesi", "Tarihi Meydan", "Yerel Lezzet Durağı"]).map((place, idx) => { const isChecked = checkedPlaces.includes(place); return (<div key={idx} onClick={()=>toggleCheckedPlace(place)} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all shadow-sm ${isChecked ? 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800/50' : 'bg-white dark:bg-gray-700 border-gray-100 dark:border-gray-600 hover:border-orange-300'}`}><div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${isChecked ? 'bg-green-500 border-green-500 scale-110' : 'bg-white dark:bg-gray-600 border-gray-300'}`}>{isChecked && <Icon name="check" className="w-3 h-3 text-white"/>}</div><span className={`text-sm ${isChecked ? 'text-green-800 dark:text-green-300 font-bold' : 'text-gray-700 dark:text-gray-300'}`}>{place}</span></div>); })}</div>
+                                        </div>
+                                    )}
+
+                                    {/* Rating Section */}
+                                    {status === 'visited' && (
+                                        <div className="mb-6 flex flex-col gap-2 items-center bg-gray-50 dark:bg-gray-700/50 p-3 rounded-xl border border-gray-100 dark:border-gray-600/50">
+                                            <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Puanın</span>
+                                            <StarRating rating={rating} setRating={isReadOnly ? () => {} : setRating} readOnly={isReadOnly} size="w-7 h-7" />
+                                            {cityStats.count > 0 && (
+                                                <div className="text-[10px] text-gray-400 mt-1">
+                                                    Genel Ort: <strong className="text-gray-700 dark:text-white">{cityStats.avg}</strong> ({cityStats.count} oy)
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                     
