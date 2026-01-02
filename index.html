@@ -1297,11 +1297,19 @@
                              <div className="flex justify-between items-center mb-4">
                                 <div className="flex items-center gap-3 font-bold cursor-pointer hover:opacity-90 transition-opacity" onClick={() => setViewMode('map')}>
                                     <div className="relative group">
-                                        <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center overflow-hidden border-2 border-white/50 shadow-sm">
+                                        <div 
+                                            className={`w-12 h-12 rounded-full bg-white/20 flex items-center justify-center overflow-hidden border-2 border-white/50 shadow-sm ${userAvatar ? 'cursor-zoom-in hover:scale-105 transition-transform' : ''}`}
+                                            onClick={(e) => {
+                                                if (userAvatar) {
+                                                    e.stopPropagation();
+                                                    openLightbox(userAvatar, [userAvatar]);
+                                                }
+                                            }}
+                                        >
                                             {userAvatar ? <img src={userAvatar} className="w-full h-full object-cover" /> : <Icon name="user" className="w-6 h-6"/>}
                                         </div>
                                         {!isReadOnly && activeTab === 'personal' && (
-                                            <label className="absolute -bottom-1 -right-1 bg-white text-black rounded-full p-1 cursor-pointer shadow-md hover:bg-gray-100 transition-colors"><Icon name="camera" className="w-3 h-3"/><input type="file" className="hidden" accept="image/*" onChange={handleAvatarUpload} /></label>
+                                            <label onClick={(e)=>e.stopPropagation()} className="absolute -bottom-1 -right-1 bg-white text-black rounded-full p-1 cursor-pointer shadow-md hover:bg-gray-100 transition-colors"><Icon name="camera" className="w-3 h-3"/><input type="file" className="hidden" accept="image/*" onChange={handleAvatarUpload} /></label>
                                         )}
                                     </div>
                                     <div>
