@@ -507,6 +507,9 @@
             );
         };
 
+        // ... (ChatModal, NotificationModal, PartnerModal, LoginScreen Components remain unchanged) ...
+        // ... (Since they are large and unchanged, I'll focus on MainApp updates) ...
+
         // --- CHAT MODAL ---
         const ChatModal = ({ myUsername, friendUsername, onClose, sendNotif }) => {
             const [messages, setMessages] = useState([]);
@@ -1468,7 +1471,7 @@
                                 <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-gray-50 dark:bg-gray-900 custom-scrollbar z-0 pb-20 md:pb-3">
                                     {displayMarkers.length === 0 && <div className="text-center text-gray-400 mt-10 text-sm">Hiç kayıt bulunamadı.</div>}
                                     {displayMarkers.map((m, idx) => {
-                                        const progress = calculateCategoryProgress(m.cityName, m.category, m.checkedPlaces);
+                                        const progress = calculateProgress(m.cityName, m.checkedPlaces);
                                         const coverImage = m.favoriteImage || (m.images && m.images.length > 0 ? m.images[0] : null);
                                         const isBucket = m.status === 'bucket';
                                         
