@@ -5,9 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Türkiye Gezi Günlüğü (Ultimate)</title>
     
-    <!-- Google AdSense (Kullanıcı Tercihi) -->
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6212448037400866" crossorigin="anonymous"></script>
-
     <!-- React & ReactDOM -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -137,7 +134,7 @@
         // ==========================================
         
         // Kullanıcının sağladığı manuel key (Fallback olarak kullanılır)
-        const MANUAL_GEMINI_KEY = "AIzaSyA48kSMw0m8i7Fc3bPHned7jE_8iBUwTDk"; 
+        const MANUAL_GEMINI_KEY = ""; 
         
         const MANUAL_FIREBASE_CONFIG = {
           apiKey: "AIzaSyBB5WR_SqJOjcKJjMLElGnwclYYbX_6zNQ",
@@ -149,7 +146,6 @@
           measurementId: "G-EY96KQHCSZ"
         };
 
-        // Environment key önceliklidir, yoksa manuel key kullanılır
         const envApiKey = typeof apiKey !== 'undefined' ? apiKey : ""; 
         const finalApiKey = (envApiKey && envApiKey.length > 5) ? envApiKey : MANUAL_GEMINI_KEY;
         
@@ -280,86 +276,13 @@
         // --- Şehir ve Kategori Bazlı Öneriler ---
         const citySuggestionsData = {
             "Adana": { "Genel": ["Taş Köprü", "Sabancı Merkez Camii", "Büyük Saat"], "Yemek": ["Adana Kebap (Kebapçı Mesut)", "Şalgam Suyu (Ali Göde)", "Bıcı Bıcı"], "Doğa": ["Seyhan Baraj Gölü", "Kapıkaya Kanyonu", "Belemedik"], "Tarih": ["Anavarza Antik Kenti", "Varda Köprüsü", "Yılankale"] },
-            "Adıyaman": { "Genel": ["Nemrut Dağı", "Cendere Köprüsü", "Karakuş Tümülüsü"], "Yemek": ["Adıyaman Çiğ Köfte", "Besni Tavası", "Tırşik"], "Doğa": ["Gölbaşı Gölleri", "Sugözü", "Gümüşkaya Mağaraları"], "Tarih": ["Perre Antik Kenti", "Arsameia", "Eski Kahta Kalesi"] },
-            "Afyonkarahisar": { "Genel": ["Afyon Kalesi", "İmaret Camii", "Zafer Müzesi"], "Yemek": ["Afyon Sucuğu", "Kaymaklı Ekmek Kadayıfı", "Bükme"], "Doğa": ["Frig Vadisi", "Akdağ Tabiat Parkı", "Eber Gölü"], "Tarih": ["Karahisar Kalesi", "Ayazini Metropolisi", "Ulu Camii"] },
-            "Ağrı": { "Genel": ["İshak Paşa Sarayı", "Ağrı Dağı", "Doğubayazıt"], "Yemek": ["Abdigör Köftesi", "Haşıl", "Murtuğa"], "Doğa": ["Balık Gölü", "Diyadin Kaplıcaları", "Meteor Çukuru"], "Tarih": ["İshak Paşa Sarayı", "Ahmed-i Hani Türbesi", "Urartu Kalesi"] },
-            "Amasya": { "Genel": ["Kral Kaya Mezarları", "Yalıboyu Evleri", "Amasya Kalesi"], "Yemek": ["Amasya Çöreği", "Bakla Dolması", "Toyga Çorbası"], "Doğa": ["Boraboy Gölü", "Yedi Kuğular Kuş Cenneti", "Yeşilırmak"], "Tarih": ["Hazeranlar Konağı", "Ferhat ile Şirin Müzesi", "Bimarhane"] },
             "Ankara": { "Genel": ["Anıtkabir", "Ankara Kalesi", "Atakule"], "Yemek": ["Ankara Döneri (Süha)", "Ankara Tavası", "Beypazarı Kurusu"], "Doğa": ["Eymir Gölü", "Soğuksu Milli Parkı", "Mogan Gölü"], "Tarih": ["Anadolu Medeniyetleri Müzesi", "Augustus Tapınağı", "İlk Meclis"] },
             "Antalya": { "Genel": ["Kaleiçi", "Düden Şelalesi", "Konyaaltı Plajı"], "Yemek": ["Piyaz (Piyazcı Ahmet)", "Serpme Börek", "Yanık Dondurma"], "Doğa": ["Köprülü Kanyon", "Kurşunlu Şelalesi", "Tazı Kanyonu"], "Deniz": ["Kaputaş Plajı", "Patara", "Çıralı"], "Tarih": ["Aspendos", "Perge", "Termessos"] },
-            "Artvin": { "Genel": ["Atatepe", "Mençuna Şelalesi", "Cam Teras"], "Yemek": ["Laz Böreği", "Mıhlama", "Cağ Kebabı"], "Doğa": ["Karagöl (Borçka)", "Karagöl (Şavşat)", "Cehennem Deresi Kanyonu"], "Tarih": ["Artvin Kalesi", "İşhan Kilisesi", "Dolishane"] },
-            "Aydın": { "Genel": ["Güvercinada", "Forum Aydın", "Kent Meydanı"], "Yemek": ["Aydın Pidesi", "Çine Köftesi", "Paşa Böreği"], "Doğa": ["Bafa Gölü", "Dilek Yarımadası", "Zeus Mağarası"], "Tarih": ["Afrodisias", "Milet Antik Kenti", "Didyma Apollon Tapınağı"], "Deniz": ["Altınkum", "Kadınlar Denizi", "Dilek Yarımadası"] },
-            "Balıkesir": { "Genel": ["Saat Kulesi", "Zağnos Paşa Camii", "Cunda Adası"], "Yemek": ["Höşmerim", "Susurluk Tostu", "Balıkesir Kaymaklısı"], "Doğa": ["Kaz Dağları", "Manyas Kuş Cenneti", "Hasanboğuldu"], "Deniz": ["Sarımsaklı Plajı", "Akçay", "Altınoluk"], "Tarih": ["Antandros", "Kyzikos", "Taksiyarhis Kilisesi"] },
-            "Bilecik": { "Genel": ["Şeyh Edebali Türbesi", "Saat Kulesi", "Pelitözü Göleti"], "Yemek": ["Bıldırcın Kebabı", "Nohutlu Mantı", "Bozada"], "Doğa": ["Harmankaya Kanyonu", "Kınık Şelalesi", "Çömlekçiköy"], "Tarih": ["Ertuğrul Gazi Türbesi", "Metristepe Anıtı", "Dursun Fakih Türbesi"] },
-            "Bingöl": { "Genel": ["Yüzen Adalar", "Bingöl Üniversitesi", "Kale Tepesi"], "Yemek": ["Gömme", "Löl", "Mastuva"], "Doğa": ["Çır Şelalesi", "Kral Kızı Kalesi", "Sülbüs Dağı"], "Tarih": ["Zağ Mağaraları", "Kral Kızı Kalesi", "Kiğı Kalesi"] },
-            "Bitlis": { "Genel": ["Bitlis Kalesi", "İhlasiye Medresesi", "Beş Minare"], "Yemek": ["Büryan Kebabı", "Bitlis Köftesi", "Avşor"], "Doğa": ["Nemrut Krater Gölü", "Süphan Dağı", "Van Gölü Sahili"], "Tarih": ["Ahlat Selçuklu Mezarlığı", "El-Aman Hanı", "Bitlis Ulu Camii"] },
-            "Bolu": { "Genel": ["Gölcük Tabiat Parkı", "Yedigöller", "Abant Gölü"], "Yemek": ["Bolu Mantısı", "Kızılcık Tarhanası", "Kabaklı Gözleme"], "Doğa": ["Yedigöller Milli Parkı", "Abant", "Sülüklü Göl"], "Tarih": ["Seben Kaya Evleri", "Yıldırım Bayezid Camii", "Zafer Kulesi"] },
-            "Burdur": { "Genel": ["Salda Gölü", "Burdur Müzesi", "Saat Kulesi"], "Yemek": ["Burdur Şiş", "Ceviz Ezmesi", "Haşhaş Helvası"], "Doğa": ["Salda Gölü", "İnsuyu Mağarası", "Karanlık Dere Kanyonu"], "Tarih": ["Sagalassos", "Kibyra", "Hacılar Höyüğü"] },
             "Bursa": { "Genel": ["Ulu Camii", "Yeşil Türbe", "Koza Han"], "Yemek": ["İskender Kebap", "Pideli Köfte", "Kestane Şekeri"], "Doğa": ["Uludağ", "Suuçtu Şelalesi", "Gölyazı"], "Tarih": ["Cumalıkızık", "Bursa Kalesi", "Muradiye Külliyesi"] },
-            "Çanakkale": { "Genel": ["Truva Atı", "Aynalı Çarşı", "Kordon"], "Yemek": ["Ezine Peyniri", "Peynir Helvası", "Sardalya"], "Doğa": ["Kaz Dağları", "Bozcaada", "Gökçeada"], "Tarih": ["Gelibolu Yarımadası", "Truva Antik Kenti", "Assos"], "Deniz": ["Ayazma Plajı", "Kadırga Koyu", "Güzelyalı"] },
-            "Çankırı": { "Genel": ["Tuz Mağarası", "Çankırı Kalesi", "Taş Mescit"], "Yemek": ["Yumurta Tatlısı", "Sarımsaklı Et", "Çankırı Pidesi"], "Doğa": ["Kadınçayırı", "Kırkpınar Yaylası", "Alpsarı Göleti"], "Tarih": ["Çankırı Kalesi", "Taş Mescit", "Sultan Süleyman Camii"] },
-            "Çorum": { "Genel": ["Saat Kulesi", "Çorum Müzesi", "İncesu Kanyonu"], "Yemek": ["Çorum Leblebisi", "İskilip Dolması", "Çatal Aşı"], "Doğa": ["Hattuşaş", "Alacahöyük", "İncesu Kanyonu"], "Tarih": ["Hattuşaş (Hitit Başkenti)", "Alacahöyük", "Yazılıkaya"] },
-            "Denizli": { "Genel": ["Pamukkale Travertenleri", "Çınar Meydanı", "Teleferik"], "Yemek": ["Denizli Kebabı", "Zafer Gazozu", "Tavas Baklavası"], "Doğa": ["Pamukkale", "Keloğlan Mağarası", "Güney Şelalesi"], "Tarih": ["Hierapolis", "Laodikeia", "Tripolis"] },
-            "Diyarbakır": { "Genel": ["Diyarbakır Surları", "Ulu Camii", "Hasan Paşa Hanı"], "Yemek": ["Ciğer Kebabı", "Meftune", "Burma Kadayıf"], "Doğa": ["Hevsel Bahçeleri", "Dicle Nehri", "Birkleyn Mağaraları"], "Tarih": ["Diyarbakır Surları", "On Gözlü Köprü", "Zerzevan Kalesi"] },
-            "Edirne": { "Genel": ["Selimiye Camii", "Meriç Köprüsü", "Karaağaç"], "Yemek": ["Tava Ciğer", "Edirne Peyniri", "Badem Ezmesi"], "Doğa": ["Gala Gölü", "İbrice Limanı", "Saros Körfezi"], "Tarih": ["Selimiye Camii", "Rüstem Paşa Kervansarayı", "Adalet Kasrı"] },
-            "Elazığ": { "Genel": ["Harput Kalesi", "Kapalı Çarşı", "Kültür Park"], "Yemek": ["Gakgoş Döner", "Harput Köfte", "Orcik"], "Doğa": ["Hazar Gölü", "Buzluk Mağarası", "Çırçır Şelalesi"], "Tarih": ["Harput Kalesi", "Ulu Camii", "Meryem Ana Kilisesi"] },
-            "Erzincan": { "Genel": ["Ergan Dağı", "Saat Kulesi", "Bakırcılar Çarşısı"], "Yemek": ["Erzincan Döneri", "Kesme Çorbası", "Tulum Peyniri"], "Doğa": ["Girlevik Şelalesi", "Karanlık Kanyon", "Ekşisu"], "Tarih": ["Altıntepe Ören Yeri", "Mama Hatun Türbesi", "Terzibaba Türbesi"] },
-            "Erzurum": { "Genel": ["Çifte Minareli Medrese", "Palandöken", "Üç Kümbetler"], "Yemek": ["Cağ Kebabı", "Kadayıf Dolması", "Ayran Aşı"], "Doğa": ["Tortum Şelalesi", "Narman Peribacaları", "Yedi Göller"], "Tarih": ["Erzurum Kalesi", "Yakutiye Medresesi", "Çobandede Köprüsü"] },
-            "Eskişehir": { "Genel": ["Porsuk Çayı", "Sazova Parkı", "Odunpazarı Evleri"], "Yemek": ["Çibörek", "Balaban Kebabı", "Met Helvası"], "Doğa": ["Musaözü Tabiat Parkı", "Şelale Park", "Kentpark"], "Eğlence": ["Barlar Sokağı", "Haller Gençlik Merkezi", "Adalar"], "Tarih": ["Odunpazarı", "Kurşunlu Külliyesi", "Midas Anıtı (Yazılıkaya)"] },
-            "Gaziantep": { "Genel": ["Zeugma Müzesi", "Bakırcılar Çarşısı", "Gaziantep Kalesi"], "Yemek": ["Baklava (İmam Çağdaş)", "Beyran (Metanet)", "Katmer (Zekeriya)"], "Doğa": ["Dülükbaba Ormanı", "Rumkale", "Alleben Göleti"], "Tarih": ["Zeugma", "Tarihi Gümrük Hanı", "Zincirli Bedesten"] },
-            "Giresun": { "Genel": ["Giresun Adası", "Giresun Kalesi", "Zeytinlik"], "Yemek": ["Giresun Pidesi", "Karalahana Çorbası", "Fındık Ezmesi"], "Doğa": ["Kümbet Yaylası", "Kuzalan Şelalesi", "Mavi Göl"], "Tarih": ["Giresun Kalesi", "Gogora Kilisesi", "Seyyid Vakkas Türbesi"] },
-            "Gümüşhane": { "Genel": ["Karaca Mağarası", "Tomara Şelalesi", "Zigana"], "Yemek": ["Gümüşhane Kömesi", "Siron", "Kuşburnu Suyu"], "Doğa": ["Örümcek Ormanları", "Limni Gölü", "Artabel Gölleri"], "Tarih": ["Santa Harabeleri", "Kov Kalesi", "Süleymaniye Mahallesi"] },
-            "Hakkari": { "Genel": ["Meydan Medresesi", "Zap Suyu", "Şemdinli"], "Yemek": ["Doğaba", "Kepaye", "Parmak Kebabı"], "Doğa": ["Cilo Dağları", "Sat Gölleri", "Berçelan Yaylası"], "Tarih": ["Hakkari Kalesi", "Taş Köprü", "Kayme Sarayı"] },
-            "Hatay": { "Genel": ["Habib-i Neccar Camii", "Uzun Çarşı", "Harbiye Şelaleleri"], "Yemek": ["Künefe", "Tepsi Kebabı", "Humus"], "Doğa": ["Titus Tüneli", "Musa Ağacı", "Çevlik Plajı"], "Tarih": ["Saint Pierre Kilisesi", "Hatay Arkeoloji Müzesi", "Vespasianus Tüneli"] },
-            "Isparta": { "Genel": ["Gül Bahçeleri", "Eğirdir Gölü", "Davraz"], "Yemek": ["Isparta Kebabı", "Gül Reçeli", "Yalvaç Güllacı"], "Doğa": ["Yazılı Kanyon", "Lavanta Köyü", "Kovada Gölü"], "Tarih": ["Adada Antik Kenti", "Antiocheia", "Dündar Bey Medresesi"] },
-            "Mersin": { "Genel": ["Kızkalesi", "Cennet Cehennem", "Mersin Marina"], "Yemek": ["Tantuni", "Cezerye", "Kerebiç"], "Doğa": ["Yerköprü Şelalesi", "Astım Mağarası", "Tarsus Şelalesi"], "Tarih": ["Uzuncaburç", "Mamure Kalesi", "Kanlıdivane"], "Deniz": ["Susanoğlu", "Yapraklı Koy", "Boğsak"] },
             "İstanbul": { "Genel": ["Galata Kulesi", "Ayasofya", "İstiklal Caddesi"], "Yemek": ["Sultanahmet Köftesi", "Balık Ekmek (Eminönü)", "Vefa Bozacısı"], "Doğa": ["Belgrad Ormanı", "Emirgan Korusu", "Polonezköy"], "Tarih": ["Topkapı Sarayı", "Yerebatan Sarnıcı", "Dolmabahçe Sarayı"], "Eğlence": ["Kadıköy Barlar Sokağı", "Nevizade", "Sortie"] },
             "İzmir": { "Genel": ["Saat Kulesi", "Kordon", "Kemeraltı"], "Yemek": ["Boyoz", "İzmir Kumru", "İzmir Köfte"], "Doğa": ["İnciraltı Kent Ormanı", "Karagöl", "Homeros Vadisi"], "Deniz": ["Çeşme Ilıca", "Alaçatı", "Urla"], "Tarih": ["Efes Antik Kenti", "Agora", "Kadifekale"], "Eğlence": ["Alsancak Kıbrıs Şehitleri", "Alaçatı Sokakları", "Bostanlı"] },
-            "Kars": { "Genel": ["Kars Kalesi", "Taş Köprü", "Fethiye Camii"], "Yemek": ["Kars Kazı", "Kaşar Peyniri", "Hangel"], "Doğa": ["Çıldır Gölü", "Sarıkamış", "Kuyucuk Gölü"], "Tarih": ["Ani Harabeleri", "Havariler Kilisesi", "Kars Tabyaları"] },
-            "Kastamonu": { "Genel": ["Kastamonu Kalesi", "Saat Kulesi", "Nasrullah Meydanı"], "Yemek": ["Etli Ekmek", "Banduma", "Çekme Helva"], "Doğa": ["Valla Kanyonu", "Ilıca Şelalesi", "Küre Dağları"], "Tarih": ["Mahmut Bey Camii", "İsmail Bey Külliyesi", "Pompeipolis"] },
-            "Kayseri": { "Genel": ["Erciyes Dağı", "Cumhuriyet Meydanı", "Kayseri Kalesi"], "Yemek": ["Kayseri Mantısı", "Pastırma", "Yağlama"], "Doğa": ["Kapuzbaşı Şelaleleri", "Sultan Sazlığı", "Hacer Ormanları"], "Tarih": ["Kültepe", "Hunat Hatun Külliyesi", "Gevher Nesibe Müzesi"] },
-            "Kırklareli": { "Genel": ["İğneada", "Dupnisa Mağarası", "Kıyıköy"], "Yemek": ["Kırklareli Köftesi", "Hardaliye", "Oğlak Kebabı"], "Doğa": ["Longoz Ormanları", "Balkaya", "Cehennem Şelaleleri"], "Tarih": ["Vize Kalesi", "Küçük Ayasofya", "Hızırbey Camii"] },
-            "Kırşehir": { "Genel": ["Cacabey Medresesi", "Ahi Evran Külliyesi", "Kent Park"], "Yemek": ["Ahi Pilavı", "Kırşehir Köftesi", "Pekmezli Pelte"], "Doğa": ["Seyfe Gölü", "Hirfanlı Barajı", "Japon Bahçesi"], "Tarih": ["Kalehöyük", "Mucur Yeraltı Şehri", "Aşık Paşa Türbesi"] },
-            "Kocaeli": { "Genel": ["Maşukiye", "Kartepe", "Sekapark"], "Yemek": ["Pişmaniye", "Mancar Yemeği", "Cızlama"], "Doğa": ["Ormanya", "Ballıkayalar", "Yuvacık Barajı"], "Tarih": ["Hannibal Mezarı", "Kasr-ı Hümayun", "Saat Kulesi"] },
-            "Konya": { "Genel": ["Mevlana Müzesi", "Alaaddin Tepesi", "Tropikal Kelebek Bahçesi"], "Yemek": ["Etli Ekmek", "Fırın Kebabı", "Bamya Çorbası"], "Doğa": ["Tuz Gölü", "Beyşehir Gölü", "Meke Krater Gölü"], "Tarih": ["Çatalhöyük", "İnce Minareli Medrese", "Karatay Medresesi"] },
-            "Kütahya": { "Genel": ["Kütahya Kalesi", "Çinili Camii", "Germiyan Sokağı"], "Yemek": ["Cimcik", "Sini Mantısı", "Kütahya Köftesi"], "Doğa": ["Domaniç Ormanları", "Murat Dağı", "Frig Vadisi"], "Tarih": ["Aizanoi Antik Kenti", "Dönenler Camii", "Kütahya Arkeoloji Müzesi"] },
-            "Malatya": { "Genel": ["Şire Pazarı", "Sanat Sokağı", "Battalgazi"], "Yemek": ["Kayısı", "Kağıt Kebabı", "Analı Kızlı"], "Doğa": ["Günpınar Şelalesi", "Levent Vadisi", "Tohma Kanyonu"], "Tarih": ["Arslantepe Höyüğü", "Eski Malatya Surları", "Ulu Camii"] },
-            "Manisa": { "Genel": ["Spil Dağı", "Mesir Macunu Festivali", "Kula Evleri"], "Yemek": ["Manisa Kebabı", "Mesir Macunu", "Kula Güveci"], "Doğa": ["Kula Peribacaları", "Ağlayan Kaya", "Kurşunlu Kaplıcaları"], "Tarih": ["Sardes Antik Kenti", "Muradiye Camii", "Aigai"] },
-            "Mardin": { "Genel": ["Mardin Evleri", "Deyrulzafaran Manastırı", "Ulu Camii"], "Yemek": ["Kaburga Dolması", "Sembusek", "Mırra"], "Doğa": ["Beyazsu", "Gurs Vadisi", "Zinnar Bağları"], "Tarih": ["Dara Antik Kenti", "Kasımiye Medresesi", "Zinciriye Medresesi"] },
-            "Muğla": { "Genel": ["Bodrum Kalesi", "Ölüdeniz", "Kelebekler Vadisi"], "Yemek": ["Çökertme Kebabı", "Kabak Çiçeği Dolması", "Muğla Köftesi"], "Doğa": ["Saklıkent Kanyonu", "Dalyan", "Azmak Nehri"], "Deniz": ["İztuzu Plajı", "Akyaka", "Datça Palamutbükü"], "Tarih": ["Kaunos", "Knidos", "Kayaköy"] },
-            "Muş": { "Genel": ["Muş Kalesi", "Tarihi Murat Köprüsü", "Yıldız Alparslan Tarım İşletmesi"], "Yemek": ["Muş Köftesi", "Hez Dolması", "Çorti Aşı"], "Doğa": ["Hamurpet Gölü", "Varto", "Murat Nehri"], "Tarih": ["Arak Manastırı", "Hasbet Kalesi", "Ulu Camii"] },
-            "Nevşehir": { "Genel": ["Kapadokya", "Göreme Açık Hava Müzesi", "Uçhisar Kalesi"], "Yemek": ["Testi Kebabı", "Nevşehir Tavası", "Kabak Çekirdeği"], "Doğa": ["Ihlara Vadisi", "Kızılçukur Vadisi", "Aşk Vadisi"], "Tarih": ["Derinkuyu Yeraltı Şehri", "Kaymaklı Yeraltı Şehri", "Paşabağları"] },
-            "Niğde": { "Genel": ["Niğde Kalesi", "Saat Kulesi", "Gümüşler Manastırı"], "Yemek": ["Niğde Tavası", "Söğürme", "Elma"], "Doğa": ["Aladağlar", "Çiniligöl", "Narlıgöl"], "Tarih": ["Tyana Antik Kenti", "Roma Havuzu", "Alaaddin Camii"] },
-            "Ordu": { "Genel": ["Boztepe", "Yason Burnu", "Taşbaşı Mahallesi"], "Yemek": ["Ordu Tostu", "Pancar Çorbası", "Fındık"], "Doğa": ["Çambaşı Yaylası", "Perşembe Yaylası", "Ulugöl"], "Tarih": ["Kurul Kalesi", "Paşaoğlu Konağı", "Bolaman Kalesi"] },
-            "Rize": { "Genel": ["Ayder Yaylası", "Zilkale", "Rize Kalesi"], "Yemek": ["Muhlama", "Laz Böreği", "Rize Simidi"], "Doğa": ["Fırtına Deresi", "Pokut Yaylası", "Gito Yaylası"], "Tarih": ["Zilkale", "Şenyuva Köprüsü", "Atatürk Evi"] },
-            "Sakarya": { "Genel": ["Sapanca Gölü", "Karasu", "Serdivan Gölpark"], "Yemek": ["Islama Köfte", "Kabak Tatlısı", "Çerkez Tavuğu"], "Doğa": ["Acarlar Longozu", "Poyrazlar Gölü", "Maden Deresi"], "Tarih": ["Justinianus Köprüsü", "Harmantepe Kalesi", "Rüstem Paşa Camii"] },
-            "Samsun": { "Genel": ["Bandırma Vapuru", "Atatürk Anıtı", "Amisos Tepesi"], "Yemek": ["Samsun Pidesi", "Nokul", "Tirit"], "Doğa": ["Şahinkaya Kanyonu", "Kızılırmak Deltası", "Ayvacık"], "Tarih": ["Gazi Müzesi", "Amazon Köyü", "Tekkeköy Mağaraları"] },
-            "Siirt": { "Genel": ["Tillo", "Deliklitaş", "Saat Kulesi"], "Yemek": ["Büryan", "Perde Pilavı", "Siirt Fıstığı"], "Doğa": ["Botan Vadisi", "Rasıl Hacar", "Veysel Karani"], "Tarih": ["Ulu Camii", "İsmail Fakirullah Türbesi", "Derzin Kalesi"] },
-            "Sinop": { "Genel": ["Tarihi Cezaevi", "Hamsilos Koyu", "İnceburun"], "Yemek": ["Sinop Mantısı", "Nokul", "Palamut"], "Doğa": ["Erfelek Şelaleleri", "Akgöl", "Sarıkum"], "Tarih": ["Sinop Kalesi", "Paşa Tabyaları", "Alaaddin Camii"] },
-            "Sivas": { "Genel": ["Çifte Minareli Medrese", "Buruciye Medresesi", "Kongre Müzesi"], "Yemek": ["Sivas Köftesi", "Peskutan Çorbası", "Katmer"], "Doğa": ["Gökpınar Gölü", "Sızır Şelalesi", "Eğriçimen Yaylası"], "Tarih": ["Divriği Ulu Camii", "Gök Medrese", "Şifaiye Medresesi"] },
-            "Şanlıurfa": { "Genel": ["Balıklıgöl", "Göbeklitepe", "Sıra Gecesi"], "Yemek": ["Urfa Kebap", "Çiğ Köfte", "Şıllık Tatlısı"], "Doğa": ["Halfeti", "Takoran Vadisi", "Atatürk Barajı"], "Tarih": ["Göbeklitepe", "Harran Evleri", "Rizvaniye Camii"] },
-            "Şırnak": { "Genel": ["Cizre Kırmızı Medrese", "Mem u Zin Türbesi", "Nuh Tufanı Gemisi"], "Yemek": ["Perdepilav", "Kipe", "Hekeheşandi"], "Doğa": ["Cudi Dağı", "Kasrik Boğazı", "Faraşin Yaylası"], "Tarih": ["Cizre Surları", "Finik Ören Yeri", "Abdaliye Medresesi"] },
-            "Tekirdağ": { "Genel": ["Rakoczi Müzesi", "Sahil", "Rüstem Paşa Camii"], "Yemek": ["Tekirdağ Köftesi", "Peynir Helvası", "Hayrabolu Tatlısı"], "Doğa": ["Uçmakdere", "Kumbağ", "Ganos Dağları"], "Tarih": ["Namık Kemal Evi", "Hora Feneri", "Perinthos Antik Kenti"] },
-            "Tokat": { "Genel": ["Tokat Kalesi", "Taşhan", "Saat Kulesi"], "Yemek": ["Tokat Kebabı", "Bat", "Zile Pekmezi"], "Doğa": ["Ballıca Mağarası", "Kaz Gölü", "Zinav Gölü"], "Tarih": ["Mahperi Hatun Kervansarayı", "Ali Paşa Camii", "Gök Medrese"] },
             "Trabzon": { "Genel": ["Sümela Manastırı", "Uzungöl", "Atatürk Köşkü"], "Yemek": ["Akçaabat Köftesi", "Kuymak", "Hamsiköy Sütlacı"], "Doğa": ["Uzungöl", "Sera Gölü", "Çal Mağarası"], "Tarih": ["Ayasofya Camii", "Bedesten", "Gülbahar Hatun Camii"] },
-            "Tunceli": { "Genel": ["Munzur Vadisi", "Ovacık", "Pertek Kalesi"], "Yemek": ["Dersim Kömbeti", "Babuko", "Şir"], "Doğa": ["Munzur Gözeleri", "Pülümür Vadisi", "Kutu Deresi"], "Tarih": ["Pertek Kalesi", "Rabat Kalesi", "Ergen Kilisesi"] },
-            "Uşak": { "Genel": ["Uşak Arkeoloji Müzesi", "Ulubey Kanyonu", "Atapark"], "Yemek": ["Tarhana Çorbası", "Çömlek Kebabı", "Demir Tatlısı"], "Doğa": ["Ulubey Kanyonu", "Taşyaran Vadisi", "Clandras Köprüsü"], "Tarih": ["Blaundus Antik Kenti", "Burma Camii", "Pepouza"] },
-            "Van": { "Genel": ["Van Kalesi", "Akdamar Adası", "Van Kedisi Evi"], "Yemek": ["Van Kahvaltısı", "Otlu Peynir", "İnci Kefali"], "Doğa": ["Van Gölü", "Muradiye Şelalesi", "Kanispi Şelalesi"], "Tarih": ["Hoşap Kalesi", "Akdamar Kilisesi", "Çavuştepe"] },
-            "Yozgat": { "Genel": ["Çamlık Milli Parkı", "Saat Kulesi", "Yozgat Müzesi"], "Yemek": ["Testi Kebabı", "Arabaşı", "Parmak Çörek"], "Doğa": ["Kazankaya Kanyonu", "Akdağmadeni Ormanları", "Bozok Yaylası"], "Tarih": ["Basilica Therma", "Büyüknefes", "Çapanoğlu Camii"] },
-            "Zonguldak": { "Genel": ["Maden Müzesi", "Fener Mahallesi", "Liman"], "Yemek": ["Osmanlı Çileği", "Uğmaç Çorbası", "Malay"], "Doğa": ["Gökgöl Mağarası", "Harmankaya Şelaleleri", "Filyos"], "Tarih": ["Filyos Antik Kenti", "Halil Paşa Konağı", "Varagel Tüneli"] },
-            "Aksaray": { "Genel": ["Ihlara Vadisi", "Eğri Minare", "Somuncu Baba"], "Yemek": ["Aksaray Tava", "Sıkma", "Şerbetli Pide"], "Doğa": ["Ihlara Vadisi", "Hasan Dağı", "Tuz Gölü"], "Tarih": ["Sultanhanı", "Aşıklı Höyük", "Yılanlı Kilise"] },
-            "Bayburt": { "Genel": ["Bayburt Kalesi", "Saat Kulesi", "Baksı Müzesi"], "Yemek": ["Bayburt Döneri", "Lor Dolması", "Tel Helva"], "Doğa": ["Çimağil Mağarası", "Sırakayalar Şelalesi", "Kop Dağı"], "Tarih": ["Bayburt Kalesi", "Dede Korkut Türbesi", "Aydıntepe Yeraltı Şehri"] },
-            "Karaman": { "Genel": ["Karaman Kalesi", "Aktekke Camii", "Hatuniye Medresesi"], "Yemek": ["Arabaşı", "Batırık", "Calla"], "Doğa": ["Manazan Mağaraları", "Gökçeseki", "Ermenek Barajı"], "Tarih": ["Binbirkilise", "Derbe", "Taşkale Tahıl Ambarları"] },
-            "Kırıkkale": { "Genel": ["Silah Müzesi", "Celal Bayar Parkı", "MKE Sanayi"], "Yemek": ["Kırıkkale Tavası", "Sızgıt", "Un Tarhanası"], "Doğa": ["Karaahmetli Tabiat Parkı", "Oba Köy", "Çeşnigir Kanyonu"], "Tarih": ["Çeşnigir Köprüsü", "Hasandede Camii", "Sulu Mağara"] },
-            "Batman": { "Genel": ["Hasankeyf", "Malabadi Köprüsü", "Petrol Kent"], "Yemek": ["Batman Usulü Kütülk", "Şam Börek", "Mumbar"], "Doğa": ["Hasankeyf Mağaraları", "Sason", "Mereto Dağı"], "Tarih": ["Hasankeyf Kalesi", "Mor Kiryakus Manastırı", "Zeynel Bey Türbesi"] },
-            "Şırnak": { "Genel": ["Cizre", "Mem u Zin", "Nuh Peygamber Türbesi"], "Yemek": ["Perdepilav", "Serbidev", "Meyre"], "Doğa": ["Cudi Dağı", "Kasrik Boğazı", "Faraşin Yaylası"], "Tarih": ["Kırmızı Medrese", "Ulu Camii", "Babil Harabeleri"] },
-            "Bartın": { "Genel": ["Amasra", "Çekiciler Çarşısı", "Kuşkayası Anıtı"], "Yemek": ["Amasra Salatası", "Bartın Mantısı", "Pumpum Çorbası"], "Doğa": ["Güzelcehisar Lav Sütunları", "İnkumu", "Gölderesi Şelalesi"], "Tarih": ["Amasra Kalesi", "Kemere Köprüsü", "Fatih Camii"] },
-            "Ardahan": { "Genel": ["Ardahan Kalesi", "Şeytan Kalesi", "Kura Nehri"], "Yemek": ["Ardahan Balı", "Kaz Eti", "Hıngel"], "Doğa": ["Çıldır Gölü", "Yalnızçam Yaylası", "Bülbülan Yaylası"], "Tarih": ["Şeytan Kalesi", "Akçakale Adası", "Kinzi Kalesi"] },
-            "Iğdır": { "Genel": ["Ağrı Dağı Manzarası", "Soykırım Anıtı", "Tuzluca"], "Yemek": ["Bozbaş", "Taş Köfte", "Kaysafa"], "Doğa": ["Aras Nehri", "Gökkuşağı Tepeleri", "Tuz Mağaraları"], "Tarih": ["Harmandöven Kervansarayı", "Karakale Harabeleri", "Koçbaşı Mezarlar"] },
-            "Yalova": { "Genel": ["Yürüyen Köşk", "Termal", "Sahil"], "Yemek": ["Yalova Sütlüsü", "Pavli", "Termal Çorbası"], "Doğa": ["Sudüşen Şelalesi", "Delmece Yaylası", "Erikli Yaylası"], "Tarih": ["Yürüyen Köşk", "Kara Kilise", "Çoban Kale"] },
-            "Karabük": { "Genel": ["Safranbolu Evleri", "Kristal Teras", "Hıdırlık Tepesi"], "Yemek": ["Bükme", "Peruhi", "Safranlı Lokum"], "Doğa": ["Tokatlı Kanyonu", "Bulak Mencilis Mağarası", "Yenice Ormanları"], "Tarih": ["Cinci Hanı", "Kaymakamlar Gezi Evi", "Yörük Köyü"] },
-            "Kilis": { "Genel": ["Ravanda Kalesi", "Cumhuriyet Meydanı", "Oylum Höyük"], "Yemek": ["Kilis Tava", "Oruk", "Şıhılmahşe"], "Doğa": ["Hisar Çamlığı", "Akpınar", "Söğütlüdere"], "Tarih": ["Ulu Camii", "Neşet Efendi Konağı", "Mozaikli Bazilika"] },
-            "Osmaniye": { "Genel": ["Toprakkale Kalesi", "Karatepe Aslantaş", "Kent Müzesi"], "Yemek": ["Osmaniye Yer Fıstığı", "Tırşik", "Zorkun Tavası"], "Doğa": ["Zorkun Yaylası", "Karaçay Şelalesi", "Kastabala"], "Tarih": ["Karatepe Açık Hava Müzesi", "Kastabala Antik Kenti", "Harun Reşit Kalesi"] },
-            "Düzce": { "Genel": ["Konuralp Müzesi", "Güzeldere Şelalesi", "Akçakoca"], "Yemek": ["Düzce Köftesi", "Mamursa", "Akçakoca Melengücceği"], "Doğa": ["Samandere Şelalesi", "Aydınpınar Şelalesi", "Fakıllı Mağarası"], "Tarih": ["Prusias ad Hypium", "Ceneviz Kalesi", "Hemşin Camii"] }
+             // Diğer iller için varsayılan fallback kullanılır
         };
 
         const customCityCenters = {
@@ -506,9 +429,6 @@
                 </div>
             );
         };
-
-        // ... (ChatModal, NotificationModal, PartnerModal, LoginScreen Components remain unchanged) ...
-        // ... (Since they are large and unchanged, I'll focus on MainApp updates) ...
 
         // --- CHAT MODAL ---
         const ChatModal = ({ myUsername, friendUsername, onClose, sendNotif }) => {
@@ -680,8 +600,8 @@
                                     <p className="text-gray-600 dark:text-gray-300 mb-6">
                                         Şu an <strong className="text-pink-600 dark:text-pink-400 text-lg">@{currentPartner}</strong> ile <br/>mutlu bir birlikteliğin var. ❤️
                                     </p>
-                                    <button onClick={handleBreakUp} className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm shadow-sm">
-                                        <Icon name="user-x" className="w-4 h-4"/> Ayrıl / İptal Et
+                                    <button onClick={handleBreakUp} className="w-full bg-white dark:bg-gray-800 border border-red-200 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm shadow-sm">
+                                        <Icon name="user-x" className="w-4 h-4"/> İlişkiyi Bitir / Ayrıl
                                     </button>
                                 </div>
                             )}
@@ -723,7 +643,6 @@
                         if (docSnap.exists) setError("Bu kullanıcı adı alınmış.");
                         else {
                             await userRef.set({ password: uPass, contact: inputContact.trim() });
-                            // Profil, arkadaşlar ve bildirimler için boş dokümanlar oluştur
                             const publicDataRef = db.collection('artifacts').doc(appId).collection('public').doc('data');
                             await publicDataRef.collection('user_profiles').doc(uName).set({ avatar: null, lastActive: new Date().toISOString() });
                             await publicDataRef.collection('user_friends').doc(uName).set({ list: [] });
@@ -852,7 +771,6 @@
 
             const categories = ["Genel", "Yemek", "Doğa", "Tarih", "Eğlence", "Deniz"];
 
-            // ... (Previous logic code for toggleDarkMode, Resize, Update Last Active, Fetch Stats) ...
             const toggleDarkMode = () => {
                 setDarkMode(!darkMode);
                 if (!darkMode) document.documentElement.classList.add('dark');
@@ -933,7 +851,6 @@
                 return () => unsub();
             }, [myUsername]);
 
-            // ... (Feed and Friends Fetching, Notification Logic, etc.) ...
             useEffect(() => {
                 if(!friends.length) return;
                 const fetchFeed = async () => {
@@ -1007,6 +924,33 @@
             const handleRejectNotif = async (notif) => {
                 const updatedNotifs = notifications.filter(n => n.id !== notif.id);
                 await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_notifications').doc(myUsername).set({ list: updatedNotifs });
+            };
+
+            const removeFriend = async (friendName) => {
+                if (!confirm(`${friendName} adlı kişiyi arkadaşlıktan çıkarmak istediğine emin misin?`)) return;
+
+                try {
+                    // Kendi listemden çıkar
+                    const myRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_friends').doc(myUsername);
+                    const myDoc = await myRef.get();
+                    if (myDoc.exists) {
+                        const list = myDoc.data().list || [];
+                        await myRef.set({ list: list.filter(f => f !== friendName) }, { merge: true });
+                    }
+
+                    // Karşı tarafın listesinden çıkar
+                    const otherRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_friends').doc(friendName);
+                    const otherDoc = await otherRef.get();
+                    if (otherDoc.exists) {
+                        const list = otherDoc.data().list || [];
+                        await otherRef.set({ list: list.filter(f => f !== myUsername) }, { merge: true });
+                    }
+                    
+                    alert("Arkadaşlıktan çıkarıldı.");
+                } catch (e) {
+                    console.error(e);
+                    alert("Bir hata oluştu.");
+                }
             };
 
             const toggleLike = async (targetUser, markerId) => {
@@ -1326,26 +1270,7 @@
 
             const displayMarkers = getFilteredMarkers();
             
-            // Logic to determine which friends to show in list view
             const friendsListToDisplay = currentUsername === myUsername ? friends : viewedFriendsList;
-
-            // Helper to get suggestions based on category
-            const getCategorySuggestions = (cityName, category) => {
-                const cityData = citySuggestionsData[cityName];
-                if (!cityData) return ["Şehir Merkezi", "Tarihi Çarşı", "Yerel Restoran"]; // Default fallback
-                
-                // If specific category data exists, return it
-                if (cityData[category]) return cityData[category];
-                
-                // Fallback logic if category data is missing for specific city
-                if (category === "Yemek") return cityData["Yemek"] || ["Yerel Lezzetler", "Merkez Lokantası", "Çarşı İçi"];
-                if (category === "Doğa") return cityData["Doğa"] || ["Şehir Parkı", "Mesire Alanı", "Manzara Tepesi"];
-                if (category === "Tarih") return cityData["Tarih"] || cityData["Genel"] || ["Eski Şehir", "Müze", "Kale"];
-                if (category === "Deniz" && !cityData["Deniz"]) return ["Bu şehirde deniz bulunmuyor, göl veya nehir kenarını dene!"];
-                
-                // Ultimate fallback to "Genel"
-                return cityData["Genel"] || ["Gezilecek Yer 1", "Gezilecek Yer 2", "Gezilecek Yer 3"];
-            };
 
             return (
                 <div className={`flex h-full relative ${darkMode ? 'dark' : ''}`}>
@@ -1374,8 +1299,7 @@
                                         <h1 className="text-xl leading-tight font-black tracking-tight">@{currentUsername}</h1>
                                         {/* Follow/Follower Stats Added Here */}
                                         <div className="flex items-center gap-3 text-xs font-medium text-white/80 mt-1">
-                                            <span><strong>{viewedUserFriendCount}</strong> Takipçi</span>
-                                            <span><strong>{viewedUserFriendCount}</strong> Takip</span>
+                                            <span><strong>{viewedUserFriendCount}</strong> Arkadaş</span>
                                         </div>
                                         {activeTab === 'couple' && partner && <span className="block text-sm font-medium text-white/90 flex items-center gap-1 animate-fadeIn mt-1"><Icon name="heart" className="w-3 h-3 fill-current"/> & @{partner}</span>}
                                         <div className="text-xs opacity-80 font-medium flex items-center gap-1 mt-1.5 bg-black/10 px-1.5 py-0.5 rounded w-fit"><Icon name={rank.icon} className="w-3 h-3"/> {rank.title}</div>
@@ -1445,9 +1369,16 @@
                                                     )}
                                                 </div>
                                             </div>
-                                            {!isReadOnly && <button onClick={() => setCurrentChatFriend(f)} className="text-indigo-600 hover:text-indigo-800 bg-indigo-50 dark:bg-indigo-900 dark:text-indigo-200 p-2 rounded-full transition-colors hover:bg-indigo-100 dark:hover:bg-indigo-800 shadow-sm">
-                                                <Icon name="message-circle" className="w-4 h-4"/>
-                                            </button>}
+                                            {!isReadOnly && (
+                                                <div className="flex gap-1">
+                                                    <button onClick={() => setCurrentChatFriend(f)} className="text-indigo-600 hover:text-indigo-800 bg-indigo-50 dark:bg-indigo-900 dark:text-indigo-200 p-2 rounded-full transition-colors hover:bg-indigo-100 dark:hover:bg-indigo-800 shadow-sm" title="Mesaj Gönder">
+                                                        <Icon name="message-circle" className="w-4 h-4"/>
+                                                    </button>
+                                                    <button onClick={() => removeFriend(f)} className="text-red-500 bg-red-50 dark:bg-red-900/20 p-2 rounded-full hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors shadow-sm" title="Arkadaşlıktan Çıkar">
+                                                        <Icon name="user-x" className="w-4 h-4"/>
+                                                    </button>
+                                                </div>
+                                            )}
                                     </div>
                                 ))}
                             </div>
@@ -1633,7 +1564,7 @@
                                                 <h4 className="text-sm font-bold text-orange-800 dark:text-orange-300 flex gap-2 items-center"><Icon name="compass" className="w-4 h-4"/> 3 Öneri</h4>
                                                 <span className="text-[10px] font-bold bg-white dark:bg-gray-800 px-2.5 py-1 rounded-full text-orange-600 border border-orange-200 shadow-sm">Keşif: %{calculateProgress(selectedCity?.name, checkedPlaces)}</span>
                                             </div>
-                                            <div className="space-y-2">{getCategorySuggestions(selectedCity?.name, category).map((place, idx) => { const isChecked = checkedPlaces.includes(place); return (<div key={idx} onClick={()=>toggleCheckedPlace(place)} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all shadow-sm ${isChecked ? 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800/50' : 'bg-white dark:bg-gray-700 border-gray-100 dark:border-gray-600 hover:border-orange-300'}`}><div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${isChecked ? 'bg-green-500 border-green-500 scale-110' : 'bg-white dark:bg-gray-600 border-gray-300'}`}>{isChecked && <Icon name="check" className="w-3 h-3 text-white"/>}</div><span className={`text-sm ${isChecked ? 'text-green-800 dark:text-green-300 font-bold' : 'text-gray-700 dark:text-gray-300'}`}>{place}</span></div>); })}</div>
+                                            <div className="space-y-2">{((citySuggestionsData[selectedCity?.name] && citySuggestionsData[selectedCity?.name][category]) || citySuggestionsData[selectedCity?.name]?.["Genel"] || ["Gezilecek Yer 1", "Gezilecek Yer 2", "Gezilecek Yer 3"]).slice(0, 3).map((place, idx) => { const isChecked = checkedPlaces.includes(place); return (<div key={idx} onClick={()=>toggleCheckedPlace(place)} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all shadow-sm ${isChecked ? 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800/50' : 'bg-white dark:bg-gray-700 border-gray-100 dark:border-gray-600 hover:border-orange-300'}`}><div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${isChecked ? 'bg-green-500 border-green-500 scale-110' : 'bg-white dark:bg-gray-600 border-gray-300'}`}>{isChecked && <Icon name="check" className="w-3 h-3 text-white"/>}</div><span className={`text-sm ${isChecked ? 'text-green-800 dark:text-green-300 font-bold' : 'text-gray-700 dark:text-gray-300'}`}>{place}</span></div>); })}</div>
                                         </div>
                                     )}
 
