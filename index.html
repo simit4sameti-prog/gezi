@@ -341,10 +341,10 @@
             "Samsun": { "Genel": ["Bandırma Vapuru", "Atatürk Anıtı", "Amisos Tepesi"], "Yemek": ["Samsun Pidesi", "Nokul", "Tirit"], "Doğa": ["Şahinkaya Kanyonu", "Kızılırmak Deltası", "Ayvacık"], "Tarih": ["Gazi Müzesi", "Amazon Köyü", "Tekkeköy Mağaraları"] },
             "Siirt": { "Genel": ["Tillo", "Deliklitaş", "Saat Kulesi"], "Yemek": ["Büryan", "Perde Pilavı", "Siirt Fıstığı"], "Doğa": ["Botan Vadisi", "Rasıl Hacar", "Veysel Karani"], "Tarih": ["Ulu Camii", "İsmail Fakirullah Türbesi", "Derzin Kalesi"] },
             "Sinop": { "Genel": ["Tarihi Cezaevi", "Hamsilos Koyu", "İnceburun"], "Yemek": ["Sinop Mantısı", "Nokul", "Palamut"], "Doğa": ["Erfelek Şelaleleri", "Akgöl", "Sarıkum"], "Tarih": ["Sinop Kalesi", "Paşa Tabyaları", "Alaaddin Camii"] },
+            "Sinop": { "Genel": ["Tarihi Cezaevi", "Hamsilos Koyu", "İnceburun"], "Yemek": ["Sinop Mantısı", "Nokul", "Palamut"], "Doğa": ["Erfelek Şelaleleri", "Akgöl", "Sarıkum"], "Tarih": ["Sinop Kalesi", "Paşa Tabyaları", "Alaaddin Camii"] },
             "Sivas": { "Genel": ["Çifte Minareli Medrese", "Buruciye Medresesi", "Kongre Müzesi"], "Yemek": ["Sivas Köftesi", "Peskutan Çorbası", "Katmer"], "Doğa": ["Gökpınar Gölü", "Sızır Şelalesi", "Eğriçimen Yaylası"], "Tarih": ["Divriği Ulu Camii", "Gök Medrese", "Şifaiye Medresesi"] },
             "Şanlıurfa": { "Genel": ["Balıklıgöl", "Göbeklitepe", "Sıra Gecesi"], "Yemek": ["Urfa Kebap", "Çiğ Köfte", "Şıllık Tatlısı"], "Doğa": ["Halfeti", "Takoran Vadisi", "Atatürk Barajı"], "Tarih": ["Göbeklitepe", "Harran Evleri", "Rizvaniye Camii"] },
             "Şırnak": { "Genel": ["Cizre Kırmızı Medrese", "Mem u Zin Türbesi", "Nuh Tufanı Gemisi"], "Yemek": ["Perdepilav", "Kipe", "Hekeheşandi"], "Doğa": ["Cudi Dağı", "Kasrik Boğazı", "Faraşin Yaylası"], "Tarih": ["Cizre Surları", "Finik Ören Yeri", "Abdaliye Medresesi"] },
-            "Tekirdağ": { "Genel": ["Rakoczi Müzesi", "Sahil", "Rüstem Paşa Camii"], "Yemek": ["Tekirdağ Köftesi", "Peynir Helvası", "Hayrabolu Tatlısı"], "Doğa": ["Uçmakdere", "Kumbağ", "Ganos Dağları"], "Tarih": ["Namık Kemal Evi", "Hora Feneri", "Perinthos Antik Kenti"] },
             "Tekirdağ": { "Genel": ["Rakoczi Müzesi", "Sahil", "Rüstem Paşa Camii"], "Yemek": ["Tekirdağ Köftesi", "Peynir Helvası", "Hayrabolu Tatlısı"], "Doğa": ["Uçmakdere", "Kumbağ", "Ganos Dağları"], "Tarih": ["Namık Kemal Evi", "Hora Feneri", "Perinthos Antik Kenti"] },
             "Tokat": { "Genel": ["Tokat Kalesi", "Taşhan", "Saat Kulesi"], "Yemek": ["Tokat Kebabı", "Bat", "Zile Pekmezi"], "Doğa": ["Ballıca Mağarası", "Kaz Gölü", "Zinav Gölü"], "Tarih": ["Mahperi Hatun Kervansarayı", "Ali Paşa Camii", "Gök Medrese"] },
             "Trabzon": { "Genel": ["Sümela Manastırı", "Uzungöl", "Atatürk Köşkü"], "Yemek": ["Akçaabat Köftesi", "Kuymak", "Hamsiköy Sütlacı"], "Doğa": ["Uzungöl", "Sera Gölü", "Çal Mağarası"], "Tarih": ["Ayasofya Camii", "Bedesten", "Gülbahar Hatun Camii"] },
@@ -696,7 +696,7 @@
             );
         };
 
-        const MainApp = ({ myUsername, currentUsername, user, onLogout }) => {
+        const MainApp = ({ myUsername, currentUsername, user, onLogout, onViewChange }) => {
             const [markers, setMarkers] = useState([]);
             const [friends, setFriends] = useState([]); 
             const [viewedFriendsList, setViewedFriendsList] = useState([]); 
@@ -761,6 +761,17 @@
             const lightColor = activeTab === 'couple' ? 'bg-pink-50' : 'bg-red-50';
 
             const categories = ["Genel", "Yemek", "Doğa", "Tarih", "Eğlence", "Deniz"];
+
+            // --- MERKEZİ NAVİGASYON FONKSİYONU ---
+            const handleUserNavigation = (targetUser) => {
+                onViewChange(targetUser);
+                setViewMode('map');
+                setActiveTab('personal');
+                setFeedOpen(false); // Haritaya odaklanmak için akışı kapat
+                setHashtagSearch("");
+                setIsModalOpen(false); // Açık modal varsa kapat
+                if (window.innerWidth < 768) setSidebarOpen(false); // Mobilde kenar çubuğunu kapat
+            };
 
             const toggleDarkMode = () => {
                 setDarkMode(!darkMode);
@@ -1200,11 +1211,8 @@
                 try { 
                     const doc = await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_credentials').doc(target).get(); 
                     if(doc.exists) { 
-                        onViewChange(target); 
+                        handleUserNavigation(target); // MERKEZİ NAVİGASYON
                         setSearchQuery(""); 
-                        setViewMode('map'); 
-                        setActiveTab('personal'); 
-                        if(window.innerWidth < 768) setSidebarOpen(false); 
                     } else alert("Kullanıcı bulunamadı!"); 
                 } catch(e) { alert("Hata."); } 
             };
@@ -1415,7 +1423,7 @@
                                          <div className="flex gap-1">
                                               {!isReadOnly && <button onClick={()=>setIsSettingsOpen(true)} className="bg-white/20 p-1.5 rounded hover:bg-white/30" title="Ayarlar"><Icon name="settings" className="w-4 h-4"/></button>}
                                               {isReadOnly ? 
-                                                  <button onClick={()=>onViewChange(myUsername)} className="bg-white text-red-600 px-2 py-1 rounded text-xs font-bold hover:bg-gray-100 transition-colors shadow-sm" title="Profilime Dön"><Icon name="user" className="w-4 h-4"/></button> 
+                                                  <button onClick={()=>handleUserNavigation(myUsername)} className="bg-white text-red-600 px-2 py-1 rounded text-xs font-bold hover:bg-gray-100 transition-colors shadow-sm" title="Profilime Dön"><Icon name="user" className="w-4 h-4"/></button> 
                                                   : <button onClick={onLogout} className="bg-red-800 p-1.5 rounded hover:bg-red-900 transition-colors shadow-sm" title="Çıkış Yap"><Icon name="log-out" className="w-4 h-4"/></button>
                                               }
                                          </div>
@@ -1461,7 +1469,7 @@
                                 <h2 className="font-bold text-gray-700 dark:text-white mb-3 flex items-center gap-2 text-sm uppercase tracking-wide opacity-70"><Icon name="users" className="w-4 h-4"/> Arkadaşlarım</h2>
                                 {viewedFriendsList.map((f, i) => (
                                     <div key={i} className="bg-white dark:bg-gray-700 p-3 rounded-xl border border-gray-100 dark:border-gray-600 mb-2 flex justify-between items-center cursor-pointer hover:shadow-md transition-all">
-                                            <div className="flex items-center gap-3" onClick={()=>{onViewChange(f); setViewMode('map'); setActiveTab('personal'); if(window.innerWidth < 768) setSidebarOpen(false);}}>
+                                            <div className="flex items-center gap-3" onClick={() => handleUserNavigation(f)}>
                                                 <div className="relative">
                                                     <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xs">
                                                          {friendDetails[f]?.avatar ? <img src={friendDetails[f].avatar} className="w-full h-full rounded-full object-cover"/> : f.substring(0,2).toUpperCase()}
@@ -1547,7 +1555,7 @@
                                     return (
                                         <div key={item.id || i} className="bg-white dark:bg-gray-700 rounded-xl shadow-md border dark:border-gray-600 overflow-hidden animate-fadeIn">
                                             <div className="p-3 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
-                                                <div className="flex items-center gap-2 cursor-pointer" onClick={() => onViewChange(item.username)}>
+                                                <div className="flex items-center gap-2 cursor-pointer" onClick={() => handleUserNavigation(item.username)}>
                                                     <div className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center text-[10px] font-bold text-indigo-600 overflow-hidden">
                                                         {item.userAvatar ? <img src={item.userAvatar} className="w-full h-full object-cover"/> : item.username[0].toUpperCase()}
                                                     </div>
