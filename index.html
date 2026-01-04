@@ -345,6 +345,7 @@
             "Şanlıurfa": { "Genel": ["Balıklıgöl", "Göbeklitepe", "Sıra Gecesi"], "Yemek": ["Urfa Kebap", "Çiğ Köfte", "Şıllık Tatlısı"], "Doğa": ["Halfeti", "Takoran Vadisi", "Atatürk Barajı"], "Tarih": ["Göbeklitepe", "Harran Evleri", "Rizvaniye Camii"] },
             "Şırnak": { "Genel": ["Cizre Kırmızı Medrese", "Mem u Zin Türbesi", "Nuh Tufanı Gemisi"], "Yemek": ["Perdepilav", "Kipe", "Hekeheşandi"], "Doğa": ["Cudi Dağı", "Kasrik Boğazı", "Faraşin Yaylası"], "Tarih": ["Cizre Surları", "Finik Ören Yeri", "Abdaliye Medresesi"] },
             "Tekirdağ": { "Genel": ["Rakoczi Müzesi", "Sahil", "Rüstem Paşa Camii"], "Yemek": ["Tekirdağ Köftesi", "Peynir Helvası", "Hayrabolu Tatlısı"], "Doğa": ["Uçmakdere", "Kumbağ", "Ganos Dağları"], "Tarih": ["Namık Kemal Evi", "Hora Feneri", "Perinthos Antik Kenti"] },
+            "Tekirdağ": { "Genel": ["Rakoczi Müzesi", "Sahil", "Rüstem Paşa Camii"], "Yemek": ["Tekirdağ Köftesi", "Peynir Helvası", "Hayrabolu Tatlısı"], "Doğa": ["Uçmakdere", "Kumbağ", "Ganos Dağları"], "Tarih": ["Namık Kemal Evi", "Hora Feneri", "Perinthos Antik Kenti"] },
             "Tokat": { "Genel": ["Tokat Kalesi", "Taşhan", "Saat Kulesi"], "Yemek": ["Tokat Kebabı", "Bat", "Zile Pekmezi"], "Doğa": ["Ballıca Mağarası", "Kaz Gölü", "Zinav Gölü"], "Tarih": ["Mahperi Hatun Kervansarayı", "Ali Paşa Camii", "Gök Medrese"] },
             "Trabzon": { "Genel": ["Sümela Manastırı", "Uzungöl", "Atatürk Köşkü"], "Yemek": ["Akçaabat Köftesi", "Kuymak", "Hamsiköy Sütlacı"], "Doğa": ["Uzungöl", "Sera Gölü", "Çal Mağarası"], "Tarih": ["Ayasofya Camii", "Bedesten", "Gülbahar Hatun Camii"] },
             "Tunceli": { "Genel": ["Munzur Vadisi", "Ovacık", "Pertek Kalesi"], "Yemek": ["Dersim Kömbeti", "Babuko", "Şir"], "Doğa": ["Munzur Gözeleri", "Pülümür Vadisi", "Kutu Deresi"], "Tarih": ["Pertek Kalesi", "Rabat Kalesi", "Ergen Kilisesi"] },
@@ -956,9 +957,9 @@
 
                 try {
                     const myRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_friends').doc(myUsername);
-                    const myDoc = await myRef.get();
-                    if (myDoc.exists) {
-                        const list = myDoc.data().list || [];
+                    const myRefDoc = await myRef.get();
+                    if (myRefDoc.exists) {
+                        const list = myRefDoc.data().list || [];
                         await myRef.set({ list: list.filter(f => f !== friendName) }, { merge: true });
                     }
                     const otherRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_friends').doc(friendName);
@@ -1159,7 +1160,28 @@
             
             const linkPartner = async (targetUsername) => { await sendNotification(targetUsername, 'partner'); alert(`Eşleşme isteği gönderildi.`); setIsPartnerModalOpen(false); };
             const addFriend = async (friendName) => { if(friendName === myUsername) return; if(friends.includes(friendName)) { alert("Zaten arkadaşsınız."); return; } await sendNotification(friendName, 'friend'); alert(`${friendName} eklendi!`); };
-            const handleDelete = (name) => { if(confirm("Silmek istediğinize emin misiniz?")) { const updated = markers.filter(m => m.cityName !== name); setMarkers(updated); saveMarkersToUser(currentUsername, updated, activeTab === 'couple'); } };
+            
+            const handleDelete = async (name) => { 
+                if(!confirm(`${name} verilerini tamamen silmek ve haritayı sıfırlamak istediğine emin misin?`)) return;
+                
+                // Puan istatistiklerini temizle
+                const existing = markers.find(m => m.cityName === name);
+                if (existing && existing.rating > 0) {
+                    const cityRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('city_stats').doc(name);
+                    try {
+                        await cityRef.set({
+                            sum: firebase.firestore.FieldValue.increment(-existing.rating),
+                            count: firebase.firestore.FieldValue.increment(-1)
+                        }, { merge: true });
+                    } catch(e) { console.error("İstatistik silme hatası:", e); }
+                }
+
+                const updated = markers.filter(m => m.cityName !== name); 
+                setMarkers(updated); 
+                saveMarkersToUser(currentUsername, updated, activeTab === 'couple');
+                setIsModalOpen(false);
+            };
+
             const handleImage = (e) => { const files = Array.from(e.target.files); files.forEach(f => { const reader = new FileReader(); reader.onloadend = () => { setImages(prev => { const newImages = [...prev, reader.result]; if (!favoriteImage && newImages.length > 0) setFavoriteImage(newImages[0]); return newImages; }); }; reader.readAsDataURL(f); }); };
             const toggleCheckedPlace = (place) => { if(isReadOnly) return; setCheckedPlaces(prev => prev.includes(place) ? prev.filter(p=>p!==place) : [...prev, place]); };
             
@@ -1439,7 +1461,7 @@
                                 <h2 className="font-bold text-gray-700 dark:text-white mb-3 flex items-center gap-2 text-sm uppercase tracking-wide opacity-70"><Icon name="users" className="w-4 h-4"/> Arkadaşlarım</h2>
                                 {viewedFriendsList.map((f, i) => (
                                     <div key={i} className="bg-white dark:bg-gray-700 p-3 rounded-xl border border-gray-100 dark:border-gray-600 mb-2 flex justify-between items-center cursor-pointer hover:shadow-md transition-all">
-                                            <div className="flex items-center gap-3" onClick={()=>{onViewChange(f); setViewMode('map'); setActiveTab('personal');}}>
+                                            <div className="flex items-center gap-3" onClick={()=>{onViewChange(f); setViewMode('map'); setActiveTab('personal'); if(window.innerWidth < 768) setSidebarOpen(false);}}>
                                                 <div className="relative">
                                                     <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xs">
                                                          {friendDetails[f]?.avatar ? <img src={friendDetails[f].avatar} className="w-full h-full rounded-full object-cover"/> : f.substring(0,2).toUpperCase()}
@@ -1469,7 +1491,7 @@
                                 <div className={`px-4 py-3 ${lightColor} dark:bg-gray-800 border-b dark:border-gray-700 transition-colors duration-500 shadow-sm relative z-10`}>
                                     <div className={`flex justify-between mb-1.5 text-xs font-bold uppercase tracking-wide ${activeTab === 'couple' ? 'text-pink-800 dark:text-pink-300' : 'text-red-800 dark:text-red-300'}`}><span>Gezilen: {markers.length} / 81</span></div>
                                     <div className="w-full bg-gray-200 dark:bg-gray-700 h-2.5 rounded-full overflow-hidden shadow-inner"><div className={`h-2.5 rounded-full transition-all duration-1000 ease-out ${subColor}`} style={{width: `${(markers.length/81)*100}%`}}></div></div>
-                                    {isReadOnly && <div className="mt-2 text-xs bg-blue-100 text-blue-700 p-1.5 rounded-md text-center flex items-center justify-center gap-1 font-bold border border-blue-200"><Icon name="eye" className="w-3 h-3"/> Görüntüleme Modu</div>}
+                                    {isReadOnly && <div className="mt-2 text-xs bg-blue-100 text-blue-700 p-1.5 rounded-md text-center flex items-center justify-center gap-1 font-bold border border-blue-200"><Icon name="eye" className="w-3 h-3"/> {currentUsername}'in Haritası</div>}
                                 </div>
 
                                 <div className="p-3 bg-gray-50 dark:bg-gray-900 border-b dark:border-gray-700 flex gap-2 overflow-x-auto custom-scrollbar shadow-sm z-10 relative">
@@ -1676,9 +1698,16 @@
                                         <div className="flex gap-2"><input type="text" value={newComment} onChange={e=>setNewComment(e.target.value)} placeholder="Yorum bırak..." className="flex-1 border border-gray-200 dark:border-gray-600 rounded-full px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none dark:bg-gray-700 dark:text-white shadow-sm"/><button onClick={handleAddComment} className="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 transition-all shadow-md"><Icon name="send" className="w-4 h-4"/></button></div>
                                     </div>
                                 </div>
-                                <div className="p-4 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex justify-end gap-3 shrink-0">
-                                    <button onClick={()=>setIsModalOpen(false)} className="px-5 py-2.5 bg-white border border-gray-200 dark:bg-gray-700 dark:border-gray-600 rounded-xl text-gray-600 dark:text-gray-300 text-sm font-bold shadow-sm">İptal</button>
-                                    {!isReadOnly && <button onClick={handleSave} className={`px-8 py-2.5 text-white rounded-xl text-sm font-bold shadow-md transform transition-all active:scale-95 ${activeTab === 'couple' ? 'bg-pink-600 hover:bg-pink-700' : 'bg-red-600 hover:bg-red-700'}`}>Kaydet</button>}
+                                <div className="p-4 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex justify-between items-center shrink-0">
+                                    {!isReadOnly && markers.some(m => m.cityName === selectedCity?.name) ? (
+                                        <button onClick={() => handleDelete(selectedCity.name)} className="px-4 py-2 text-red-600 text-xs font-bold hover:bg-red-50 rounded-xl transition-colors flex items-center gap-1 border border-red-100">
+                                            <Icon name="trash-2" className="w-4 h-4"/> Sıfırla
+                                        </button>
+                                    ) : <div></div>}
+                                    <div className="flex gap-3">
+                                        <button onClick={()=>setIsModalOpen(false)} className="px-5 py-2.5 bg-white border border-gray-200 dark:bg-gray-700 dark:border-gray-600 rounded-xl text-gray-600 dark:text-gray-300 text-sm font-bold shadow-sm">İptal</button>
+                                        {!isReadOnly && <button onClick={handleSave} className={`px-8 py-2.5 text-white rounded-xl text-sm font-bold shadow-md transform transition-all active:scale-95 ${activeTab === 'couple' ? 'bg-pink-600 hover:bg-pink-700' : 'bg-red-600 hover:bg-red-700'}`}>Kaydet</button>}
+                                    </div>
                                 </div>
                             </div>
                         </div>
