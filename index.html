@@ -277,10 +277,11 @@
             const now = new Date();
             const date = new Date(isoDate);
             const diffInSeconds = Math.floor((now - date) / 1000);
-            if (diffInSeconds < 60) return "Şimdi";
-            if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} dk önce`;
-            if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} sa önce`;
-            return `${Math.floor(diffInSeconds / 86400)} gün önce`;
+            if (diffInSeconds < 60) return "Şimdi aktif";
+            if (diffInSeconds < 300) return "Çevrimiçi";
+            if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} dk önce aktifti`;
+            if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} sa önce aktifti`;
+            return `${Math.floor(diffInSeconds / 86400)} gün önce aktifti`;
         };
 
         // --- Şehir ve Kategori Bazlı Öneriler ---
@@ -350,7 +351,6 @@
             "Tunceli": { "Genel": ["Munzur Vadisi", "Ovacık", "Pertek Kalesi"], "Yemek": ["Dersim Kömbeti", "Babuko", "Şir"], "Doğa": ["Munzur Gözeleri", "Pülümür Vadisi", "Kutu Deresi"], "Tarih": ["Pertek Kalesi", "Rabat Kalesi", "Ergen Kilisesi"] },
             "Uşak": { "Genel": ["Uşak Arkeoloji Müzesi", "Ulubey Kanyonu", "Atapark"], "Yemek": ["Tarhana Çorbası", "Çömlek Kebabı", "Demir Tatlısı"], "Doğa": ["Ulubey Kanyonu", "Taşyaran Vadisi", "Clandras Köprüsü"], "Tarih": ["Blaundus Antik Kenti", "Burma Camii", "Pepouza"] },
             "Van": { "Genel": ["Van Kalesi", "Akdamar Adası", "Van Kedisi Evi"], "Yemek": ["Van Kahvaltısı", "Otlu Peynir", "İnci Kefali"], "Doğa": ["Van Gölü", "Muradiye Şelalesi", "Kanispi Şelalesi"], "Tarih": ["Hoşap Kalesi", "Akdamar Kilisesi", "Çavuştepe"] },
-            "Yozgat": { "Genel": ["Çamlık Milli Parkı", "Saat Kulesi", "Yozgat Müzesi"], "Yemek": ["Testi Kebabı", "Arabaşı", "Parmak Çörek"], "Doğa": ["Kazankaya Kanyonu", "Akdağmadeni Ormanları", "Bozok Yaylası"], "Tarih": ["Basilica Therma", "Büyüknefes", "Çapanoğlu Camii"] },
             "Yozgat": { "Genel": ["Çamlık Milli Parkı", "Saat Kulesi", "Yozgat Müzesi"], "Yemek": ["Testi Kebabı", "Arabaşı", "Parmak Çörek"], "Doğa": ["Kazankaya Kanyonu", "Akdağmadeni Ormanları", "Bozok Yaylası"], "Tarih": ["Basilica Therma", "Büyüknefes", "Çapanoğlu Camii"] },
             "Zonguldak": { "Genel": ["Maden Müzesi", "Fener Mahallesi", "Liman"], "Yemek": ["Osmanlı Çileği", "Uğmaç Çorbası", "Malay"], "Doğa": ["Gökgöl Mağarası", "Harmankaya Şelaleleri", "Filyos"], "Tarih": ["Filyos Antik Kenti", "Halil Paşa Konağı", "Varagel Tüneli"] },
             "Aksaray": { "Genel": ["Ihlara Vadisi", "Eğri Minare", "Somuncu Baba"], "Yemek": ["Aksaray Tava", "Sıkma", "Şerbetli Pide"], "Doğa": ["Ihlara Vadisi", "Hasan Dağı", "Tuz Gölü"], "Tarih": ["Sultanhanı", "Aşıklı Höyük", "Yılanlı Kilise"] },
@@ -861,12 +861,12 @@
             const imageMarkersRef = useRef(null); 
             const [geoJsonLayer, setGeoJsonLayer] = useState(null);
             const [isModalOpen, setIsModalOpen] = useState(false);
-            const [isSettingsOpen, setIsSettingsOpen] = useState(false); // YENİ
+            const [isSettingsOpen, setIsSettingsOpen] = useState(false); 
             const [selectedCity, setSelectedCity] = useState(null);
             const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
             const [loading, setLoading] = useState(true);
             const [searchQuery, setSearchQuery] = useState("");
-            const [hashtagSearch, setHashtagSearch] = useState(""); // YENİ - Hashtag arama
+            const [hashtagSearch, setHashtagSearch] = useState(""); 
             const [viewMode, setViewMode] = useState("map"); 
             const [zoomedImage, setZoomedImage] = useState(null);
             const [userAvatar, setUserAvatar] = useState(null);
@@ -874,7 +874,7 @@
             const [darkMode, setDarkMode] = useState(false); 
             const [isStatsOpen, setIsStatsOpen] = useState(false); 
             const [isCinemaOpen, setIsCinemaOpen] = useState(false); 
-            const [showCityNames, setShowCityNames] = useState(true); // YENİ - Şehir isimleri toggle
+            const [showCityNames, setShowCityNames] = useState(true);
 
             const [activeTab, setActiveTab] = useState("personal"); 
             const [partner, setPartner] = useState(null); 
@@ -1093,7 +1093,6 @@
                 }
             };
 
-            // AKIŞTA BEĞENİ VE YORUM İŞLEMLERİ
             const toggleLike = async (targetUser, markerId) => {
                 const docRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_maps').doc(targetUser);
                 const doc = await docRef.get();
@@ -1713,7 +1712,6 @@
                                         </div>
                                     )}
 
-                                    {/* PUANLAMA VE ŞEHİR ORTALAMASI (YENİLENMİŞ) */}
                                     {status === 'visited' && (
                                         <div className="mb-6 flex flex-col gap-4 items-center bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl border border-gray-100 dark:border-gray-600 shadow-inner">
                                             <div className="text-center">
