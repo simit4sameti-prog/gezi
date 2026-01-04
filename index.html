@@ -93,17 +93,16 @@
         
         /* City Labels on Map - MOBİL PERFORMANS İÇİN OPTİMİZE EDİLDİ */
         .city-label {
-            background: rgba(255, 255, 255, 0.9); /* Blur kaldırıldı, opaklık artırıldı */
-            /* backdrop-filter: blur(4px); REMOVED FOR PERFORMANCE */
+            background: rgba(255, 255, 255, 0.9);
             border: 1px solid rgba(0,0,0,0.1); 
             border-radius: 12px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1); /* Gölge azaltıldı */
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
             font-size: 11px; font-weight: 700; color: #334155;
             padding: 2px 8px;
             text-align: center; opacity: 1 !important; white-space: nowrap;
             pointer-events: none;
             transition: all 0.3s;
-            transform: translate3d(0,0,0); /* GPU Hızlandırma */
+            transform: translate3d(0,0,0);
             will-change: transform;
         }
         .dark .city-label { 
@@ -149,20 +148,16 @@
         // --- AYARLAR & YAPILANDIRMA ---
         // ==========================================
         
-        // 1. ADIM: GitHub Raw Linki ile güncellendi
         const LOGO_URL = "https://raw.githubusercontent.com/simit4sameti-prog/gezi/2dc829678a678bedabc4c8bce4330d8a94c5bea5/65dc1944-b4bd-479c-950a-57336cc7abf1.jpg";
 
-        // Favicon'u güncelle (Yedek olarak JS ile de tetikler)
         const link = document.querySelector("link[rel*='icon']") || document.createElement('link');
         link.type = 'image/jpeg';
         link.rel = 'icon';
         link.href = LOGO_URL;
         document.getElementsByTagName('head')[0].appendChild(link);
 
-        // Kullanıcının sağladığı manuel key (Fallback olarak kullanılır)
         const MANUAL_GEMINI_KEY = ""; 
 
-        // !!! EKLENEN KISIM: Firebase Config !!!
         const MANUAL_FIREBASE_CONFIG = {
           apiKey: "AIzaSyBB5WR_SqJOjcKJjMLElGnwclYYbX_6zNQ",
           authDomain: "adimadim-5b4da.firebaseapp.com",
@@ -195,8 +190,6 @@
             } catch (e) {
                 console.error("Firebase başlatma hatası:", e);
             }
-        } else {
-            console.warn("Firebase kütüphanesi yüklenemedi.");
         }
 
         // ==========================================
@@ -243,20 +236,10 @@
             );
         };
 
-        const ConfigWarning = () => (
-            <div className="flex flex-col h-screen w-full items-center justify-center bg-gray-100 p-6 text-center dark:bg-gray-900">
-                <div className="bg-white p-8 rounded-xl shadow-2xl max-w-lg dark:bg-gray-800 dark:text-white">
-                    <div className="text-red-500 mb-4 flex justify-center"><Icon name="alert-triangle" className="w-16 h-16" /></div>
-                    <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Ayarlar Eksik</h1>
-                    <p className="text-gray-600 dark:text-gray-300">Firebase yapılandırması bulunamadı.</p>
-                </div>
-            </div>
-        );
-
         const callGeminiAPI = async (prompt) => {
             if (!finalApiKey) return "Hata: API anahtarı eksik.";
             try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${finalApiKey}`, {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${finalApiKey}`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
@@ -309,7 +292,7 @@
             "Amasya": { "Genel": ["Kral Kaya Mezarları", "Yalıboyu Evleri", "Amasya Kalesi"], "Yemek": ["Amasya Çöreği", "Bakla Dolması", "Toyga Çorbası"], "Doğa": ["Boraboy Gölü", "Yedi Kuğular Kuş Cenneti", "Yeşilırmak"], "Tarih": ["Hazeranlar Konağı", "Ferhat ile Şirin Müzesi", "Bimarhane"] },
             "Ankara": { "Genel": ["Anıtkabir", "Ankara Kalesi", "Atakule"], "Yemek": ["Ankara Döneri (Süha)", "Ankara Tavası", "Beypazarı Kurusu"], "Doğa": ["Eymir Gölü", "Soğuksu Milli Parkı", "Mogan Gölü"], "Tarih": ["Anadolu Medeniyetleri Müzesi", "Augustus Tapınağı", "İlk Meclis"] },
             "Antalya": { "Genel": ["Kaleiçi", "Düden Şelalesi", "Konyaaltı Plajı"], "Yemek": ["Piyaz (Piyazcı Ahmet)", "Serpme Börek", "Yanık Dondurma"], "Doğa": ["Köprülü Kanyon", "Kurşunlu Şelalesi", "Tazı Kanyonu"], "Deniz": ["Kaputaş Plajı", "Patara", "Çıralı"], "Tarih": ["Aspendos", "Perge", "Termessos"] },
-            "Artvin": { "Genel": ["Atatepe", "Mençuna Şelalesi", "Cam Teras"], "Yemek": ["Laz Böreği", "Mıhlama", "Cağ Kebabı"], "Doğa": ["Karagöl (Borçka)", "Karagöl (Şavşat)", "Cehennem Deresi Kanyonu"], "Tarih": ["Artvin Kalesi", "İşhan Kilisesi", "Dolishane"] },
+            "Artvin": { "Genel": ["Atatepe", "Mençuna Şelalesi", "Cam Teras"], "Yemek": ["Laz Böreği", "Mıhlama", "Cağ Kebabı"], "Doğa": ["Karagöl (Borçka)", "Karagöl (Şavşat)", "Cehennem Deresi Kanyonu"], "Tarih": ["Artvin Kalesi", "İshak Paşa Sarayı", "Dolishane"] },
             "Aydın": { "Genel": ["Güvercinada", "Forum Aydın", "Kent Meydanı"], "Yemek": ["Aydın Pidesi", "Çine Köftesi", "Paşa Böreği"], "Doğa": ["Bafa Gölü", "Dilek Yarımadası", "Zeus Mağarası"], "Tarih": ["Afrodisias", "Milet Antik Kenti", "Didyma Apollon Tapınağı"], "Deniz": ["Altınkum", "Kadınlar Denizi", "Dilek Yarımadası"] },
             "Balıkesir": { "Genel": ["Saat Kulesi", "Zağnos Paşa Camii", "Cunda Adası"], "Yemek": ["Höşmerim", "Susurluk Tostu", "Balıkesir Kaymaklısı"], "Doğa": ["Kaz Dağları", "Manyas Kuş Cenneti", "Hasanboğuldu"], "Deniz": ["Sarımsaklı Plajı", "Akçay", "Altınoluk"], "Tarih": ["Antandros", "Kyzikos", "Taksiyarhis Kilisesi"] },
             "Bilecik": { "Genel": ["Şeyh Edebali Türbesi", "Saat Kulesi", "Pelitözü Göleti"], "Yemek": ["Bıldırcın Kebabı", "Nohutlu Mantı", "Bozada"], "Doğa": ["Harmankaya Kanyonu", "Kınık Şelalesi", "Çömlekçiköy"], "Tarih": ["Ertuğrul Gazi Türbesi", "Metristepe Anıtı", "Dursun Fakih Türbesi"] },
@@ -319,7 +302,7 @@
             "Burdur": { "Genel": ["Salda Gölü", "Burdur Müzesi", "Saat Kulesi"], "Yemek": ["Burdur Şiş", "Ceviz Ezmesi", "Haşhaş Helvası"], "Doğa": ["Salda Gölü", "İnsuyu Mağarası", "Karanlık Dere Kanyonu"], "Tarih": ["Sagalassos", "Kibyra", "Hacılar Höyüğü"] },
             "Bursa": { "Genel": ["Ulu Camii", "Yeşil Türbe", "Koza Han"], "Yemek": ["İskender Kebap", "Pideli Köfte", "Kestane Şekeri"], "Doğa": ["Uludağ", "Suuçtu Şelalesi", "Gölyazı"], "Tarih": ["Cumalıkızık", "Bursa Kalesi", "Muradiye Külliyesi"] },
             "Çanakkale": { "Genel": ["Truva Atı", "Aynalı Çarşı", "Kordon"], "Yemek": ["Ezine Peyniri", "Peynir Helvası", "Sardalya"], "Doğa": ["Kaz Dağları", "Bozcaada", "Gökçeada"], "Tarih": ["Gelibolu Yarımadası", "Truva Antik Kenti", "Assos"], "Deniz": ["Ayazma Plajı", "Kadırga Koyu", "Güzelyalı"] },
-            "Çankırı": { "Genel": ["Tuz Mağarası", "Çankırı Kalesi", "Taş Mescit"], "Yemek": ["Yumurta Tatlısı", "Sarımsaklı Et", "Çankırı Pidesi"], "Doğa": ["Kadınçayırı", "Kırkpınar Yaylası", "Alpsarı Göleti"], "Tarih": ["Çankırı Kalesi", "Taş Mescit", "Sultan Süleyman Camii"] },
+            "Çankırı": { "Genel": ["Tuz Mağarası", "Çankırı Kalesi", "Taş Mescit"], "Yemek": ["Yumurta Tatlısi", "Sarımsaklı Et", "Çankırı Pidesi"], "Doğa": ["Kadınçayırı", "Kırkpınar Yaylası", "Alpsarı Göleti"], "Tarih": ["Çankırı Kalesi", "Taş Mescit", "Sultan Süleyman Camii"] },
             "Çorum": { "Genel": ["Saat Kulesi", "Çorum Müzesi", "İncesu Kanyonu"], "Yemek": ["Çorum Leblebisi", "İskilip Dolması", "Çatal Aşı"], "Doğa": ["Hattuşaş", "Alacahöyük", "İncesu Kanyonu"], "Tarih": ["Hattuşaş (Hitit Başkenti)", "Alacahöyük", "Yazılıkaya"] },
             "Denizli": { "Genel": ["Pamukkale Travertenleri", "Çınar Meydanı", "Teleferik"], "Yemek": ["Denizli Kebabı", "Zafer Gazozu", "Tavas Baklavası"], "Doğa": ["Pamukkale", "Keloğlan Mağarası", "Güney Şelalesi"], "Tarih": ["Hierapolis", "Laodikeia", "Tripolis"] },
             "Diyarbakır": { "Genel": ["Diyarbakır Surları", "Ulu Camii", "Hasan Paşa Hanı"], "Yemek": ["Ciğer Kebabı", "Meftune", "Burma Kadayıf"], "Doğa": ["Hevsel Bahçeleri", "Dicle Nehri", "Birkleyn Mağaraları"], "Tarih": ["Diyarbakır Surları", "On Gözlü Köprü", "Zerzevan Kalesi"] },
@@ -611,6 +594,47 @@
             );
         };
 
+        // --- AYARLAR MODALI (YENİ) ---
+        const SettingsModal = ({ myUsername, onClose }) => {
+            const [newName, setNewName] = useState(myUsername);
+            const [newPass, setNewPass] = useState("");
+            const [loading, setLoading] = useState(false);
+            const [msg, setMsg] = useState("");
+
+            const handleUpdate = async () => {
+                setLoading(true);
+                try {
+                    const credRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_credentials').doc(myUsername);
+                    const updateObj = {};
+                    if(newPass) updateObj.password = newPass;
+                    await credRef.update(updateObj);
+                    setMsg("Başarıyla güncellendi!");
+                } catch(e) { setMsg("Hata oluştu."); }
+                setLoading(false);
+            };
+
+            return (
+                <div className="fixed inset-0 z-[1700] bg-black/70 flex items-center justify-center p-4 animate-fadeIn backdrop-blur-sm">
+                    <div className="bg-white dark:bg-gray-800 w-full max-w-sm rounded-2xl shadow-2xl p-6 border dark:border-gray-700 relative">
+                        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><Icon name="x" className="w-5 h-5"/></button>
+                        <h2 className="text-xl font-bold mb-6 flex items-center gap-2 dark:text-white"><Icon name="settings" className="w-5 h-5 text-blue-500"/> Ayarlar</h2>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Kullanıcı Adı</label>
+                                <input type="text" value={newName} readOnly className="w-full bg-gray-100 dark:bg-gray-900 dark:text-gray-400 border border-gray-200 dark:border-gray-700 rounded-lg p-2.5 text-sm cursor-not-allowed"/>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Yeni Şifre</label>
+                                <input type="password" value={newPass} onChange={e=>setNewPass(e.target.value)} className="w-full border border-gray-200 dark:border-gray-700 dark:bg-gray-700 dark:text-white rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Şifreyi değiştir..."/>
+                            </div>
+                            {msg && <p className={`text-xs font-bold ${msg.includes("Başarı") ? 'text-green-500' : 'text-red-500'}`}>{msg}</p>}
+                            <button onClick={handleUpdate} disabled={loading} className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition-all active:scale-95 shadow-lg">Değişiklikleri Kaydet</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
         // --- NOTIFICATION MODAL ---
         const NotificationModal = ({ notifications, onClose, onAccept, onReject }) => {
             return (
@@ -714,6 +738,8 @@
             const [isRegistering, setIsRegistering] = useState(false);
             const [inputUsername, setInputUsername] = useState("");
             const [inputPassword, setInputPassword] = useState("");
+            const [inputEmail, setInputEmail] = useState(""); 
+            const [inputPhone, setInputPhone] = useState(""); 
             const [inputContact, setInputContact] = useState(""); 
             const [loading, setLoading] = useState(false);
             const [error, setError] = useState(null);
@@ -741,7 +767,12 @@
                     if (isRegistering) {
                         if (docSnap.exists) setError("Bu kullanıcı adı alınmış.");
                         else {
-                            await userRef.set({ password: uPass, contact: inputContact.trim() });
+                            await userRef.set({ 
+                                password: uPass, 
+                                contact: inputContact.trim(),
+                                email: inputEmail.trim(), 
+                                phone: inputPhone.trim()   
+                            });
                             const publicDataRef = db.collection('artifacts').doc(appId).collection('public').doc('data');
                             await publicDataRef.collection('user_profiles').doc(uName).set({ avatar: null, lastActive: new Date().toISOString() });
                             await publicDataRef.collection('user_friends').doc(uName).set({ list: [] });
@@ -770,17 +801,8 @@
 
                     <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center transition-all duration-300 relative z-10 border border-white/50">
                         <div className="mb-6 flex justify-center transform hover:scale-105 transition-transform duration-500">
-                            {/* LOGO AREA - Kırmızı alana yerleştirildi */}
                             <div className="bg-gradient-to-br from-red-500 to-pink-600 p-1.5 rounded-2xl shadow-lg w-28 h-28 flex items-center justify-center border-4 border-white/20 relative overflow-hidden">
-                                <img 
-                                    src={LOGO_URL}
-                                    alt="Maporys" 
-                                    className="w-full h-full object-cover rounded-xl bg-white" 
-                                    onError={(e) => { e.target.style.display='none'; e.target.nextSibling.style.display='flex'; }}
-                                />
-                                <div className="hidden w-full h-full items-center justify-center">
-                                    <Icon name="map" className="w-12 h-12 text-white" />
-                                </div>
+                                <img src={LOGO_URL} className="w-full h-full object-cover rounded-xl bg-white" />
                             </div>
                         </div>
                         <h1 className="text-3xl font-black text-gray-800 dark:text-white mb-1 tracking-tight">Maporys</h1>
@@ -798,10 +820,16 @@
                             </div>
                             
                             {isRegistering && (
-                                <div className="relative animate-fadeIn">
-                                    <Icon name="mail" className="absolute left-3 top-3 w-5 h-5 text-gray-400"/>
-                                    <input type="text" className="w-full border border-gray-200 dark:border-gray-600 rounded-lg pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 dark:bg-gray-700 dark:text-white transition-all" placeholder="E-posta (Opsiyonel)" value={inputContact} onChange={e => setInputContact(e.target.value)} disabled={loading} />
-                                </div>
+                                <>
+                                    <div className="relative animate-fadeIn">
+                                        <Icon name="mail" className="absolute left-3 top-3 w-5 h-5 text-gray-400"/>
+                                        <input type="email" className="w-full border border-gray-200 dark:border-gray-600 rounded-lg pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-red-500 dark:bg-gray-700 dark:text-white" placeholder="E-posta" value={inputEmail} onChange={e => setInputEmail(e.target.value)} />
+                                    </div>
+                                    <div className="relative animate-fadeIn">
+                                        <Icon name="phone" className="absolute left-3 top-3 w-5 h-5 text-gray-400"/>
+                                        <input type="tel" className="w-full border border-gray-200 dark:border-gray-600 rounded-lg pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-red-500 dark:bg-gray-700 dark:text-white" placeholder="Telefon No" value={inputPhone} onChange={e => setInputPhone(e.target.value)} />
+                                    </div>
+                                </>
                             )}
                             
                             <div className="relative">
@@ -823,59 +851,67 @@
 
         const MainApp = ({ myUsername, currentUsername, onViewChange, onLogout }) => {
             const [markers, setMarkers] = useState([]);
-            const [friends, setFriends] = useState([]); 
-            const [viewedFriendsList, setViewedFriendsList] = useState([]); 
-            const [friendDetails, setFriendDetails] = useState({}); 
+            const [friends, setFriends] = useState([]); 
+            const [viewedFriendsList, setViewedFriendsList] = useState([]); 
+            const [friendDetails, setFriendDetails] = useState({}); 
             const mapRef = useRef(null);
-            const labelLayerRef = useRef(null); 
-            const routeLayerRef = useRef(null); 
-            const imageMarkersRef = useRef(null); 
+            const labelLayerRef = useRef(null); 
+            const routeLayerRef = useRef(null); 
+            const imageMarkersRef = useRef(null); 
             const [geoJsonLayer, setGeoJsonLayer] = useState(null);
             const [isModalOpen, setIsModalOpen] = useState(false);
+            const [isSettingsOpen, setIsSettingsOpen] = useState(false); // YENİ
             const [selectedCity, setSelectedCity] = useState(null);
             const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
             const [loading, setLoading] = useState(true);
             const [searchQuery, setSearchQuery] = useState("");
-            const [viewMode, setViewMode] = useState("map"); 
+            const [hashtagSearch, setHashtagSearch] = useState(""); // YENİ - Hashtag arama
+            const [viewMode, setViewMode] = useState("map"); 
             const [zoomedImage, setZoomedImage] = useState(null);
             const [userAvatar, setUserAvatar] = useState(null);
             const [currentChatFriend, setCurrentChatFriend] = useState(null);
-            const [darkMode, setDarkMode] = useState(false); 
-            const [isStatsOpen, setIsStatsOpen] = useState(false); 
-            const [isCinemaOpen, setIsCinemaOpen] = useState(false); 
-             
-            const [activeTab, setActiveTab] = useState("personal"); 
-            const [partner, setPartner] = useState(null); 
+            const [darkMode, setDarkMode] = useState(false); 
+            const [isStatsOpen, setIsStatsOpen] = useState(false); 
+            const [isCinemaOpen, setIsCinemaOpen] = useState(false); 
+            const [showCityNames, setShowCityNames] = useState(true); // YENİ - Şehir isimleri toggle
+
+            const [activeTab, setActiveTab] = useState("personal"); 
+            const [partner, setPartner] = useState(null); 
             const [isPartnerModalOpen, setIsPartnerModalOpen] = useState(false);
             const [coupleId, setCoupleId] = useState(null);
 
             const [notifications, setNotifications] = useState([]);
             const [isNotifOpen, setIsNotifOpen] = useState(false);
-             
+             
             const [categoryFilter, setCategoryFilter] = useState("Tümü");
             const [showRoute, setShowRoute] = useState(false);
-             
+             
             const [note, setNote] = useState("");
             const [images, setImages] = useState([]);
-            const [rating, setRating] = useState(0); 
-            const [cityStats, setCityStats] = useState({ avg: 0, count: 0 }); 
+            const [rating, setRating] = useState(0); 
+            const [cityStats, setCityStats] = useState({ avg: 0, count: 0 }); 
             const [checkedPlaces, setCheckedPlaces] = useState([]);
-            const [favoriteImage, setFavoriteImage] = useState(null); 
+            const [favoriteImage, setFavoriteImage] = useState(null); 
             const [comments, setComments] = useState([]);
             const [newComment, setNewComment] = useState("");
-            const [status, setStatus] = useState("visited"); 
-            const [category, setCategory] = useState("Genel"); 
+            const [status, setStatus] = useState("visited"); 
+            const [category, setCategory] = useState("Genel"); 
 
-            const [feedOpen, setFeedOpen] = useState(false); 
-            const [feedItems, setFeedItems] = useState([]); 
+            const [feedOpen, setFeedOpen] = useState(false); 
+            const [feedItems, setFeedItems] = useState([]); 
             const [feedCommentInputs, setFeedCommentInputs] = useState({});
 
             const [isEnhancingNote, setIsEnhancingNote] = useState(false);
-             
+             
             const [viewedUserFriendCount, setViewedUserFriendCount] = useState(0);
 
             const isReadOnly = (myUsername !== currentUsername) && (activeTab === 'personal');
             const markersRef = useRef(markers);
+
+            // Renkleri Dinamik Belirle (BU KISIM HATAYI DÜZELTEN KISIMDIR)
+            const mainColor = activeTab === 'couple' ? 'bg-pink-600' : 'bg-red-600';
+            const subColor = activeTab === 'couple' ? 'bg-pink-500' : 'bg-red-500';
+            const lightColor = activeTab === 'couple' ? 'bg-pink-50' : 'bg-red-50';
 
             const categories = ["Genel", "Yemek", "Doğa", "Tarih", "Eğlence", "Deniz"];
 
@@ -896,7 +932,7 @@
                     lastActive: new Date().toISOString()
                 }, { merge: true });
             }, [myUsername]);
-             
+             
             useEffect(() => {
                 const fRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_friends').doc(currentUsername);
                 const unsub = fRef.onSnapshot(doc => {
@@ -945,7 +981,7 @@
                 setCurrentImageIndex(allImages ? allImages.indexOf(imgSrc) : 0);
                 setZoomedImage(imgSrc);
             };
-             
+             
             const nextLightbox = (e) => { e.stopPropagation(); setCurrentImageIndex((prev) => (prev + 1) % lightboxImages.length); setZoomedImage(lightboxImages[(currentImageIndex + 1) % lightboxImages.length]); };
             const prevLightbox = (e) => { e.stopPropagation(); setCurrentImageIndex((prev) => (prev - 1 + lightboxImages.length) % lightboxImages.length); setZoomedImage(lightboxImages[(currentImageIndex - 1 + lightboxImages.length) % lightboxImages.length]); };
 
@@ -969,7 +1005,7 @@
                         const fAvatar = pDoc.exists ? pDoc.data().avatar : null;
                         if (doc.exists) {
                             const m = doc.data().markers || [];
-                            const mWithUser = m.map(i => ({...i, username: friend, userAvatar: fAvatar})); 
+                            const mWithUser = m.map(i => ({...i, username: friend, userAvatar: fAvatar})); 
                             allItems = [...allItems, ...mWithUser];
                         }
                     }
@@ -988,7 +1024,7 @@
                     setFriendDetails(details);
                 };
                 fetchFriendDetails();
-            }, [friends, feedOpen, viewedFriendsList]); 
+            }, [friends, feedOpen, viewedFriendsList]); 
 
             const sendNotification = async (targetUser, type, msg=null) => {
                 const notifRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_notifications').doc(targetUser);
@@ -1038,22 +1074,18 @@
                 if (!confirm(`${friendName} adlı kişiyi arkadaşlıktan çıkarmak istediğine emin misin?`)) return;
 
                 try {
-                    // Kendi listemden çıkar
                     const myRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_friends').doc(myUsername);
                     const myDoc = await myRef.get();
                     if (myDoc.exists) {
                         const list = myDoc.data().list || [];
                         await myRef.set({ list: list.filter(f => f !== friendName) }, { merge: true });
                     }
-
-                    // Karşı tarafın listesinden çıkar
                     const otherRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_friends').doc(friendName);
                     const otherDoc = await otherRef.get();
                     if (otherDoc.exists) {
                         const list = otherDoc.data().list || [];
                         await otherRef.set({ list: list.filter(f => f !== myUsername) }, { merge: true });
                     }
-                    
                     alert("Arkadaşlıktan çıkarıldı.");
                 } catch (e) {
                     console.error(e);
@@ -1085,7 +1117,7 @@
                 const cleanText = filterProfanity(text);
                 const commentObj = { id: Date.now(), user: myUsername, text: cleanText, date: new Date().toLocaleDateString('tr-TR') };
                 setFeedItems(prev => prev.map(item => { if (item.id === markerId) return { ...item, comments: [...(item.comments || []), commentObj] }; return item; }));
-                setFeedInput(markerId, ""); 
+                setFeedInput(markerId, ""); 
                 try {
                     const docRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_maps').doc(targetUser);
                     const doc = await docRef.get();
@@ -1137,7 +1169,7 @@
                     if (activeTab === 'couple' && coupleId) {
                          docRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('couple_maps').doc(coupleId);
                     } else if (activeTab === 'couple' && !coupleId) {
-                         setMarkers([]); 
+                         setMarkers([]); 
                          return;
                     } else {
                          docRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_maps').doc(myUsername);
@@ -1174,7 +1206,6 @@
             const handleSave = () => {
                 if (!selectedCity) return;
                 const cleanNote = filterProfanity(note);
-                
                 const existingMarker = markers.find(m => m.cityName === selectedCity.name);
                 const oldRating = existingMarker ? (existingMarker.rating || 0) : 0;
                 
@@ -1182,7 +1213,7 @@
                     id: Date.now(), lat: selectedCity.latlng.lat, lng: selectedCity.latlng.lng,
                     cityName: selectedCity.name, note: cleanNote, images: images, checkedPlaces: checkedPlaces,
                     comments: comments, favoriteImage: favoriteImage, rating: rating,
-                    status: status, category: category, date: new Date().toLocaleDateString('tr-TR'), timestamp: Date.now(), likes: [] 
+                    status: status, category: category, date: new Date().toLocaleDateString('tr-TR'), timestamp: Date.now(), likes: [] 
                 };
                 const updated = [...markers.filter(m => m.cityName !== selectedCity.name), newMarker];
                 setMarkers(updated);
@@ -1200,7 +1231,6 @@
                         }, { merge: true });
                     }
                 }
-
                 setIsModalOpen(false);
             };
 
@@ -1238,28 +1268,20 @@
             const toggleCheckedPlace = (place) => { if(isReadOnly) return; setCheckedPlaces(prev => prev.includes(place) ? prev.filter(p=>p!==place) : [...prev, place]); };
             const handleSearch = async (e) => { e.preventDefault(); if(!searchQuery.trim()) return; const target = searchQuery.trim().toLowerCase(); try { const doc = await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_credentials').doc(target).get(); if(doc.exists) { onViewChange(target); setSearchQuery(""); setViewMode('map'); setActiveTab('personal'); if(window.innerWidth < 768) setSidebarOpen(false); } else alert("Kullanıcı bulunamadı!"); } catch(e) { alert("Hata."); } };
             
-            const calculateProgress = (cityName, visitedPlaces) => { 
+            const calculateProgress = (cityName, visitedPlaces) => { 
                 const visitedCount = visitedPlaces ? visitedPlaces.length : 0;
                 if (visitedCount === 0) return 0;
-
                 let totalPossible = 0;
                 const data = citySuggestionsData[cityName];
-                
                 if (data) {
                     const uniqueItems = new Set();
-                    // Şehir verisindeki tüm kategorileri (Genel, Yemek, Doğa vb.) dolaş
                     Object.values(data).forEach(categoryList => {
-                        if (Array.isArray(categoryList)) {
-                            categoryList.forEach(item => uniqueItems.add(item));
-                        }
+                        if (Array.isArray(categoryList)) { categoryList.forEach(item => uniqueItems.add(item)); }
                     });
                     totalPossible = uniqueItems.size;
                 }
-
-                // Veri yoksa veya boşsa varsayılan olarak 3 kabul et (eski mantık çökmemesi için)
                 if (totalPossible === 0) totalPossible = 3;
-
-                return Math.min(100, Math.round((visitedCount / totalPossible) * 100)); 
+                return Math.min(100, Math.round((visitedCount / totalPossible) * 100)); 
             };
 
             useEffect(() => {
@@ -1284,7 +1306,7 @@
                             if (marker.status === 'bucket') { fillColor = '#eab308'; fillOpacity = 0.8; }
                             else { fillColor = activeTab === 'couple' ? '#ec4899' : '#ef4444'; fillOpacity = 0.9; }
                         } else {
-                            fillColor = '#9ca3af'; 
+                            fillColor = '#9ca3af'; 
                         }
 
                         layer.setStyle({ fillColor: fillColor, fillOpacity: fillOpacity, color: 'white', weight: 1 });
@@ -1299,8 +1321,10 @@
                             if (progress > 0) labelContent = `<div class="city-label"><div>${cityName}</div><div class="city-label-progress">%${progress}</div></div>`;
                         }
                         
-                        L.marker(center, { icon: L.divIcon({className: 'hidden'}), interactive: false })
-                          .bindTooltip(labelContent, { permanent: true, direction: 'center', className: '' }).addTo(labelLayerRef.current);
+                        if (showCityNames) { // ŞEHİR İSİMLERİ TOGGLE KONTROLÜ
+                            L.marker(center, { icon: L.divIcon({className: 'hidden'}), interactive: false })
+                              .bindTooltip(labelContent, { permanent: true, direction: 'center', className: '' }).addTo(labelLayerRef.current);
+                        }
 
                         if (progress === 100 && (marker.favoriteImage || (marker.images && marker.images.length > 0))) {
                             const imgUrl = marker.favoriteImage || marker.images[0];
@@ -1309,7 +1333,7 @@
                         }
                     });
                 }
-            }, [markers, geoJsonLayer, activeTab, categoryFilter, showRoute]);
+            }, [markers, geoJsonLayer, activeTab, categoryFilter, showRoute, showCityNames]);
 
             // Harita Init
             useEffect(() => {
@@ -1318,19 +1342,19 @@
                 if(!container) return;
                 if(container._leaflet_id) { container._leaflet_id = null; container.innerHTML = ""; }
                 
-                const mapInstance = L.map('map-container', { 
-                    preferCanvas: true, 
-                    minZoom: 5, 
+                const mapInstance = L.map('map-container', { 
+                    preferCanvas: true, 
+                    minZoom: 5, 
                     zoomControl: false,
                     maxBounds: [[35, 25], [43, 45]],
-                    maxBoundsViscosity: 1.0 
+                    maxBoundsViscosity: 1.0 
                 }).setView([39.0, 35.5], 6);
                 
                 L.control.zoom({ position: 'bottomright' }).addTo(mapInstance);
                 mapRef.current = mapInstance;
                 
-                L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', { 
-                    attribution: 'Esri', 
+                L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', { 
+                    attribution: 'Esri', 
                     maxZoom: 16,
                     noWrap: true,
                     bounds: [[-90, -180], [90, 180]]
@@ -1348,11 +1372,11 @@
                     .then(data => {
                         const layer = L.geoJSON(data, {
                             interactive: true,
-                            style: () => ({ 
-                                fillColor: '#9ca3af', 
-                                weight: 1, 
-                                opacity: 0.5, 
-                                color: 'white', 
+                            style: () => ({ 
+                                fillColor: '#9ca3af', 
+                                weight: 1, 
+                                opacity: 0.5, 
+                                color: 'white', 
                                 fillOpacity: 0.5,
                                 className: 'cursor-pointer'
                             }),
@@ -1387,26 +1411,17 @@
                 return () => { if(mapRef.current) { mapRef.current.remove(); mapRef.current = null; } };
             }, []);
 
-            const mainColor = activeTab === 'couple' ? 'bg-pink-600' : 'bg-red-600';
-            const subColor = activeTab === 'couple' ? 'bg-pink-500' : 'bg-red-500';
-            const lightColor = activeTab === 'couple' ? 'bg-pink-50' : 'bg-red-50';
-
-            const getFilteredMarkers = () => {
-                let filtered = markers.filter(m => categoryFilter === "Tümü" || m.category === categoryFilter);
-                if (viewMode === 'timeline') {
-                    return filtered.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)); 
-                }
-                return filtered; 
-            };
-
-            const displayMarkers = getFilteredMarkers();
-            
-            const friendsListToDisplay = currentUsername === myUsername ? friends : viewedFriendsList;
+            // HASHTAG FİLTRELEME MANTIĞI
+            const filteredFeedItems = feedItems.filter(item => {
+                if(!hashtagSearch.trim()) return true;
+                const tag = hashtagSearch.trim().toLowerCase();
+                return item.note && item.note.toLowerCase().includes(tag);
+            });
 
             return (
                 <div className={`flex h-full relative ${darkMode ? 'dark' : ''}`}>
                     <div className={`absolute md:relative z-20 h-full bg-white dark:bg-gray-800 shadow-xl transition-all duration-300 ease-in-out flex flex-col ${sidebarOpen ? 'w-full md:w-96 translate-x-0' : 'w-0 -translate-x-full overflow-hidden'}`}>
-                        {/* ... (Sidebar Header Content) ... */}
+                        {/* Sidebar Header Content */}
                         <div className={`p-5 ${mainColor} text-white shadow-md transition-colors duration-500`}>
                              <div className="flex justify-between items-center mb-4">
                                 <div className="flex items-center gap-3 font-bold cursor-pointer hover:opacity-90 transition-opacity" onClick={() => setViewMode('map')}>
@@ -1428,32 +1443,29 @@
                                     </div>
                                     <div>
                                         <h1 className="text-xl leading-tight font-black tracking-tight">@{currentUsername}</h1>
-                                        {/* Follow/Follower Stats Added Here */}
                                         <div className="flex items-center gap-3 text-xs font-medium text-white/80 mt-1">
                                             <span><strong>{viewedUserFriendCount}</strong> Arkadaş</span>
                                         </div>
-                                        {activeTab === 'couple' && partner && (
-                                            <div className="flex items-center gap-2 mt-1 animate-fadeIn">
-                                                <span className="text-sm font-medium text-white/90 flex items-center gap-1"><Icon name="heart" className="w-3 h-3 fill-current"/> & @{partner}</span>
-                                                <button onClick={() => setIsPartnerModalOpen(true)} className="text-white/70 hover:text-white bg-black/20 hover:bg-black/30 p-1 rounded-full transition-colors" title="İlişki Ayarları">
-                                                    <Icon name="settings" className="w-3 h-3"/>
-                                                </button>
-                                            </div>
-                                        )}
                                         <div className="text-xs opacity-80 font-medium flex items-center gap-1 mt-1.5 bg-black/10 px-1.5 py-0.5 rounded w-fit"><Icon name={rank.icon} className="w-3 h-3"/> {rank.title}</div>
                                     </div>
                                 </div>
                                 <div className="flex gap-2 items-center">
+                                    {/* ŞEHİR İSİMLERİ TOGGLE (YENİ) */}
+                                    <button onClick={()=>setShowCityNames(!showCityNames)} className={`p-2 rounded-full transition-all ${showCityNames ? 'bg-white text-red-600' : 'bg-white/20'}`} title="Şehir İsimlerini Göster/Gizle">
+                                        <Icon name="type" className="w-4 h-4"/>
+                                    </button>
                                     <button onClick={()=>setIsNotifOpen(!isNotifOpen)} className="bg-white/20 p-2 rounded-full hover:bg-white/30 relative transition-colors">
                                         <Icon name="bell" className="w-5 h-5"/>
                                         {notifications.length > 0 && <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-yellow-400 rounded-full border-2 border-red-600 animate-pulse"></span>}
                                     </button>
                                     <div className="flex flex-col gap-1">
-                                         <button onClick={()=>setSidebarOpen(false)} className="md:hidden bg-white/20 p-1 rounded hover:bg-white/30"><Icon name="chevrons-left" className="w-5 h-5"/></button>
+                                         {/* KAPAT TUŞU (YENİ) */}
+                                         <button onClick={()=>setSidebarOpen(false)} className="bg-black/20 p-2 rounded-full hover:bg-black/40"><Icon name="x" className="w-4 h-4"/></button>
                                          <div className="flex gap-1">
+                                              {!isReadOnly && <button onClick={()=>setIsSettingsOpen(true)} className="bg-white/20 p-1.5 rounded hover:bg-white/30" title="Ayarlar"><Icon name="settings" className="w-4 h-4"/></button>}
                                               {isReadOnly ? 
-                                                 <button onClick={()=>onViewChange(myUsername)} className="bg-white text-red-600 px-2 py-1 rounded text-xs font-bold hover:bg-gray-100 transition-colors shadow-sm" title="Profilime Dön"><Icon name="user" className="w-4 h-4"/></button> 
-                                                 : <button onClick={onLogout} className="bg-red-800 p-1.5 rounded hover:bg-red-900 transition-colors shadow-sm" title="Çıkış Yap"><Icon name="log-out" className="w-4 h-4"/></button>
+                                                  <button onClick={()=>onViewChange(myUsername)} className="bg-white text-red-600 px-2 py-1 rounded text-xs font-bold hover:bg-gray-100 transition-colors shadow-sm" title="Profilime Dön"><Icon name="user" className="w-4 h-4"/></button> 
+                                                  : <button onClick={onLogout} className="bg-red-800 p-1.5 rounded hover:bg-red-900 transition-colors shadow-sm" title="Çıkış Yap"><Icon name="log-out" className="w-4 h-4"/></button>
                                               }
                                          </div>
                                     </div>
@@ -1482,34 +1494,23 @@
                                 <input className="w-full pl-9 py-2 rounded-lg text-black text-sm shadow-sm border-none focus:ring-2 focus:ring-red-300 focus:outline-none" placeholder="Kullanıcı ara..." value={searchQuery} onChange={e=>setSearchQuery(e.target.value)}/>
                                 <Icon name="search" className="w-4 h-4 text-gray-400 absolute left-3 top-2.5"/>
                             </form>
-                            {isReadOnly && !friends.includes(currentUsername) && <button onClick={()=>addFriend(currentUsername)} className="mt-2 mx-5 w-[calc(100%-2.5rem)] bg-white text-red-600 font-bold text-xs py-2 rounded-lg flex items-center justify-center gap-1 shadow-sm hover:bg-gray-50"><Icon name="user-plus" className="w-3 h-3"/> Arkadaş Ekle</button>}
                         </div>
 
                         {/* VIEW MODE */}
                         {viewMode === 'friends' ? (
                              <div className="flex-1 overflow-y-auto p-4 bg-gray-50 dark:bg-gray-900 custom-scrollbar">
-                                <h2 className="font-bold text-gray-700 dark:text-white mb-3 flex items-center gap-2 text-sm uppercase tracking-wide opacity-70"><Icon name="users" className="w-4 h-4"/> {isReadOnly ? `${currentUsername} Arkadaşları` : 'Arkadaşlarım'} ({friendsListToDisplay.length})</h2>
-                                {friendsListToDisplay.length === 0 && <p className="text-gray-400 text-sm text-center py-4">Henüz arkadaş yok.</p>}
+                                <h2 className="font-bold text-gray-700 dark:text-white mb-3 flex items-center gap-2 text-sm uppercase tracking-wide opacity-70"><Icon name="users" className="w-4 h-4"/> Arkadaşlarım</h2>
                                 {friendsListToDisplay.map((f, i) => (
-                                    <div key={i} className="bg-white dark:bg-gray-700 p-3 rounded-xl border border-gray-100 dark:border-gray-600 mb-2 flex justify-between items-center cursor-pointer hover:shadow-md transition-all hover:border-indigo-200">
+                                    <div key={i} className="bg-white dark:bg-gray-700 p-3 rounded-xl border border-gray-100 dark:border-gray-600 mb-2 flex justify-between items-center cursor-pointer hover:shadow-md transition-all">
                                             <div className="flex items-center gap-3" onClick={()=>{onViewChange(f); setViewMode('map'); setActiveTab('personal');}}>
-                                                <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xs border border-indigo-200">
+                                                <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xs">
                                                      {friendDetails[f]?.avatar ? <img src={friendDetails[f].avatar} className="w-full h-full rounded-full object-cover"/> : f.substring(0,2).toUpperCase()}
                                                 </div>
-                                                <div>
-                                                    <div className="font-bold text-gray-800 dark:text-white text-sm">@{f}</div>
-                                                    {friendDetails[f]?.lastActive && (
-                                                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                                                            formatTimeAgo(friendDetails[f].lastActive) === "Şimdi" || formatTimeAgo(friendDetails[f].lastActive).includes("dk") ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
-                                                        }`}>
-                                                            {formatTimeAgo(friendDetails[f].lastActive) === "Şimdi" ? "🟢 Çevrimiçi" : `⚫ ${formatTimeAgo(friendDetails[f].lastActive)}`}
-                                                        </span>
-                                                    )}
-                                                </div>
+                                                <div className="font-bold text-gray-800 dark:text-white text-sm">@{f}</div>
                                             </div>
                                             {!isReadOnly && (
                                                 <div className="flex gap-1">
-                                                    <button onClick={() => setCurrentChatFriend(f)} className="text-indigo-600 hover:text-indigo-800 bg-indigo-50 dark:bg-indigo-900 dark:text-indigo-200 p-2 rounded-full transition-colors hover:bg-indigo-100 dark:hover:bg-indigo-800 shadow-sm" title="Mesaj Gönder">
+                                                    <button onClick={() => setCurrentChatFriend(f)} className="text-indigo-600 hover:text-indigo-800 bg-indigo-50 dark:bg-indigo-900 p-2 rounded-full transition-colors hover:bg-indigo-100 dark:hover:bg-indigo-800 shadow-sm" title="Mesaj Gönder">
                                                         <Icon name="message-circle" className="w-4 h-4"/>
                                                     </button>
                                                     <button onClick={() => removeFriend(f)} className="text-red-500 bg-red-50 dark:bg-red-900/20 p-2 rounded-full hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors shadow-sm" title="Arkadaşlıktan Çıkar">
@@ -1523,7 +1524,7 @@
                         ) : (
                             <>
                                 <div className={`px-4 py-3 ${lightColor} dark:bg-gray-800 border-b dark:border-gray-700 transition-colors duration-500 shadow-sm relative z-10`}>
-                                    <div className={`flex justify-between mb-1.5 text-xs font-bold uppercase tracking-wide ${activeTab === 'couple' ? 'text-pink-800 dark:text-pink-300' : 'text-red-800 dark:text-red-300'}`}><span>Gezilen: {markers.length} / 81</span><span>{activeTab === 'couple' ? '❤️ Bizim Haritamız' : ''}</span></div>
+                                    <div className={`flex justify-between mb-1.5 text-xs font-bold uppercase tracking-wide ${activeTab === 'couple' ? 'text-pink-800 dark:text-pink-300' : 'text-red-800 dark:text-red-300'}`}><span>Gezilen: {markers.length} / 81</span></div>
                                     <div className="w-full bg-gray-200 dark:bg-gray-700 h-2.5 rounded-full overflow-hidden shadow-inner"><div className={`h-2.5 rounded-full transition-all duration-1000 ease-out ${subColor}`} style={{width: `${(markers.length/81)*100}%`}}></div></div>
                                     {isReadOnly && <div className="mt-2 text-xs bg-blue-100 text-blue-700 p-1.5 rounded-md text-center flex items-center justify-center gap-1 font-bold border border-blue-200"><Icon name="eye" className="w-3 h-3"/> Görüntüleme Modu</div>}
                                 </div>
@@ -1534,116 +1535,59 @@
                                         {categories.map(c => <option key={c} value={c}>{c}</option>)}
                                     </select>
                                     <button onClick={() => setShowRoute(!showRoute)} className={`text-xs px-3 py-1.5 rounded-lg border flex items-center gap-1 transition-all shadow-sm ${showRoute ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-white dark:bg-gray-700 dark:text-white dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600'}`}><Icon name="route" className="w-3.5 h-3.5"/> Rota</button>
-                                    <button onClick={() => setViewMode(viewMode === 'timeline' ? 'map' : 'timeline')} className={`text-xs px-3 py-1.5 rounded-lg border flex items-center gap-1 transition-all shadow-sm ${viewMode === 'timeline' ? 'bg-purple-100 text-purple-700 border-purple-200' : 'bg-white dark:bg-gray-700 dark:text-white dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600'}`}><Icon name="clock" className="w-3.5 h-3.5"/> Zaman</button>
                                 </div>
 
-                                <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-gray-50 dark:bg-gray-900 custom-scrollbar z-0 pb-20 md:pb-3">
-                                    {displayMarkers.length === 0 && <div className="text-center text-gray-400 mt-10 text-sm">Hiç kayıt bulunamadı.</div>}
-                                    {displayMarkers.map((m, idx) => {
-                                        const progress = calculateProgress(m.cityName, m.checkedPlaces);
-                                        const coverImage = m.favoriteImage || (m.images && m.images.length > 0 ? m.images[0] : null);
-                                        const isBucket = m.status === 'bucket';
-                                        
-                                        return (
-                                            <div key={m.id} onClick={()=> { if(mapRef.current) mapRef.current.flyTo([m.lat, m.lng], 8); }} className={`bg-white dark:bg-gray-700 p-4 rounded-xl border dark:border-gray-600 shadow-sm hover:shadow-lg cursor-pointer relative group transition-all duration-300 ${isBucket ? 'border-l-4 border-l-yellow-400' : 'border-l-4 border-l-green-500'}`}>
-                                                {viewMode === 'timeline' && <div className="absolute -left-3 top-6 w-3 h-0.5 bg-gray-300 dark:bg-gray-600"></div>} 
-                                                <div className="flex justify-between font-bold text-gray-800 dark:text-white items-center mb-1">
-                                                    <span className="flex items-center gap-1.5 text-base">{isBucket ? <Icon name="target" className="w-4 h-4 text-yellow-600"/> : null}{m.cityName}</span>
-                                                    {!isReadOnly && <button onClick={(e)=>{e.stopPropagation(); handleDelete(m.cityName)}} className="text-gray-300 hover:text-red-500 transition-colors p-1.5 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20"><Icon name="trash-2" className="w-4 h-4"/></button>}
-                                                </div>
-                                                <div className="text-[10px] text-gray-400 dark:text-gray-400 mb-2 flex justify-between items-center">
-                                                    <span className="flex items-center gap-1"><Icon name="calendar" className="w-3 h-3"/> {m.date}</span>
-                                                    <span className="flex items-center gap-2">
-                                                        {m.rating > 0 && <span className="flex items-center text-yellow-500 gap-0.5"><Icon name="star" className="w-3 h-3 fill-current"/>{m.rating}</span>}
-                                                        <span className="bg-gray-100 dark:bg-gray-600 dark:text-gray-200 px-2 py-0.5 rounded-full text-gray-600 font-bold uppercase tracking-wider text-[9px]">{m.category}</span>
-                                                    </span>
-                                                </div>
-                                                {!isBucket && <div className="mb-2"><div className="w-full bg-gray-100 dark:bg-gray-600 h-1.5 rounded-full overflow-hidden"><div className={`h-1.5 ${progress===100?'bg-green-500':'bg-blue-500'}`} style={{width: `${progress}%`}}></div></div></div>}
-                                                {coverImage && (
-                                                    <div className="relative w-full h-36 rounded-lg overflow-hidden mt-2 mb-2 shadow-inner group-hover:shadow-md transition-all">
-                                                        <img src={coverImage} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                                                        {m.images.length > 1 && <div className="absolute bottom-1 right-1 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-full backdrop-blur-sm font-bold">+{m.images.length - 1}</div>}
-                                                        {m.status === 'bucket' && <div className="absolute top-2 left-2 bg-yellow-400 text-yellow-900 text-[10px] px-2 py-0.5 rounded font-bold shadow-sm">HEDEF</div>}
-                                                    </div>
-                                                )}
-                                                {m.note && <p className="text-xs text-gray-500 dark:text-gray-300 italic mt-1 line-clamp-2 leading-relaxed border-l-2 border-gray-200 pl-2">"{m.note}"</p>}
+                                <div className="flex-1 overflow-y-auto p-3 space-y-3 bg-gray-50 dark:bg-gray-900 custom-scrollbar z-0">
+                                    {markers.length === 0 && <div className="text-center text-gray-400 mt-10 text-sm">Hiç kayıt bulunamadı.</div>}
+                                    {markers.filter(m => categoryFilter === "Tümü" || m.category === categoryFilter).map((m, idx) => (
+                                        <div key={m.id} onClick={()=> { if(mapRef.current) mapRef.current.flyTo([m.lat, m.lng], 8); }} className={`bg-white dark:bg-gray-700 p-4 rounded-xl border dark:border-gray-600 shadow-sm hover:shadow-lg cursor-pointer border-l-4 ${m.status === 'bucket' ? 'border-l-yellow-400' : 'border-l-green-500'}`}>
+                                            <div className="flex justify-between font-bold text-gray-800 dark:text-white items-center mb-1">
+                                                <span className="text-base">{m.cityName}</span>
+                                                {!isReadOnly && <button onClick={(e)=>{e.stopPropagation(); handleDelete(m.cityName)}} className="text-gray-300 hover:text-red-500 transition-colors p-1.5 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20"><Icon name="trash-2" className="w-4 h-4"/></button>}
                                             </div>
-                                        );
-                                    })}
+                                            <div className="text-[10px] text-gray-400 mb-2">{m.date} | {m.category}</div>
+                                            {m.images && m.images[0] && <img src={m.images[0]} className="w-full h-32 object-cover rounded-lg mb-2 shadow-sm"/>}
+                                            {m.note && <p className="text-xs text-gray-500 dark:text-gray-300 italic line-clamp-2 leading-relaxed">"{m.note}"</p>}
+                                        </div>
+                                    ))}
                                 </div>
                             </>
                         )}
                     </div>
 
-                    {!sidebarOpen && <button onClick={()=>setSidebarOpen(true)} className={`absolute top-4 left-4 z-10 bg-white dark:bg-gray-700 p-3 rounded-full shadow-lg transition-transform hover:scale-110 active:scale-95 ${activeTab === 'couple' ? 'text-pink-600' : 'text-red-600'}`}><Icon name="menu" className="w-6 h-6"/></button>}
+                    {!sidebarOpen && <button onClick={()=>setSidebarOpen(true)} className={`absolute top-4 left-4 z-10 bg-white dark:bg-gray-700 p-3 rounded-full shadow-lg text-red-600 hover:scale-110 active:scale-95 transition-all`}><Icon name="menu" className="w-6 h-6"/></button>}
                     
+                    {/* ARKADAŞ AKIŞI PANELİ (HASHTAG EKLENDİ) */}
                     {feedOpen && (
-                        <div className="absolute top-0 right-0 h-full w-full md:w-80 bg-white dark:bg-gray-800 shadow-2xl z-30 flex flex-col border-l border-gray-200 dark:border-gray-700 animate-fadeIn custom-scrollbar">
-                            <div className="p-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white flex justify-between items-center shadow-md">
-                                <h3 className="font-bold flex items-center gap-2"><Icon name="activity" className="w-5 h-5"/> Arkadaş Akışı</h3>
-                                <button onClick={()=>setFeedOpen(false)} className="hover:bg-white/20 p-1 rounded-full transition-colors"><Icon name="x" className="w-5 h-5"/></button>
+                        <div className="absolute top-0 right-0 h-full w-full md:w-80 bg-white dark:bg-gray-800 shadow-2xl z-30 flex flex-col border-l border-gray-200 dark:border-gray-700 animate-fadeIn">
+                            <div className="p-4 bg-indigo-600 text-white flex justify-between items-center shadow-md">
+                                <h3 className="font-bold flex items-center gap-2"><Icon name="activity" className="w-5 h-5"/> Akış</h3>
+                                <button onClick={()=>setFeedOpen(false)} className="hover:bg-white/20 p-1 rounded-full"><Icon name="x" className="w-5 h-5"/></button>
+                            </div>
+                            {/* HASHTAG ARAMA (YENİ) */}
+                            <div className="p-3 border-b dark:border-gray-700">
+                                <div className="relative">
+                                    <Icon name="hash" className="absolute left-3 top-2.5 w-4 h-4 text-gray-400"/>
+                                    <input 
+                                        type="text" 
+                                        placeholder="Etiketle ara (#eskişehir)" 
+                                        value={hashtagSearch}
+                                        onChange={e=>setHashtagSearch(e.target.value)}
+                                        className="w-full pl-9 pr-4 py-2 text-sm rounded-lg border dark:border-gray-600 dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
+                                    />
+                                </div>
                             </div>
                             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-900 custom-scrollbar">
-                                {feedItems.length === 0 && <div className="flex flex-col items-center justify-center mt-20 opacity-50"><Icon name="rss" className="w-12 h-12 mb-2"/><p className="text-sm">Henüz bir hareket yok.</p></div>}
-                                {feedItems.map((item, i) => (
-                                    <div key={i} className="bg-white dark:bg-gray-700 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-600 cursor-pointer hover:border-indigo-300 dark:hover:border-indigo-500 transition-all" onClick={() => {
-                                        onViewChange(item.username);
-                                        setFeedOpen(false); // Mobile friendly close
-                                        if(mapRef.current) mapRef.current.flyTo([item.lat, item.lng], 9);
-                                    }}>
-                                        <div className="flex items-center gap-3 mb-3">
-                                            <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xs border border-indigo-200 shadow-sm overflow-hidden">
-                                                {item.userAvatar ? <img src={item.userAvatar} className="w-full h-full object-cover"/> : item.username.substring(0,2).toUpperCase()}
-                                            </div>
-                                            <div>
-                                                <div className="text-sm font-bold text-gray-800 dark:text-white">@{item.username}</div>
-                                                <div className="text-[10px] text-gray-400">{item.date}</div>
-                                            </div>
+                                {filteredFeedItems.length === 0 && <p className="text-center text-gray-400 text-sm mt-10">Paylaşım bulunamadı.</p>}
+                                {filteredFeedItems.map((item, i) => (
+                                    <div key={i} className="bg-white dark:bg-gray-700 p-4 rounded-xl shadow-sm border dark:border-gray-600 cursor-pointer hover:border-indigo-300 transition-all" onClick={() => { onViewChange(item.username); if(mapRef.current) mapRef.current.flyTo([item.lat, item.lng], 9); }}>
+                                        <div className="flex justify-between items-center mb-2">
+                                            <span className="font-bold text-xs text-indigo-600">@{item.username}</span>
+                                            <span className="text-[10px] text-gray-400">{item.cityName}</span>
                                         </div>
-                                        <div className="mb-3 text-sm text-gray-800 dark:text-gray-200">
-                                            <span className="font-bold text-indigo-600 dark:text-indigo-400">{item.cityName}</span> şehrini ziyaret etti.
-                                            {item.status === 'bucket' && <span className="text-[10px] bg-yellow-100 text-yellow-700 px-1.5 py-0.5 ml-2 rounded shadow-sm align-middle">HEDEF 🎯</span>}
-                                        </div>
-                                        {item.images && item.images.length > 0 && (
-                                            <div className="h-32 w-full rounded-lg overflow-hidden border border-gray-100 mb-3 shadow-sm">
-                                                <img src={item.favoriteImage || item.images[0]} className="w-full h-full object-cover transition-transform hover:scale-105"/>
-                                            </div>
-                                        )}
-                                        {item.note && <p className="text-xs text-gray-600 dark:text-gray-400 italic line-clamp-2 leading-relaxed bg-gray-50 dark:bg-gray-800 p-2 rounded-lg mb-2">"{item.note}"</p>}
-
-                                        <div className="flex items-center gap-3 text-gray-500 dark:text-gray-400 mt-2">
-                                            <button 
-                                                onClick={(e) => { e.stopPropagation(); toggleLike(item.username, item.id); }}
-                                                className={`flex items-center gap-1 hover:text-red-500 transition-colors ${item.likes && item.likes.includes(myUsername) ? 'text-red-500 font-bold' : ''}`}
-                                            >
-                                                <Icon name="heart" className={`w-4 h-4 ${item.likes && item.likes.includes(myUsername) ? 'fill-current like-anim' : ''}`} />
-                                                <span className="text-xs">{item.likes ? item.likes.length : 0}</span>
-                                            </button>
-                                        </div>
-                                        
-                                        <div className="mt-3 pt-2 border-t border-gray-100 dark:border-gray-600" onClick={(e) => e.stopPropagation()}>
-                                            {item.comments && item.comments.length > 0 && (
-                                                <div className="space-y-1.5 mb-2">
-                                                    {item.comments.slice(-2).map(c => (
-                                                        <div key={c.id} className="text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 p-1.5 rounded">
-                                                            <span className="font-bold text-gray-800 dark:text-gray-300 mr-1">@{c.user}</span>{c.text}
-                                                        </div>
-                                                    ))}
-                                                    {item.comments.length > 2 && <div className="text-[10px] text-gray-400 cursor-pointer hover:text-indigo-500 transition-colors">Tümünü gör ({item.comments.length})...</div>}
-                                                </div>
-                                            )}
-                                            <div className="flex gap-2">
-                                                <input 
-                                                    type="text" 
-                                                    className="flex-1 border dark:border-gray-600 rounded-full px-3 py-1.5 text-xs focus:outline-none focus:border-indigo-500 dark:bg-gray-800 dark:text-white shadow-sm transition-all"
-                                                    placeholder="Yorum yaz..."
-                                                    value={feedCommentInputs[item.id] || ""}
-                                                    onChange={(e) => setFeedInput(item.id, e.target.value)}
-                                                    onKeyDown={(e) => { if (e.key === 'Enter') submitFeedComment(item.username, item.id); }}
-                                                />
-                                                <button className="bg-indigo-600 text-white p-1.5 rounded-full text-xs hover:bg-indigo-700 transition-colors shadow-sm" onClick={() => submitFeedComment(item.username, item.id)}><Icon name="send" className="w-3.5 h-3.5"/></button>
-                                            </div>
-                                        </div>
+                                        {item.images && item.images[0] && <img src={item.images[0]} className="w-full h-32 object-cover rounded-lg mb-2 shadow-sm"/>}
+                                        <p className="text-xs text-gray-600 dark:text-gray-300 italic line-clamp-3">"{item.note}"</p>
+                                        <div className="text-[9px] text-gray-400 mt-2">{item.date}</div>
                                     </div>
                                 ))}
                             </div>
@@ -1653,14 +1597,15 @@
                     {currentChatFriend && <ChatModal myUsername={myUsername} friendUsername={currentChatFriend} onClose={() => setCurrentChatFriend(null)} sendNotif={sendNotification} />}
                     {isStatsOpen && <StatsModal markers={markers} onClose={() => setIsStatsOpen(false)} />}
                     {isCinemaOpen && <CinemaModal markers={markers} onClose={() => setIsCinemaOpen(false)} />}
+                    {isSettingsOpen && <SettingsModal myUsername={myUsername} onClose={()=>setIsSettingsOpen(false)} />}
 
-                    <div id="map-container" className="flex-1 z-0 relative bg-slate-100">{loading && <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-[999] backdrop-blur-sm"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div></div>}</div>
+                    <div id="map-container" className="flex-1 z-0 relative bg-slate-100">{loading && <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-[999] backdrop-blur-sm"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mr-2"></div></div>}</div>
                     
                     {zoomedImage && <div className="fixed inset-0 z-[2000] bg-black/95 flex items-center justify-center p-4" onClick={() => setZoomedImage(null)}>
-                        <button className="absolute left-4 top-1/2 text-white bg-white/10 p-3 rounded-full hover:bg-white/20 transition-all hover:scale-110 backdrop-blur-md" onClick={prevLightbox}><Icon name="chevron-left" className="w-8 h-8"/></button>
+                        <button className="absolute left-4 top-1/2 text-white bg-white/10 p-3 rounded-full" onClick={prevLightbox}><Icon name="chevron-left" className="w-8 h-8"/></button>
                         <img src={zoomedImage} className="max-h-[90vh] max-w-[90vw] rounded-lg shadow-2xl animate-fadeIn object-contain" onClick={(e)=>e.stopPropagation()}/>
-                        <button className="absolute right-4 top-1/2 text-white bg-white/10 p-3 rounded-full hover:bg-white/20 transition-all hover:scale-110 backdrop-blur-md" onClick={nextLightbox}><Icon name="chevron-right" className="w-8 h-8"/></button>
-                        <button className="absolute top-4 right-4 text-white bg-white/10 p-3 rounded-full hover:bg-white/20 transition-all hover:scale-110 backdrop-blur-md" onClick={(e) => { e.stopPropagation(); setZoomedImage(null); }}><Icon name="x" className="w-6 h-6"/></button>
+                        <button className="absolute right-4 top-1/2 text-white bg-white/10 p-3 rounded-full" onClick={nextLightbox}><Icon name="chevron-right" className="w-8 h-8"/></button>
+                        <button className="absolute top-4 right-4 text-white bg-white/10 p-3 rounded-full" onClick={() => setZoomedImage(null)}><Icon name="x" className="w-6 h-6"/></button>
                         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 text-white px-4 py-1 rounded-full text-sm font-mono backdrop-blur-md">
                             {currentImageIndex + 1} / {lightboxImages.length}
                         </div>
@@ -1673,86 +1618,67 @@
                     {isModalOpen && (
                         <div className="fixed inset-0 z-[1000] bg-black/60 flex items-center justify-center p-4 backdrop-blur-sm animate-fadeIn">
                             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
-                                <div className={`${activeTab === 'couple' ? 'bg-gradient-to-r from-pink-500 to-rose-500' : 'bg-gradient-to-r from-red-600 to-orange-600'} p-5 text-white flex justify-between items-center shadow-lg shrink-0`}>
-                                    <span className="font-black text-xl tracking-wide flex gap-2 items-center"><Icon name="map-pin" className="w-6 h-6"/> {selectedCity?.name}</span>
+                                <div className={`${activeTab === 'couple' ? 'bg-pink-500' : 'bg-red-600'} p-5 text-white flex justify-between items-center shadow-lg shrink-0`}>
+                                    <span className="font-black text-xl flex gap-2 items-center tracking-wide"><Icon name="map-pin" className="w-6 h-6"/> {selectedCity?.name}</span>
                                     <button onClick={()=>setIsModalOpen(false)} className="hover:bg-white/20 p-1.5 rounded-full transition-colors"><Icon name="x" className="w-6 h-6"/></button>
                                 </div>
                                 <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
                                     {!isReadOnly && (
                                         <div className="flex gap-4 mb-6">
-                                            <div className="flex-1 relative">
-                                                <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full appearance-none border border-gray-200 dark:border-gray-600 rounded-xl p-3 text-sm bg-gray-50 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow">
-                                                    <option value="visited">✅ Gezildi</option>
-                                                    <option value="bucket">🎯 Gideceğim</option>
-                                                </select>
-                                                <Icon name="chevron-down" className="w-4 h-4 absolute right-3 top-3.5 text-gray-400 pointer-events-none"/>
-                                            </div>
-                                            <div className="flex-1 relative">
-                                                <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full appearance-none border border-gray-200 dark:border-gray-600 rounded-xl p-3 text-sm bg-gray-50 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow">
-                                                    {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                                                </select>
-                                                <Icon name="chevron-down" className="w-4 h-4 absolute right-3 top-3.5 text-gray-400 pointer-events-none"/>
-                                            </div>
+                                            <select value={status} onChange={(e) => setStatus(e.target.value)} className="flex-1 border dark:border-gray-600 rounded-xl p-3 text-sm bg-gray-50 dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                                                <option value="visited">✅ Gezildi</option>
+                                                <option value="bucket">🎯 Gideceğim</option>
+                                            </select>
+                                            <select value={category} onChange={(e) => setCategory(e.target.value)} className="flex-1 border dark:border-gray-600 rounded-xl p-3 text-sm bg-gray-50 dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                                                {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                                            </select>
                                         </div>
                                     )}
                                     
                                     {status === 'visited' && (
-                                        <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-800/50 rounded-xl p-4 mb-6 shadow-sm">
-                                            <div className="flex justify-between items-center mb-3">
-                                                <h4 className="text-sm font-bold text-orange-800 dark:text-orange-300 flex gap-2 items-center">
-                                                    <Icon name="compass" className="w-4 h-4"/> 
-                                                    {((citySuggestionsData[selectedCity?.name] && citySuggestionsData[selectedCity?.name][category]) || []).length > 0 ? 'Öneriler' : 'Öneri Yok'}
-                                                </h4>
-                                                <span className="text-[10px] font-bold bg-white dark:bg-gray-800 px-2.5 py-1 rounded-full text-orange-600 border border-orange-200 shadow-sm">Keşif: %{calculateProgress(selectedCity?.name, checkedPlaces)}</span>
-                                            </div>
-                                            <div className="space-y-2">{((citySuggestionsData[selectedCity?.name] && citySuggestionsData[selectedCity?.name][category]) || citySuggestionsData[selectedCity?.name]?.["Genel"] || ["Gezilecek Yer 1", "Gezilecek Yer 2", "Gezilecek Yer 3"]).slice(0, 3).map((place, idx) => { const isChecked = checkedPlaces.includes(place); return (<div key={idx} onClick={()=>toggleCheckedPlace(place)} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all shadow-sm ${isChecked ? 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800/50' : 'bg-white dark:bg-gray-700 border-gray-100 dark:border-gray-600 hover:border-orange-300'}`}><div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${isChecked ? 'bg-green-500 border-green-500 scale-110' : 'bg-white dark:bg-gray-600 border-gray-300'}`}>{isChecked && <Icon name="check" className="w-3 h-3 text-white"/>}</div><span className={`text-sm ${isChecked ? 'text-green-800 dark:text-green-300 font-bold' : 'text-gray-700 dark:text-gray-300'}`}>{place}</span></div>); })}</div>
+                                        <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-800/50 p-4 rounded-xl mb-6 shadow-sm">
+                                            <h4 className="text-sm font-bold text-orange-800 dark:text-orange-300 mb-3 flex gap-2 items-center"><Icon name="compass" className="w-4 h-4"/> Öneriler</h4>
+                                            <div className="space-y-2">{((citySuggestionsData[selectedCity?.name] && citySuggestionsData[selectedCity?.name][category]) || citySuggestionsData[selectedCity?.name]?.["Genel"] || ["Gezilecek Yer 1", "Gezilecek Yer 2", "Gezilecek Yer 3"]).slice(0, 3).map((place, idx) => { const isChecked = checkedPlaces.includes(place); return (<div key={idx} onClick={()=>toggleCheckedPlace(place)} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${isChecked ? 'bg-green-50 border-green-200' : 'bg-white dark:bg-gray-700 border-gray-100 dark:border-gray-600'}`}><div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${isChecked ? 'bg-green-500 border-green-500' : 'bg-white border-gray-300'}`}>{isChecked && <Icon name="check" className="w-3 h-3 text-white"/>}</div><span className={`text-sm ${isChecked ? 'text-green-800 dark:text-green-300 font-bold' : 'text-gray-700 dark:text-gray-300'}`}>{place}</span></div>); })}</div>
                                         </div>
                                     )}
 
-                                    {/* Rating Section */}
                                     {status === 'visited' && (
-                                        <div className="mb-6 flex flex-col gap-2 items-center bg-gray-50 dark:bg-gray-700/50 p-3 rounded-xl border border-gray-100 dark:border-gray-600/50">
-                                            <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Puanın</span>
+                                        <div className="mb-6 flex flex-col gap-2 items-center bg-gray-50 dark:bg-gray-700/50 p-3 rounded-xl border border-gray-100 dark:border-gray-600">
+                                            <span className="text-xs font-bold text-gray-500 uppercase">Puanın</span>
                                             <StarRating rating={rating} setRating={isReadOnly ? () => {} : setRating} readOnly={isReadOnly} size="w-7 h-7" />
-                                            {cityStats.count > 0 && (
-                                                <div className="text-[10px] text-gray-400 mt-1">
-                                                    Genel Ort: <strong className="text-gray-700 dark:text-white">{cityStats.avg}</strong> ({cityStats.count} oy)
-                                                </div>
-                                            )}
                                         </div>
                                     )}
                                     
                                     <div className="mb-6">
-                                        <div className="font-bold text-sm mb-3 text-gray-700 dark:text-gray-300 flex items-center gap-2 uppercase tracking-wide"><Icon name="image" className="w-4 h-4"/> Fotoğraflar</div>
+                                        <div className="font-bold text-sm mb-3 dark:text-white flex items-center gap-2 uppercase tracking-wide"><Icon name="image" className="w-4 h-4"/> Fotoğraflar</div>
                                         <div className="grid grid-cols-4 gap-2 mb-3">
                                             {images.map((img,i) => (
-                                                <div key={i} className="relative aspect-square group rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all border border-gray-100">
-                                                    <img src={img} className="w-full h-full object-cover cursor-zoom-in hover:opacity-90 transition-opacity" onClick={() => openLightbox(img, images)}/>
-                                                    {!isReadOnly && <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity"><button onClick={()=>setFavoriteImage(img)} className={`p-1 rounded-full bg-white/90 shadow-sm hover:bg-white ${favoriteImage === img ? 'text-yellow-500' : 'text-gray-400'}`} title="Kapak Yap"><Icon name="star" className="w-3 h-3 fill-current"/></button><button onClick={()=>setImages(images.filter((_,x)=>x!==i))} className="bg-red-500/90 text-white rounded-full p-1 shadow-sm hover:bg-red-600"><Icon name="x" className="w-3 h-3"/></button></div>}
-                                                    {favoriteImage === img && <div className="absolute bottom-0 left-0 w-full bg-yellow-500/90 text-white text-[9px] text-center font-bold py-0.5">KAPAK</div>}
+                                                <div key={i} className="relative aspect-square rounded-lg overflow-hidden group border border-gray-100 shadow-sm">
+                                                    <img src={img} className="w-full h-full object-cover cursor-zoom-in" onClick={() => openLightbox(img, images)}/>
+                                                    {!isReadOnly && <button onClick={()=>setImages(images.filter((_,x)=>x!==i))} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"><Icon name="x" className="w-3 h-3"/></button>}
                                                 </div>
                                             ))}
-                                            {!isReadOnly && <label className="aspect-square border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-gray-700 rounded-lg cursor-pointer flex flex-col items-center justify-center gap-1 text-gray-400 hover:text-blue-500 transition-all"><Icon name="plus" className="w-6 h-6"/><span className="text-[10px] font-bold">EKLE</span><input type="file" multiple className="hidden" onChange={handleImage}/></label>}
+                                            {!isReadOnly && <label className="aspect-square border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer flex items-center justify-center text-gray-400 hover:border-blue-500 hover:text-blue-500 transition-all shadow-sm"><Icon name="plus" className="w-6 h-6"/><input type="file" multiple className="hidden" onChange={handleImage}/></label>}
                                         </div>
                                     </div>
 
                                     <div className="mb-6">
                                         <div className="flex justify-between mb-2 items-center">
-                                            <label className="font-bold text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2 uppercase tracking-wide"><Icon name="edit-3" className="w-4 h-4"/> Notlar</label>
-                                            {!isReadOnly && <button onClick={enhanceNote} disabled={isEnhancingNote || !note} className="text-[10px] text-purple-600 font-bold flex gap-1 items-center hover:text-purple-800 disabled:opacity-50 transition-colors bg-purple-50 dark:bg-purple-900/30 px-2 py-1 rounded-full border border-purple-100"><Icon name="wand-2" className="w-3 h-3"/> {isEnhancingNote ? 'Yazılıyor...' : 'AI ile Düzenle'}</button>}
+                                            <label className="font-bold text-sm dark:text-white flex items-center gap-2 uppercase tracking-wide"><Icon name="edit-3" className="w-4 h-4"/> Notlar</label>
+                                            {!isReadOnly && <button onClick={enhanceNote} disabled={isEnhancingNote || !note} className="text-[10px] text-purple-600 font-bold bg-purple-50 px-2 py-1 rounded-full border border-purple-100 hover:bg-purple-100 transition-all">{isEnhancingNote ? 'Yazılıyor...' : 'AI ile Düzenle'}</button>}
                                         </div>
-                                        {isReadOnly ? <div className="p-4 bg-gray-50 dark:bg-gray-700/50 border dark:border-gray-600/50 rounded-xl text-sm min-h-[80px] italic text-gray-600 dark:text-gray-300 shadow-inner leading-relaxed">{note || "Not yok."}</div> : <textarea className="w-full border border-gray-200 dark:border-gray-600 rounded-xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:text-white shadow-inner transition-all resize-none bg-gray-50 dark:bg-gray-800" rows="4" value={note} onChange={e=>setNote(e.target.value)} placeholder="Buraya anılarınızı yazın..."></textarea>}
+                                        {isReadOnly ? <div className="p-4 bg-gray-50 dark:bg-gray-700/50 border dark:border-gray-600 rounded-xl text-sm min-h-[80px] italic text-gray-600 dark:text-gray-300 shadow-inner">{note || "Not yok."}</div> : <textarea className="w-full border border-gray-200 dark:border-gray-600 rounded-xl p-4 text-sm focus:ring-2 focus:ring-red-500 outline-none dark:bg-gray-700 dark:text-white shadow-inner" rows="4" value={note} onChange={e=>setNote(e.target.value)} placeholder="Anılarını #hashtag ile süsle..."></textarea>}
                                     </div>
 
-                                    <div className="mt-6 pt-5 border-t border-gray-100 dark:border-gray-700">
-                                        <h4 className="font-bold text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2 mb-3 uppercase tracking-wide"><Icon name="message-square" className="w-4 h-4"/> Yorumlar</h4>
-                                        <div className="space-y-3 mb-5 max-h-40 overflow-y-auto custom-scrollbar pr-1">{comments.length === 0 && <div className="text-gray-400 text-xs italic">İlk yorumu sen yaz.</div>}{comments.map(c => (<div key={c.id} className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-xl text-sm border border-gray-100 dark:border-gray-600/50"><div className="flex justify-between items-start mb-1"><span className="font-bold text-xs text-gray-800 dark:text-white">@{c.user}</span><span className="text-[10px] text-gray-400">{c.date}</span></div><p className="text-gray-600 dark:text-gray-300 text-xs leading-relaxed">{c.text}</p></div>))}</div>
-                                        <div className="flex gap-2"><input type="text" value={newComment} onChange={e=>setNewComment(e.target.value)} placeholder="Bir yorum bırak..." className="flex-1 border border-gray-200 dark:border-gray-600 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white shadow-sm transition-all"/><button onClick={handleAddComment} className="bg-blue-600 text-white p-2 rounded-full text-sm font-bold hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg"><Icon name="send" className="w-4 h-4"/></button></div>
+                                    <div className="mt-6 pt-5 border-t dark:border-gray-700">
+                                        <h4 className="font-bold text-sm mb-3 dark:text-white flex gap-2 uppercase tracking-wide"><Icon name="message-square" className="w-4 h-4"/> Yorumlar</h4>
+                                        <div className="space-y-3 mb-5 max-h-40 overflow-y-auto custom-scrollbar pr-1">{comments.map(c => (<div key={c.id} className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-xl text-sm border dark:border-gray-600 shadow-sm"><div className="flex justify-between items-start mb-1"><span className="font-bold text-xs text-gray-800 dark:text-white">@{c.user}</span><span className="text-[10px] text-gray-400">{c.date}</span></div><p className="text-gray-600 dark:text-gray-300 text-xs leading-relaxed">{c.text}</p></div>))}</div>
+                                        <div className="flex gap-2"><input type="text" value={newComment} onChange={e=>setNewComment(e.target.value)} placeholder="Yorum bırak..." className="flex-1 border border-gray-200 dark:border-gray-600 rounded-full px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none dark:bg-gray-700 dark:text-white shadow-sm"/><button onClick={handleAddComment} className="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 transition-all shadow-md"><Icon name="send" className="w-4 h-4"/></button></div>
                                     </div>
                                 </div>
-                                <div className="p-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex justify-end gap-3 shrink-0">
-                                    <button onClick={()=>setIsModalOpen(false)} className="px-5 py-2.5 bg-white border border-gray-200 dark:border-gray-600 rounded-xl text-gray-600 dark:text-gray-300 text-sm font-bold hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors shadow-sm">İptal</button>
-                                    {!isReadOnly && <button onClick={handleSave} className={`px-8 py-2.5 text-white rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition-all transform hover:scale-105 ${activeTab === 'couple' ? 'bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700' : 'bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700'}`}>Kaydet</button>}
+                                <div className="p-4 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex justify-end gap-3 shrink-0">
+                                    <button onClick={()=>setIsModalOpen(false)} className="px-5 py-2.5 bg-white border border-gray-200 dark:bg-gray-700 dark:border-gray-600 rounded-xl text-gray-600 dark:text-gray-300 text-sm font-bold shadow-sm">İptal</button>
+                                    {!isReadOnly && <button onClick={handleSave} className={`px-8 py-2.5 text-white rounded-xl text-sm font-bold shadow-md transform transition-all active:scale-95 ${activeTab === 'couple' ? 'bg-pink-600 hover:bg-pink-700' : 'bg-red-600 hover:bg-red-700'}`}>Kaydet</button>}
                                 </div>
                             </div>
                         </div>
