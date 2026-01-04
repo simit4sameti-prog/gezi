@@ -302,7 +302,7 @@
             "Burdur": { "Genel": ["Salda Gölü", "Burdur Müzesi", "Saat Kulesi"], "Yemek": ["Burdur Şiş", "Ceviz Ezmesi", "Haşhaş Helvası"], "Doğa": ["Salda Gölü", "İnsuyu Mağarası", "Karanlık Dere Kanyonu"], "Tarih": ["Sagalassos", "Kibyra", "Hacılar Höyüğü"] },
             "Bursa": { "Genel": ["Ulu Camii", "Yeşil Türbe", "Koza Han"], "Yemek": ["İskender Kebap", "Pideli Köfte", "Kestane Şekeri"], "Doğa": ["Uludağ", "Suuçtu Şelalesi", "Gölyazı"], "Tarih": ["Cumalıkızık", "Bursa Kalesi", "Muradiye Külliyesi"] },
             "Çanakkale": { "Genel": ["Truva Atı", "Aynalı Çarşı", "Kordon"], "Yemek": ["Ezine Peyniri", "Peynir Helvası", "Sardalya"], "Doğa": ["Kaz Dağları", "Bozcaada", "Gökçeada"], "Tarih": ["Gelibolu Yarımadası", "Truva Antik Kenti", "Assos"], "Deniz": ["Ayazma Plajı", "Kadırga Koyu", "Güzelyalı"] },
-            "Çankırı": { "Genel": ["Tuz Mağarası", "Çankırı Kalesi", "Taş Mescit"], "Yemek": ["Yumurta Tatlısi", "Sarımsaklı Et", "Çankırı Pidesi"], "Doğa": ["Kadınçayırı", "Kırkpınar Yaylası", "Alpsarı Göleti"], "Tarih": ["Çnfçırı Kalesi", "Taş Mescit", "Sultan Süleyman Camii"] },
+            "Çankırı": { "Genel": ["Tuz Mağarası", "Çankırı Kalesi", "Taş Mescit"], "Yemek": ["Yumurta Tatlısi", "Sarımsaklı Et", "Çankırı Pidesi"], "Doğa": ["Kadınçayırı", "Kırkpınar Yaylası", "Alpsarı Göleti"], "Tarih": ["Çankırı Kalesi", "Taş Mescit", "Sultan Süleyman Camii"] },
             "Çorum": { "Genel": ["Saat Kulesi", "Çorum Müzesi", "İncesu Kanyonu"], "Yemek": ["Çorum Leblebisi", "İskilip Dolması", "Çatal Aşı"], "Doğa": ["Hattuşaş", "Alacahöyük", "İncesu Kanyonu"], "Tarih": ["Hattuşaş (Hitit Başkenti)", "Alacahöyük", "Yazılıkaya"] },
             "Denizli": { "Genel": ["Pamukkale Travertenleri", "Çınar Meydanı", "Teleferik"], "Yemek": ["Denizli Kebabı", "Zafer Gazozu", "Tavas Baklavası"], "Doğa": ["Pamukkale", "Keloğlan Mağarası", "Güney Şelalesi"], "Tarih": ["Hierapolis", "Laodikeia", "Tripolis"] },
             "Diyarbakır": { "Genel": ["Diyarbakır Surları", "Ulu Camii", "Hasan Paşa Hanı"], "Yemek": ["Ciğer Kebabı", "Meftune", "Burma Kadayıf"], "Doğa": ["Hevsel Bahçeleri", "Dicle Nehri", "Birkleyn Mağaraları"], "Tarih": ["Diyarbakır Surları", "On Gözlü Köprü", "Zerzevan Kalesi"] },
@@ -996,12 +996,6 @@
             }, [myUsername]);
 
             useEffect(() => {
-                const friendsRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_friends').doc(myUsername);
-                const unsubscribe = friendsRef.onSnapshot((doc) => { if (doc.exists) setFriends(doc.data().list || []); else setFriends([]); });
-                return () => unsubscribe();
-            }, [myUsername]);
-
-            useEffect(() => {
                 if(!friends.length) return;
                 const fetchFeed = async () => {
                     let allItems = [];
@@ -1127,7 +1121,7 @@
                 const text = feedCommentInputs[markerId];
                 if(!text || !text.trim()) return;
                 const cleanText = filterProfanity(text);
-                const commentObj = { id: Date.now(), user: myUsername, text: cleanText, date: new Date().toLocaleString('tr-TR') };
+                const commentObj = { id: Date.now(), user: myUsername, text: cleanText, date: new Date().toLocaleDateString('tr-TR') };
                 
                 try {
                     const docRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_maps').doc(targetUser);
@@ -1151,14 +1145,14 @@
             };
 
             const breakUpPartner = async () => {
-                if(!confirm("Eşleşmeyi sonlandırmak istediğine emin misin?")) return;
-                await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_partners').doc(myUsername).delete();
-                if(partner) {
-                    await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_partners').doc(partner).delete();
-                }
-                setPartner(null);
-                setCoupleId(null);
-                alert("Birliktelik sona erdi.");
+                 if(!confirm("Eşleşmeyi sonlandırmak istediğine emin misin?")) return;
+                 await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_partners').doc(myUsername).delete();
+                 if(partner) {
+                     await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_partners').doc(partner).delete();
+                 }
+                 setPartner(null);
+                 setCoupleId(null);
+                 alert("Birliktelik sona erdi.");
             };
 
             useEffect(() => {
@@ -1205,6 +1199,12 @@
                 return () => unsub();
             }, [currentUsername]);
 
+            useEffect(() => {
+                const friendsRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_friends').doc(myUsername);
+                const unsubscribe = friendsRef.onSnapshot((doc) => { if (doc.exists) setFriends(doc.data().list || []); else setFriends([]); });
+                return () => unsubscribe();
+            }, [myUsername]);
+
             const saveMarkersToUser = async (targetUser, newMarkers, isCoupleMode = false) => {
                 try {
                     let docRef;
@@ -1224,9 +1224,7 @@
                     id: Date.now(), lat: selectedCity.latlng.lat, lng: selectedCity.latlng.lng,
                     cityName: selectedCity.name, note: cleanNote, images: images, checkedPlaces: checkedPlaces,
                     comments: comments, favoriteImage: favoriteImage, rating: rating,
-                    status: status, category: category, 
-                    date: new Date().toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }), 
-                    timestamp: Date.now(), likes: [] 
+                    status: status, category: category, date: new Date().toLocaleDateString('tr-TR'), timestamp: Date.now(), likes: [] 
                 };
                 const updated = [...markers.filter(m => m.cityName !== selectedCity.name), newMarker];
                 setMarkers(updated);
@@ -1250,7 +1248,7 @@
             const handleAddComment = () => {
                 if (!newComment.trim()) return;
                 const cleanText = filterProfanity(newComment);
-                const commentObj = { id: Date.now(), user: myUsername, text: cleanText, date: new Date().toLocaleString('tr-TR') };
+                const commentObj = { id: Date.now(), user: myUsername, text: cleanText, date: new Date().toLocaleDateString('tr-TR') };
                 const updatedComments = [...comments, commentObj];
                 setComments(updatedComments);
                 setNewComment("");
@@ -1259,7 +1257,7 @@
                     id: originalMarker.id || Date.now(), lat: selectedCity.latlng.lat, lng: selectedCity.latlng.lng,
                     cityName: selectedCity.name, note: note, images: images, checkedPlaces: checkedPlaces,
                     comments: updatedComments, favoriteImage: favoriteImage, rating: rating,
-                    status: status, category: category, date: originalMarker.date || new Date().toLocaleString('tr-TR'), timestamp: Date.now(), likes: originalMarker.likes || []
+                    status: status, category: category, date: new Date().toLocaleDateString('tr-TR'), timestamp: Date.now(), likes: originalMarker.likes || []
                 };
                 const updatedMarkers = [...markers.filter(m => m.cityName !== selectedCity.name), newMarker];
                 saveMarkersToUser(currentUsername, updatedMarkers, activeTab === 'couple');
@@ -1348,6 +1346,89 @@
                 }
             }, [markers, geoJsonLayer, activeTab, categoryFilter, showRoute, showCityNames]);
 
+            // Harita Init
+            useEffect(() => {
+                if (mapRef.current) return;
+                const container = document.getElementById('map-container');
+                if(!container) return;
+                if(container._leaflet_id) { container._leaflet_id = null; container.innerHTML = ""; }
+                
+                const mapInstance = L.map('map-container', { 
+                    preferCanvas: true, 
+                    minZoom: 5, 
+                    zoomControl: false,
+                    maxBounds: [[35, 25], [43, 45]],
+                    maxBoundsViscosity: 1.0 
+                }).setView([39.0, 35.5], 6);
+                
+                L.control.zoom({ position: 'bottomright' }).addTo(mapInstance);
+                mapRef.current = mapInstance;
+                
+                L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', { 
+                    attribution: 'Esri', 
+                    maxZoom: 16,
+                    noWrap: true,
+                    bounds: [[-90, -180], [90, 180]]
+                }).addTo(mapInstance);
+                
+                const labelLayer = L.layerGroup().addTo(mapInstance);
+                labelLayerRef.current = labelLayer;
+                const routeLayer = L.layerGroup().addTo(mapInstance);
+                routeLayerRef.current = routeLayer;
+                const imageLayer = L.layerGroup().addTo(mapInstance);
+                imageMarkersRef.current = imageLayer;
+
+                fetch('https://raw.githubusercontent.com/codeforgermany/click_that_hood/main/public/data/turkey.geojson')
+                    .then(res => res.json())
+                    .then(data => {
+                        const layer = L.geoJSON(data, {
+                            interactive: true,
+                            style: () => ({ 
+                                fillColor: '#9ca3af', 
+                                weight: 1, 
+                                opacity: 0.5, 
+                                color: 'white', 
+                                fillOpacity: 0.5,
+                                className: 'cursor-pointer'
+                            }),
+                            onEachFeature: (feature, layer) => {
+                                const cityName = feature.properties.name;
+                                let center = layer.getBounds().getCenter();
+                                if(customCityCenters[cityName]) center = L.latLng(customCityCenters[cityName]);
+                                
+                                layer.on('click', () => {
+                                    setSelectedCity({ name: cityName, latlng: center });
+                                    const existing = markersRef.current.find(m => m.cityName === cityName);
+                                    if(existing) {
+                                        setNote(existing.note || ""); setImages(existing.images || []); setCheckedPlaces(existing.checkedPlaces || []); setComments(existing.comments || []); setFavoriteImage(existing.favoriteImage || null);
+                                        setStatus(existing.status || "visited"); setCategory(existing.category || "Genel"); setRating(existing.rating || 0);
+                                    } else {
+                                        setNote(""); setImages([]); setCheckedPlaces([]); setComments([]); setFavoriteImage(null);
+                                        setStatus("visited"); setCategory("Genel"); setRating(0);
+                                    }
+                                    setIsModalOpen(true);
+                                });
+                                layer.on('mouseover', function() { this.setStyle({ weight: 3, color: '#333', fillOpacity: 0.7 }); });
+                                layer.on('mouseout', function() { });
+                            }
+                        }).addTo(mapInstance);
+                        setGeoJsonLayer(layer);
+                        setLoading(false);
+                    })
+                    .catch(err => {
+                        console.error("Harita verisi yüklenemedi:", err);
+                        setLoading(false);
+                    });
+                return () => { if(mapRef.current) { mapRef.current.remove(); mapRef.current = null; } };
+            }, []);
+
+            // HASHTAG FİLTRELEME MANTIĞI
+            const filteredFeedItems = feedItems.filter(item => {
+                if(!hashtagSearch.trim()) return true;
+                const tag = hashtagSearch.trim().toLowerCase();
+                return item.note && item.note.toLowerCase().includes(tag);
+            });
+
             return (
                 <div className={`flex h-full relative ${darkMode ? 'dark' : ''}`}>
                     <div className={`absolute md:relative z-20 h-full bg-white dark:bg-gray-800 shadow-xl transition-all duration-300 ease-in-out flex flex-col ${sidebarOpen ? 'w-full md:w-96 translate-x-0' : 'w-0 -translate-x-full overflow-hidden'}`}>
@@ -1371,21 +1452,16 @@
                                             <label onClick={(e)=>e.stopPropagation()} className="absolute -bottom-1 -right-1 bg-white text-black rounded-full p-1 cursor-pointer shadow-md hover:bg-gray-100 transition-colors"><Icon name="camera" className="w-3 h-3"/><input type="file" className="hidden" accept="image/*" onChange={handleAvatarUpload} /></label>
                                         )}
                                     </div>
-                                    <div className="flex flex-col">
+                                    <div>
                                         <h1 className="text-xl leading-tight font-black tracking-tight">@{currentUsername}</h1>
                                         <div className="flex items-center gap-3 text-xs font-medium text-white/80 mt-1">
                                             <span><strong>{viewedUserFriendCount}</strong> Arkadaş</span>
                                         </div>
-                                        {/* ARKADAŞ EKLE BUTONU (YENİ) */}
-                                        {isReadOnly && !friends.includes(currentUsername) && currentUsername !== myUsername && (
-                                            <button onClick={() => addFriend(currentUsername)} className="mt-2 bg-white text-indigo-600 px-3 py-1 rounded-full text-[10px] font-bold shadow-sm hover:bg-gray-100 transition-all flex items-center gap-1 w-fit">
-                                                <Icon name="user-plus" className="w-3 h-3"/> Arkadaş Ekle
-                                            </button>
-                                        )}
                                         <div className="text-xs opacity-80 font-medium flex items-center gap-1 mt-1.5 bg-black/10 px-1.5 py-0.5 rounded w-fit"><Icon name={rank.icon} className="w-3 h-3"/> {rank.title}</div>
                                     </div>
                                 </div>
                                 <div className="flex gap-2 items-center">
+                                    {/* ŞEHİR İSİMLERİ TOGGLE (YENİ) */}
                                     <button onClick={()=>setShowCityNames(!showCityNames)} className={`p-2 rounded-full transition-all ${showCityNames ? 'bg-white text-red-600' : 'bg-white/20'}`} title="Şehir İsimlerini Göster/Gizle">
                                         <Icon name="type" className="w-4 h-4"/>
                                     </button>
@@ -1394,6 +1470,7 @@
                                         {notifications.length > 0 && <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-yellow-400 rounded-full border-2 border-red-600 animate-pulse"></span>}
                                     </button>
                                     <div className="flex flex-col gap-1">
+                                         {/* KAPAT TUŞU (YENİ) */}
                                          <button onClick={()=>setSidebarOpen(false)} className="bg-black/20 p-2 rounded-full hover:bg-black/40"><Icon name="x" className="w-4 h-4"/></button>
                                          <div className="flex gap-1">
                                               {!isReadOnly && <button onClick={()=>setIsSettingsOpen(true)} className="bg-white/20 p-1.5 rounded hover:bg-white/30" title="Ayarlar"><Icon name="settings" className="w-4 h-4"/></button>}
@@ -1430,12 +1507,12 @@
                             </form>
                         </div>
 
-                        {/* SEVGİLİ BİLGİSİ VE AYRILMA (GÜNCELLENDİ) */}
+                        {/* SEVGİLİ BİLGİSİ VE AYRILMA (YENİ) */}
                         {!isReadOnly && activeTab === 'couple' && partner && (
                             <div className="px-5 py-2 flex items-center justify-between bg-pink-50 dark:bg-pink-900/20 border-b dark:border-pink-800/50 animate-fadeIn">
                                 <div className="flex items-center gap-2">
                                     <Icon name="heart" className="w-4 h-4 text-pink-500 fill-pink-500"/>
-                                    <span className="text-xs font-bold text-pink-700 dark:text-pink-300">@{partner} ile sevgilisin</span>
+                                    <span className="text-xs font-bold text-pink-700 dark:text-pink-300">@{partner} ile ortaksın</span>
                                 </div>
                                 <button onClick={breakUpPartner} className="text-[10px] bg-white dark:bg-gray-800 text-red-500 px-2 py-1 rounded border border-red-200 dark:border-red-900/50 font-bold hover:bg-red-50 transition-colors">Ayrıl</button>
                             </div>
@@ -1448,8 +1525,8 @@
                                 {viewedFriendsList.map((f, i) => (
                                     <div key={i} className="bg-white dark:bg-gray-700 p-3 rounded-xl border border-gray-100 dark:border-gray-600 mb-2 flex justify-between items-center cursor-pointer hover:shadow-md transition-all">
                                             <div className="flex items-center gap-3" onClick={()=>{onViewChange(f); setViewMode('map'); setActiveTab('personal');}}>
-                                                <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xs overflow-hidden">
-                                                     {friendDetails[f]?.avatar ? <img src={friendDetails[f].avatar} className="w-full h-full object-cover"/> : f.substring(0,2).toUpperCase()}
+                                                <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xs">
+                                                     {friendDetails[f]?.avatar ? <img src={friendDetails[f].avatar} className="w-full h-full rounded-full object-cover"/> : f.substring(0,2).toUpperCase()}
                                                 </div>
                                                 <div className="font-bold text-gray-800 dark:text-white text-sm">@{f}</div>
                                             </div>
@@ -1502,7 +1579,7 @@
 
                     {!sidebarOpen && <button onClick={()=>setSidebarOpen(true)} className={`absolute top-4 left-4 z-10 bg-white dark:bg-gray-700 p-3 rounded-full shadow-lg text-red-600 hover:scale-110 active:scale-95 transition-all`}><Icon name="menu" className="w-6 h-6"/></button>}
                     
-                    {/* ARKADAŞ AKIŞI PANELİ (TARİH/SAAT EKLENDİ) */}
+                    {/* ARKADAŞ AKIŞI PANELİ (GELİŞTİRİLMİŞ) */}
                     {feedOpen && (
                         <div className="absolute top-0 right-0 h-full w-full md:w-80 bg-white dark:bg-gray-800 shadow-2xl z-30 flex flex-col border-l border-gray-200 dark:border-gray-700 animate-fadeIn">
                             <div className="p-4 bg-indigo-600 text-white flex justify-between items-center shadow-md">
@@ -1579,10 +1656,6 @@
                                                     <button onClick={() => submitFeedComment(item.username, item.id)} className="text-indigo-600 p-1.5">
                                                         <Icon name="send" className="w-4 h-4"/>
                                                     </button>
-                                                </div>
-                                                {/* PAYLAŞIM TARİH VE SAATİ (GÜNCELLENDİ) */}
-                                                <div className="text-[9px] text-gray-400 mt-3 font-mono border-t dark:border-gray-600 pt-1">
-                                                    {item.date}
                                                 </div>
                                             </div>
                                         </div>
@@ -1699,7 +1772,7 @@
             );
         };
 
-        const App = () => {
+        const Root = () => {
             const [user, setUser] = useState(null);
             const [myUsername, setMyUsername] = useState(localStorage.getItem('my_username'));
             const [viewUser, setViewUser] = useState(null);
@@ -1717,7 +1790,7 @@
         };
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        root.render(<Root />);
     </script>
 </body>
 </html>
