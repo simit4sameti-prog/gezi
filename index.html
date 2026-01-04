@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Maporys</title>
-    <!-- FAVICON - Site İkonu (GitHub Raw Linki) -->
+    <!-- FAVICON - Site İkonu -->
     <link rel="icon" type="image/jpeg" href="https://raw.githubusercontent.com/simit4sameti-prog/gezi/2dc829678a678bedabc4c8bce4330d8a94c5bea5/65dc1944-b4bd-479c-950a-57336cc7abf1.jpg">
     
     <!-- React & ReactDOM -->
@@ -91,7 +91,7 @@
         @keyframes likeBounce { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
         .like-anim { animation: likeBounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         
-        /* City Labels on Map - MOBİL PERFORMANS İÇİN OPTİMİZE EDİLDİ */
+        /* City Labels on Map */
         .city-label {
             background: rgba(255, 255, 255, 0.9);
             border: 1px solid rgba(0,0,0,0.1); 
@@ -384,9 +384,9 @@
             return { title: "Çırak", icon: "footprints", color: "text-gray-500" };
         };
 
-        const BAD_WORDS = ["aptal", "salak", "gerizekalı", "mal", "öküz", "dangalak", "ahmak", "manyak", "pislik", "şerefsiz", "küfür"];
         const filterProfanity = (text) => {
             if (!text) return "";
+            const BAD_WORDS = ["aptal", "salak", "gerizekalı", "mal", "öküz", "dangalak", "ahmak", "manyak", "pislik", "şerefsiz", "küfür"];
             let cleanText = text;
             BAD_WORDS.forEach(word => { const regex = new RegExp(word, "gi"); cleanText = cleanText.replace(regex, "*".repeat(word.length)); });
             return cleanText;
@@ -411,28 +411,16 @@
             const current = visualMarkers[currentIndex];
             const cover = current.favoriteImage || current.images[0];
             
-            useEffect(() => {
-                const handleKeyDown = (e) => {
-                    if(e.key === 'ArrowRight') next();
-                    if(e.key === 'ArrowLeft') prev();
-                    if(e.key === 'Escape') onClose();
-                };
-                window.addEventListener('keydown', handleKeyDown);
-                return () => window.removeEventListener('keydown', handleKeyDown);
-            }, [currentIndex]);
-
             const next = () => setCurrentIndex((prev) => (prev + 1) % visualMarkers.length);
             const prev = () => setCurrentIndex((prev) => (prev - 1 + visualMarkers.length) % visualMarkers.length);
 
             return (
                 <div className="fixed inset-0 z-[1600] bg-black flex items-center justify-center animate-fadeIn">
                     <button onClick={onClose} className="absolute top-4 right-4 z-50 p-2 bg-black/50 rounded-full text-white hover:bg-white/20 transition-colors"><Icon name="x" className="w-8 h-8"/></button>
-                    
                     <div className="relative w-full h-full md:w-[450px] md:h-[90%] bg-gray-900 md:rounded-2xl overflow-hidden shadow-2xl flex flex-col">
                         <div className="flex-1 relative group">
                              <img src={cover} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent"></div>
-                             
                              <div className="absolute bottom-0 left-0 w-full p-8 text-white">
                                 <div className="flex items-center gap-2 mb-2">
                                     <Icon name="map-pin" className="w-5 h-5 text-red-500 fill-current"/>
@@ -441,7 +429,6 @@
                                 </div>
                                 <div className="text-sm text-gray-300 mb-4 font-mono">{current.date}</div>
                                 {current.note && <p className="text-base text-gray-200 italic line-clamp-4 leading-relaxed border-l-2 border-red-500 pl-3">"{current.note}"</p>}
-                                
                                 <div className="flex gap-1.5 mt-6 justify-center">
                                     {visualMarkers.map((_, idx) => (
                                         <div key={idx} className={`h-1 rounded-full transition-all duration-300 ${idx === currentIndex ? 'w-6 bg-red-500' : 'w-1.5 bg-white/30'}`}></div>
@@ -449,9 +436,8 @@
                                 </div>
                              </div>
                         </div>
-
-                        <button onClick={prev} className="absolute left-2 top-1/2 -translate-y-1/2 p-3 text-white/50 hover:text-white hover:bg-black/20 rounded-full transition-all"><Icon name="chevron-left" className="w-10 h-10"/></button>
-                        <button onClick={next} className="absolute right-2 top-1/2 -translate-y-1/2 p-3 text-white/50 hover:text-white hover:bg-black/20 rounded-full transition-all"><Icon name="chevron-right" className="w-10 h-10"/></button>
+                        <button onClick={prev} className="absolute left-2 top-1/2 -translate-y-1/2 p-3 text-white/50 hover:text-white rounded-full"><Icon name="chevron-left" className="w-10 h-10"/></button>
+                        <button onClick={next} className="absolute right-2 top-1/2 -translate-y-1/2 p-3 text-white/50 hover:text-white rounded-full"><Icon name="chevron-right" className="w-10 h-10"/></button>
                     </div>
                 </div>
             );
@@ -461,50 +447,27 @@
         const StatsModal = ({ markers, onClose }) => {
             const visitedCount = markers.filter(m => m.status !== 'bucket').length;
             const bucketCount = markers.filter(m => m.status === 'bucket').length;
-            const totalCities = 81;
-            const progress = Math.round((visitedCount / totalCities) * 100);
-            const categories = {};
-            markers.forEach(m => { if(m.status !== 'bucket') categories[m.category] = (categories[m.category] || 0) + 1; });
-            const topCategory = Object.keys(categories).length > 0 ? Object.keys(categories).reduce((a, b) => categories[a] > categories[b] ? a : b) : "Henüz yok";
-
+            const progress = Math.round((visitedCount / 81) * 100);
+            
             return (
                 <div className="fixed inset-0 z-[1500] bg-black bg-opacity-70 flex items-center justify-center p-4 animate-fadeIn">
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-sm:px-4 max-w-sm p-6 relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
-                        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"><Icon name="x" className="w-5 h-5"/></button>
-                        
-                        <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6 text-center flex items-center justify-center gap-2">
-                            <Icon name="bar-chart-2" className="w-6 h-6 text-indigo-500"/> İstatistikler
-                        </h2>
-                        
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm p-6 relative overflow-hidden">
+                        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><Icon name="x" className="w-5 h-5"/></button>
+                        <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6 text-center">İstatistikler</h2>
                         <div className="grid grid-cols-2 gap-4 mb-6">
-                            <div className="bg-blue-50 dark:bg-gray-700/50 p-4 rounded-xl text-center border border-blue-100 dark:border-gray-600">
-                                <div className="text-3xl font-black text-blue-600 dark:text-blue-400">{visitedCount}</div>
-                                <div className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wide mt-1">Gezilen</div>
+                            <div className="bg-blue-50 dark:bg-gray-700/50 p-4 rounded-xl text-center">
+                                <div className="text-3xl font-black text-blue-600">{visitedCount}</div>
+                                <div className="text-xs text-gray-500 font-bold uppercase mt-1">Gezilen</div>
                             </div>
-                            <div className="bg-yellow-50 dark:bg-gray-700/50 p-4 rounded-xl text-center border border-yellow-100 dark:border-gray-600">
-                                <div className="text-3xl font-black text-yellow-600 dark:text-yellow-400">{bucketCount}</div>
-                                <div className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wide mt-1">Hedef</div>
+                            <div className="bg-yellow-50 dark:bg-gray-700/50 p-4 rounded-xl text-center">
+                                <div className="text-3xl font-black text-yellow-600">{bucketCount}</div>
+                                <div className="text-xs text-gray-500 font-bold uppercase mt-1">Hedef</div>
                             </div>
                         </div>
-                        
                         <div className="mb-6">
-                            <div className="flex justify-between text-sm text-gray-600 dark:text-gray-300 mb-2 font-medium">
-                                <span>Türkiye Keşfi</span>
-                                <span className="font-bold text-indigo-600 dark:text-indigo-400">%{progress}</span>
-                            </div>
-                            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4 overflow-hidden">
-                                <div className="bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 h-4 rounded-full transition-all duration-1000 ease-out" style={{width: `${progress}%`}}></div>
-                            </div>
-                        </div>
-                        
-                        <div className="bg-purple-50 dark:bg-gray-700/50 p-4 rounded-xl flex items-center justify-between border border-purple-100 dark:border-gray-600">
-                            <div>
-                                <div className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase">Favori Kategori</div>
-                                <div className="text-lg font-bold text-purple-700 dark:text-purple-400 mt-0.5">{topCategory}</div>
-                            </div>
-                            <div className="bg-purple-100 dark:bg-gray-600 p-2 rounded-full">
-                                <Icon name="heart" className="w-6 h-6 text-purple-500 dark:text-purple-300"/>
+                            <div className="flex justify-between text-sm mb-2"><span>Türkiye Keşfi</span><span className="font-bold">%{progress}</span></div>
+                            <div className="w-full bg-gray-200 dark:bg-gray-700 h-4 rounded-full overflow-hidden">
+                                <div className="bg-indigo-500 h-full transition-all duration-1000" style={{width: `${progress}%`}}></div>
                             </div>
                         </div>
                     </div>
@@ -516,7 +479,6 @@
         const ChatModal = ({ myUsername, friendUsername, onClose, sendNotif }) => {
             const [messages, setMessages] = useState([]);
             const [newMessage, setNewMessage] = useState("");
-            const [showEmojis, setShowEmojis] = useState(false);
             const chatId = [myUsername, friendUsername].sort().join('_');
             const scrollRef = useRef(null);
 
@@ -533,10 +495,9 @@
                 if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
             }, [messages]);
 
-            const sendMessage = async (text = null, image = null) => {
-                if (!text && !image) return;
-                const cleanText = text ? filterProfanity(text) : null;
-                const msg = { id: Date.now(), sender: myUsername, text: cleanText, image: image, timestamp: Date.now() };
+            const sendMessage = async () => {
+                if (!newMessage) return;
+                const msg = { id: Date.now(), sender: myUsername, text: newMessage, timestamp: Date.now() };
                 const chatRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('direct_messages').doc(chatId);
                 const doc = await chatRef.get();
                 let currentMsgs = doc.exists ? doc.data().msgs : [];
@@ -546,18 +507,6 @@
                 setNewMessage("");
             };
 
-            const handleImageSend = async (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                const base64 = await compressImage(file);
-                sendMessage(null, base64);
-            };
-
-            const addEmoji = (emoji) => {
-                setNewMessage(prev => prev + emoji);
-                setShowEmojis(false);
-            };
-
             return (
                 <div className="fixed bottom-4 right-4 w-80 bg-white dark:bg-gray-800 rounded-t-2xl shadow-2xl border border-gray-200 dark:border-gray-700 z-[1400] flex flex-col h-96 animate-fadeIn">
                     <div className="bg-indigo-600 p-4 text-white rounded-t-2xl flex justify-between items-center shadow-md">
@@ -565,71 +514,17 @@
                         <button onClick={onClose} className="hover:bg-white/20 p-1 rounded-full"><Icon name="x" className="w-4 h-4"/></button>
                     </div>
                     <div className="flex-1 overflow-y-auto p-3 bg-gray-50 dark:bg-gray-900 space-y-3" ref={scrollRef}>
-                        {messages.length === 0 && <div className="text-center text-xs text-gray-400 mt-10 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">Sohbeti başlatın...<br/>Merhaba de! 👋</div>}
                         {messages.map((m, i) => (
                             <div key={i} className={`flex ${m.sender === myUsername ? 'justify-end' : 'justify-start'}`}>
                                 <div className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm shadow-sm ${m.sender === myUsername ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-white border border-gray-200 text-gray-800 dark:bg-gray-700 dark:border-gray-600 dark:text-white rounded-bl-none'}`}>
-                                    {m.image && <img src={m.image} className="rounded-lg mb-1 max-w-full border border-white/20" />}
-                                    {m.text && <p>{m.text}</p>}
+                                    {m.text}
                                 </div>
                             </div>
                         ))}
                     </div>
-                    <div className="p-2 border-t dark:border-gray-700 bg-white dark:bg-gray-800 relative">
-                        {showEmojis && (
-                            <div className="absolute bottom-14 left-2 bg-white dark:bg-gray-700 shadow-xl rounded-xl p-2 grid grid-cols-6 gap-1 w-64 h-32 overflow-y-auto border dark:border-gray-600 z-10">
-                                {EMOJIS.map(emoji => (
-                                    <button key={emoji} onClick={() => addEmoji(emoji)} className="text-xl hover:bg-gray-100 dark:hover:bg-gray-600 p-1 rounded transition-colors">{emoji}</button>
-                                ))}
-                            </div>
-                        )}
-                        <div className="flex gap-2 items-center">
-                            <button onClick={() => setShowEmojis(!showEmojis)} className="text-gray-500 hover:text-indigo-600 p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"><Icon name="smile" className="w-5 h-5"/></button>
-                            <label className="cursor-pointer text-gray-500 hover:text-indigo-600 p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"><Icon name="image" className="w-5 h-5"/><input type="file" className="hidden" accept="image/*" onChange={handleImageSend}/></label>
-                            <input type="text" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && sendMessage(newMessage)} className="flex-1 border dark:border-gray-600 rounded-full px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-500 dark:bg-gray-700 dark:text-white transition-all" placeholder="Mesaj..."/>
-                            <button onClick={() => sendMessage(newMessage)} className="text-indigo-600 hover:text-indigo-800 bg-indigo-50 dark:bg-indigo-900 p-1.5 rounded-full transition-colors"><Icon name="send" className="w-5 h-5"/></button>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
-        // --- AYARLAR MODALI ---
-        const SettingsModal = ({ myUsername, onClose }) => {
-            const [newName, setNewName] = useState(myUsername);
-            const [newPass, setNewPass] = useState("");
-            const [loading, setLoading] = useState(false);
-            const [msg, setMsg] = useState("");
-
-            const handleUpdate = async () => {
-                setLoading(true);
-                try {
-                    const credRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_credentials').doc(myUsername);
-                    const updateObj = {};
-                    if(newPass) updateObj.password = newPass;
-                    await credRef.update(updateObj);
-                    setMsg("Başarıyla güncellendi!");
-                } catch(e) { setMsg("Hata oluştu."); }
-                setLoading(false);
-            };
-
-            return (
-                <div className="fixed inset-0 z-[1700] bg-black/70 flex items-center justify-center p-4 animate-fadeIn backdrop-blur-sm">
-                    <div className="bg-white dark:bg-gray-800 w-full max-w-sm rounded-2xl shadow-2xl p-6 border dark:border-gray-700 relative">
-                        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><Icon name="x" className="w-5 h-5"/></button>
-                        <h2 className="text-xl font-bold mb-6 flex items-center gap-2 dark:text-white"><Icon name="settings" className="w-5 h-5 text-blue-500"/> Ayarlar</h2>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Kullanıcı Adı</label>
-                                <input type="text" value={newName} readOnly className="w-full bg-gray-100 dark:bg-gray-900 dark:text-gray-400 border border-gray-200 dark:border-gray-700 rounded-lg p-2.5 text-sm cursor-not-allowed"/>
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Yeni Şifre</label>
-                                <input type="password" value={newPass} onChange={e=>setNewPass(e.target.value)} className="w-full border border-gray-200 dark:border-gray-700 dark:bg-gray-700 dark:text-white rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Şifreyi değiştir..."/>
-                            </div>
-                            {msg && <p className={`text-xs font-bold ${msg.includes("Başarı") ? 'text-green-500' : 'text-red-500'}`}>{msg}</p>}
-                            <button onClick={handleUpdate} disabled={loading} className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition-all active:scale-95 shadow-lg">Değişiklikleri Kaydet</button>
-                        </div>
+                    <div className="p-2 border-t dark:border-gray-700 bg-white dark:bg-gray-800 flex gap-2">
+                        <input type="text" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && sendMessage()} className="flex-1 border dark:border-gray-600 rounded-full px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-500 dark:bg-gray-700 dark:text-white" placeholder="Mesaj..."/>
+                        <button onClick={sendMessage} className="text-indigo-600 hover:text-indigo-800"><Icon name="send" className="w-5 h-5"/></button>
                     </div>
                 </div>
             );
@@ -647,17 +542,11 @@
                         <div className="max-h-80 overflow-y-auto p-2 bg-gray-50 dark:bg-gray-900">
                             {notifications.length === 0 ? <p className="text-center text-sm text-gray-400 py-6 italic">Yeni bildirim yok.</p> : notifications.map((notif, idx) => (
                                 <div key={idx} className="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg p-3 mb-2 shadow-sm">
-                                    <p className="text-sm text-gray-800 dark:text-gray-200 mb-3 leading-tight">
-                                        {notif.msg ? notif.msg : <><span className="font-bold text-indigo-600 dark:text-indigo-400">@{notif.from}</span> {notif.type === 'friend' ? ' seni arkadaş eklemek istiyor.' : ' seninle sevgili haritası oluşturmak istiyor.'}</>}
-                                    </p>
-                                    {notif.type !== 'message' ? (
-                                        <div className="flex gap-2">
-                                            <button onClick={() => onAccept(notif)} className="flex-1 bg-green-500 text-white text-xs py-1.5 rounded-md font-bold hover:bg-green-600 transition-colors shadow-sm">Kabul Et</button>
-                                            <button onClick={() => onReject(notif)} className="flex-1 bg-gray-100 text-gray-600 text-xs py-1.5 rounded-md font-bold hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 transition-colors">Reddet</button>
-                                        </div>
-                                    ) : (
-                                        <button onClick={() => onReject(notif)} className="w-full bg-blue-50 text-blue-600 text-xs py-1.5 rounded-md font-bold hover:bg-blue-100 transition-colors">Tamam</button>
-                                    )}
+                                    <p className="text-sm text-gray-800 dark:text-gray-200 mb-3">{notif.msg ? notif.msg : <span>@{notif.from} seni eklemek istiyor.</span>}</p>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => onAccept(notif)} className="flex-1 bg-green-500 text-white text-xs py-1.5 rounded-md font-bold">Kabul Et</button>
+                                        <button onClick={() => onReject(notif)} className="flex-1 bg-gray-100 text-gray-600 text-xs py-1.5 rounded-md font-bold">Reddet</button>
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -668,128 +557,86 @@
 
         // --- PARTNER MODAL ---
         const PartnerModal = ({ myUsername, currentPartner, onClose, onLink, onBreakUp }) => {
-            const [partnerName, setPartnerName] = useState(currentPartner || "");
-            const [status, setStatus] = useState("");
-
-            const handleLink = async () => {
-                if(!partnerName.trim() || partnerName === myUsername) {
-                    setStatus("Geçerli bir kullanıcı adı girin.");
-                    return;
-                }
-                setStatus("İstek gönderiliyor...");
-                await onLink(partnerName.trim().toLowerCase());
-                setStatus("İstek gönderildi! Karşı taraf onaylayınca eşleşme tamamlanır.");
-            };
-
-            const handleBreakUp = async () => {
-                if(confirm("Sevgilinden ayrılmak istediğine emin misin? Ortak harita kaybolacak.")) {
-                    await onBreakUp();
-                }
-            };
-
+            const [partnerName, setPartnerName] = useState("");
+            
             return (
                 <div className="fixed inset-0 z-[1200] bg-black bg-opacity-70 flex items-center justify-center p-4 animate-fadeIn">
                     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-6 relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-full h-1 bg-pink-500"></div>
-                        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"><Icon name="x" className="w-5 h-5"/></button>
-                        
-                        <div className="text-center mb-8 mt-2">
-                            <div className="w-20 h-20 bg-pink-50 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-lg relative">
-                                <Icon name="heart" className="w-10 h-10 text-pink-500 fill-pink-500 animate-bounce-short" />
-                                <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-1 shadow-sm"><Icon name="link" className="w-4 h-4 text-gray-400"/></div>
+                        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><Icon name="x" className="w-5 h-5"/></button>
+                        <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-4 text-center">Sevgili Eşleşmesi</h2>
+                        {!currentPartner ? (
+                            <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl border border-gray-100 dark:border-gray-600">
+                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Kullanıcı Adı</label>
+                                <input type="text" value={partnerName} onChange={(e) => setPartnerName(e.target.value)} className="w-full border border-gray-300 dark:border-gray-500 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-500 dark:bg-gray-700 dark:text-white" placeholder="Örn: aysecinar"/>
+                                <button onClick={() => onLink(partnerName)} className="w-full bg-gradient-to-r from-pink-500 to-rose-500 text-white font-bold py-3 rounded-lg mt-3">Eşleşme İsteği Gönder</button>
                             </div>
-                            <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Sevgili Eşleşmesi</h2>
-                            <p className="text-gray-500 dark:text-gray-400 text-sm mt-2 px-6">Birlikte gezdiğiniz yerleri ortak, romantik bir haritada birleştirin.</p>
-                        </div>
-                        
+                        ) : (
+                            <div className="text-center bg-pink-50 dark:bg-pink-900/20 p-6 rounded-xl border border-pink-100 dark:border-pink-800">
+                                <p className="text-gray-600 dark:text-gray-300 mb-6">Şu an <strong className="text-pink-600 dark:text-pink-400">@{currentPartner}</strong> ile birliktesin.</p>
+                                <button onClick={onBreakUp} className="w-full bg-white text-red-600 font-bold py-3 rounded-lg border border-red-200">Ayrıl</button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const SettingsModal = ({ myUsername, onClose }) => {
+            return (
+                <div className="fixed inset-0 z-[1700] bg-black/70 flex items-center justify-center p-4 animate-fadeIn backdrop-blur-sm">
+                    <div className="bg-white dark:bg-gray-800 w-full max-w-sm rounded-2xl shadow-2xl p-6 border dark:border-gray-700 relative">
+                        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><Icon name="x" className="w-5 h-5"/></button>
+                        <h2 className="text-xl font-bold mb-6 flex items-center gap-2 dark:text-white"><Icon name="settings" className="w-5 h-5 text-blue-500"/> Ayarlar</h2>
                         <div className="space-y-4">
-                            {!currentPartner ? (
-                                <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl border border-gray-100 dark:border-gray-600">
-                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Sevgilinin Kullanıcı Adı</label>
-                                    <input 
-                                        type="text" 
-                                        value={partnerName}
-                                        onChange={(e) => setPartnerName(e.target.value)}
-                                        className="w-full border border-gray-300 dark:border-gray-500 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-500 dark:bg-gray-700 dark:text-white transition-shadow"
-                                        placeholder="Örn: aysecinar"
-                                    />
-                                    <button onClick={handleLink} className="w-full bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-bold py-3 rounded-lg mt-3 transition-all transform active:scale-95 shadow-lg flex items-center justify-center gap-2">
-                                        <Icon name="send" className="w-4 h-4"/> Eşleşme İsteği Gönder
-                                    </button>
-                                    {status && <p className={`text-center text-xs mt-3 font-bold ${status.includes("gönderildi") ? 'text-green-600' : 'text-pink-600'}`}>{status}</p>}
-                                </div>
-                            ) : (
-                                <div className="text-center bg-pink-50 dark:bg-pink-900/20 p-6 rounded-xl border border-pink-100 dark:border-pink-800">
-                                    <p className="text-gray-600 dark:text-gray-300 mb-6">
-                                        Şu an <strong className="text-pink-600 dark:text-pink-400 text-lg">@{currentPartner}</strong> ile <br/>mutlu bir birlikteliğin var. ❤️
-                                    </p>
-                                    <button onClick={handleBreakUp} className="w-full bg-white dark:bg-gray-800 border border-red-200 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm shadow-sm">
-                                        <Icon name="user-x" className="w-4 h-4"/> Sevgililikten Çıkar
-                                    </button>
-                                </div>
-                            )}
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Kullanıcı Adı</label>
+                                <input type="text" value={myUsername} readOnly className="w-full bg-gray-100 dark:bg-gray-900 dark:text-gray-400 border border-gray-200 dark:border-gray-700 rounded-lg p-2.5 text-sm cursor-not-allowed"/>
+                            </div>
                         </div>
                     </div>
                 </div>
             );
         };
 
+        // --- LOGIN SCREEN ---
         const LoginScreen = ({ onLogin }) => {
+            const [username, setUsername] = useState("");
+            const [password, setPassword] = useState("");
             const [isRegistering, setIsRegistering] = useState(false);
-            const [inputUsername, setInputUsername] = useState("");
-            const [inputPassword, setInputPassword] = useState("");
             const [inputEmail, setInputEmail] = useState(""); 
             const [inputPhone, setInputPhone] = useState(""); 
-            const [inputContact, setInputContact] = useState(""); 
+            const [error, setError] = useState("");
             const [loading, setLoading] = useState(false);
-            const [error, setError] = useState(null);
-            const [successMsg, setSuccessMsg] = useState(null);
 
             const handleSubmit = async (e) => {
                 e.preventDefault();
-                setError(null);
-                setSuccessMsg(null);
+                setError("");
+                if (!username.trim() || !password.trim()) return;
                 
-                if(!inputUsername.trim() || !inputPassword.trim()) return;
-                const uName = inputUsername.trim().toLowerCase();
-                const uPass = inputPassword.trim();
-                
-                if (isRegistering) {
-                    if (uName.length < 3) { setError("Kullanıcı adı en az 3 karakter olmalı."); return; }
-                    if (uPass.length < 4) { setError("Şifre en az 4 karakter olmalı."); return; }
-                }
-
-                setLoading(true); 
+                setLoading(true);
                 try {
-                    const userRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_credentials').doc(uName);
-                    const docSnap = await userRef.get();
-
+                    const userRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_credentials').doc(username.toLowerCase());
+                    const doc = await userRef.get();
+                    
                     if (isRegistering) {
-                        if (docSnap.exists) setError("Bu kullanıcı adı alınmış.");
-                        else {
-                            await userRef.set({ 
-                                password: uPass, 
-                                contact: inputContact.trim(),
-                                email: inputEmail.trim(), 
-                                phone: inputPhone.trim()   
-                            });
-                            const publicDataRef = db.collection('artifacts').doc(appId).collection('public').doc('data');
-                            await publicDataRef.collection('user_profiles').doc(uName).set({ avatar: null, lastActive: new Date().toISOString() });
-                            await publicDataRef.collection('user_friends').doc(uName).set({ list: [] });
-                            await publicDataRef.collection('user_notifications').doc(uName).set({ list: [] });
-                            setSuccessMsg("Kayıt başarılı! Giriş yapılıyor...");
-                            setTimeout(() => onLogin(uName), 1000);
-                        }
+                        if (doc.exists) { setError("Bu kullanıcı adı alınmış."); setLoading(false); return; }
+                        await userRef.set({ 
+                            password,
+                            email: inputEmail,
+                            phone: inputPhone
+                        });
+                        await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_profiles').doc(username.toLowerCase()).set({ lastActive: new Date().toISOString() });
+                        await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_friends').doc(username.toLowerCase()).set({ list: [] });
+                        await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_notifications').doc(username.toLowerCase()).set({ list: [] });
+                        onLogin(username.toLowerCase());
                     } else {
-                        if (docSnap.exists) {
-                            if (docSnap.data().password === uPass) onLogin(uName);
-                            else setError("Hatalı şifre!");
-                        } else setError("Kullanıcı bulunamadı.");
+                        if (!doc.exists || doc.data().password !== password) { setError("Kullanıcı adı veya şifre hatalı."); setLoading(false); return; }
+                        onLogin(username.toLowerCase());
                     }
                 } catch (err) { 
-                    console.error("Giriş Hatası:", err); 
-                    setError("Bir hata oluştu. İnternet bağlantınızı kontrol edin.");
-                } finally { setLoading(false); }
+                    setError("Bir hata oluştu."); 
+                    setLoading(false);
+                }
             };
 
             return (
@@ -816,7 +663,7 @@
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="relative">
                                 <Icon name="user" className="absolute left-3 top-3 w-5 h-5 text-gray-400"/>
-                                <input type="text" className="w-full border border-gray-200 dark:border-gray-600 rounded-lg pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 dark:bg-gray-700 dark:text-white transition-all" placeholder="Kullanıcı Adı" value={inputUsername} onChange={e => setInputUsername(e.target.value)} disabled={loading} />
+                                <input type="text" className="w-full border border-gray-200 dark:border-gray-600 rounded-lg pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 dark:bg-gray-700 dark:text-white transition-all" placeholder="Kullanıcı Adı" value={username} onChange={e => setUsername(e.target.value)} disabled={loading} />
                             </div>
                             
                             {isRegistering && (
@@ -834,11 +681,10 @@
                             
                             <div className="relative">
                                 <Icon name="lock" className="absolute left-3 top-3 w-5 h-5 text-gray-400"/>
-                                <input type="password" className="w-full border border-gray-200 dark:border-gray-600 rounded-lg pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 dark:bg-gray-700 dark:text-white transition-all" placeholder="Şifre" value={inputPassword} onChange={e => setInputPassword(e.target.value)} disabled={loading} />
+                                <input type="password" className="w-full border border-gray-200 dark:border-gray-600 rounded-lg pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 dark:bg-gray-700 dark:text-white transition-all" placeholder="Şifre" value={password} onChange={e => setPassword(e.target.value)} disabled={loading} />
                             </div>
 
                             {error && <div className="p-3 bg-red-50 text-red-600 text-xs rounded-lg text-left font-medium flex gap-2 items-start"><Icon name="alert-circle" className="w-4 h-4 shrink-0"/> {error}</div>}
-                            {successMsg && <div className="p-3 bg-green-50 text-green-600 text-xs rounded-lg text-left font-medium flex gap-2 items-start"><Icon name="check-circle" className="w-4 h-4 shrink-0"/> {successMsg}</div>}
                             
                             <button type="submit" className="w-full bg-red-600 text-white font-bold py-3 rounded-lg hover:bg-red-700 transition-all shadow-lg hover:shadow-red-500/30 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed mt-2" disabled={loading}>
                                 {loading ? "İşleniyor..." : (isRegistering ? "Hesap Oluştur" : "Giriş Yap")}
@@ -849,7 +695,7 @@
             );
         };
 
-        const MainApp = ({ myUsername, currentUsername, onViewChange, onLogout }) => {
+        const MainApp = ({ myUsername, currentUsername, user, onLogout }) => {
             const [markers, setMarkers] = useState([]);
             const [friends, setFriends] = useState([]); 
             const [viewedFriendsList, setViewedFriendsList] = useState([]); 
@@ -921,6 +767,28 @@
                 else document.documentElement.classList.remove('dark');
             };
 
+            const renderClickableNote = (text) => {
+                if (!text) return null;
+                const parts = text.split(/(\s+)/);
+                return parts.map((part, i) => {
+                    if (part.trim().startsWith('#')) {
+                        return (
+                            <span 
+                                key={i} 
+                                className="text-blue-500 font-bold cursor-pointer hover:underline"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setHashtagSearch(part.trim());
+                                }}
+                            >
+                                {part}
+                            </span>
+                        );
+                    }
+                    return part;
+                });
+            };
+
             useEffect(() => {
                 if (mapRef.current) {
                     setTimeout(() => { mapRef.current.invalidateSize(); }, 300);
@@ -934,7 +802,7 @@
                     }, { merge: true });
                 };
                 updateActivity();
-                const interval = setInterval(updateActivity, 60000); // 1 dakikada bir güncelle
+                const interval = setInterval(updateActivity, 60000); 
                 return () => clearInterval(interval);
             }, [myUsername]);
              
@@ -1006,11 +874,9 @@
                     let usersToFetch = [];
 
                     if (hashtagSearch.startsWith("#")) {
-                        // Global hashtag arama: Tüm kullanıcıları listele (Sistem kısıtı nedeniyle credentiallardan çekiyoruz)
                         const allUsersDoc = await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_credentials').get();
                         usersToFetch = allUsersDoc.docs.map(d => d.id);
                     } else {
-                        // Normal akış: Sadece arkadaşlar
                         usersToFetch = friends;
                     }
 
@@ -1671,7 +1537,7 @@
                                             {item.images && item.images[0] && <img src={item.images[0]} className="w-full h-44 object-cover cursor-zoom-in" onClick={() => openLightbox(item.images[0], item.images)}/>}
                                             
                                             <div className="p-3">
-                                                <p className="text-xs text-gray-600 dark:text-gray-300 italic mb-3">"{item.note}"</p>
+                                                <div className="text-xs text-gray-600 dark:text-gray-300 italic mb-3">"{renderClickableNote(item.note)}"</div>
                                                 
                                                 <div className="flex items-center gap-4 border-t dark:border-gray-600 pt-3 mb-3">
                                                     <button onClick={() => toggleLike(item.username, item.id)} className="flex items-center gap-1 group">
@@ -1835,7 +1701,7 @@
             if (!isFirebaseReady) return <div className="h-screen flex items-center justify-center text-red-600">Firebase Config Eksik!</div>;
             if (!user) return <div className="h-screen flex items-center justify-center text-red-600 font-bold bg-gray-50"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mr-2"></div> Harita Yükleniyor...</div>;
             if (!myUsername) return <LoginScreen onLogin={(u) => { setMyUsername(u); localStorage.setItem('my_username', u); }} />;
-            return <MainApp myUsername={myUsername} currentUsername={viewUser || myUsername} onViewChange={setViewUser} onLogout={()=>{ localStorage.removeItem('my_username'); setMyUsername(null); setViewUser(null); }} />;
+            return <MainApp user={user} myUsername={myUsername} currentUsername={viewUser || myUsername} onViewChange={setViewUser} onLogout={()=>{ localStorage.removeItem('my_username'); setMyUsername(null); setViewUser(null); }} />;
         };
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
