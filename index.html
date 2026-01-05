@@ -341,7 +341,6 @@
             "Samsun": { "Genel": ["Bandırma Vapuru", "Atatürk Anıtı", "Amisos Tepesi"], "Yemek": ["Samsun Pidesi", "Nokul", "Tirit"], "Doğa": ["Şahinkaya Kanyonu", "Kızılırmak Deltası", "Ayvacık"], "Tarih": ["Gazi Müzesi", "Amazon Köyü", "Tekkeköy Mağaraları"] },
             "Siirt": { "Genel": ["Tillo", "Deliklitaş", "Saat Kulesi"], "Yemek": ["Büryan", "Perde Pilavı", "Siirt Fıstığı"], "Doğa": ["Botan Vadisi", "Rasıl Hacar", "Veysel Karani"], "Tarih": ["Ulu Camii", "İsmail Fakirullah Türbesi", "Derzin Kalesi"] },
             "Sinop": { "Genel": ["Tarihi Cezaevi", "Hamsilos Koyu", "İnceburun"], "Yemek": ["Sinop Mantısı", "Nokul", "Palamut"], "Doğa": ["Erfelek Şelaleleri", "Akgöl", "Sarıkum"], "Tarih": ["Sinop Kalesi", "Paşa Tabyaları", "Alaaddin Camii"] },
-            "Sinop": { "Genel": ["Tarihi Cezaevi", "Hamsilos Koyu", "İnceburun"], "Yemek": ["Sinop Mantısı", "Nokul", "Palamut"], "Doğa": ["Erfelek Şelaleleri", "Akgöl", "Sarıkum"], "Tarih": ["Sinop Kalesi", "Paşa Tabyaları", "Alaaddin Camii"] },
             "Sivas": { "Genel": ["Çifte Minareli Medrese", "Buruciye Medresesi", "Kongre Müzesi"], "Yemek": ["Sivas Köftesi", "Peskutan Çorbası", "Katmer"], "Doğa": ["Gökpınar Gölü", "Sızır Şelalesi", "Eğriçimen Yaylası"], "Tarih": ["Divriği Ulu Camii", "Gök Medrese", "Şifaiye Medresesi"] },
             "Şanlıurfa": { "Genel": ["Balıklıgöl", "Göbeklitepe", "Sıra Gecesi"], "Yemek": ["Urfa Kebap", "Çiğ Köfte", "Şıllık Tatlısı"], "Doğa": ["Halfeti", "Takoran Vadisi", "Atatürk Barajı"], "Tarih": ["Göbeklitepe", "Harran Evleri", "Rizvaniye Camii"] },
             "Şırnak": { "Genel": ["Cizre Kırmızı Medrese", "Mem u Zin Türbesi", "Nuh Tufanı Gemisi"], "Yemek": ["Perdepilav", "Kipe", "Hekeheşandi"], "Doğa": ["Cudi Dağı", "Kasrik Boğazı", "Faraşin Yaylası"], "Tarih": ["Cizre Surları", "Finik Ören Yeri", "Abdaliye Medresesi"] },
@@ -392,8 +391,6 @@
             BAD_WORDS.forEach(word => { const regex = new RegExp(word, "gi"); cleanText = cleanText.replace(regex, "*".repeat(word.length)); });
             return cleanText;
         };
-
-        const EMOJIS = ["😀", "😂", "🥰", "😍", "😎", "🤩", "🤔", "😴", "😭", "😤", "👍", "👎", "❤️", "🔥", "🎉", "✈️", "🗺️", "📸"];
 
         // --- CINEMA MODAL ---
         const CinemaModal = ({ markers, onClose }) => {
@@ -753,6 +750,9 @@
             const [viewedUserFriendCount, setViewedUserFriendCount] = useState(0);
             const [viewedUserLastActive, setViewedUserLastActive] = useState(null);
 
+            const [activeReplyId, setActiveReplyId] = useState(null);
+            const [replyText, setReplyText] = useState("");
+
             const isReadOnly = (myUsername !== currentUsername) && (activeTab === 'personal');
             const markersRef = useRef(markers);
 
@@ -762,15 +762,36 @@
 
             const categories = ["Genel", "Yemek", "Doğa", "Tarih", "Eğlence", "Deniz"];
 
-            // --- MERKEZİ NAVİGASYON FONKSİYONU ---
+            // --- NAVİGASYON VE ARAMA FONKSİYONLARI ---
             const handleUserNavigation = (targetUser) => {
                 onViewChange(targetUser);
                 setViewMode('map');
                 setActiveTab('personal');
-                setFeedOpen(false); // Haritaya odaklanmak için akışı kapat
+                setFeedOpen(false); 
                 setHashtagSearch("");
-                setIsModalOpen(false); // Açık modal varsa kapat
-                if (window.innerWidth < 768) setSidebarOpen(false); // Mobilde kenar çubuğunu kapat
+                setIsModalOpen(false); 
+                if (window.innerWidth < 768) setSidebarOpen(false); 
+            };
+
+            const handleSearch = async (e) => { 
+                e.preventDefault(); 
+                if(!searchQuery.trim()) return; 
+                const target = searchQuery.trim().toLowerCase(); 
+
+                if (target.startsWith("#")) {
+                    setHashtagSearch(target);
+                    setFeedOpen(true);
+                    setSidebarOpen(true);
+                    return;
+                }
+
+                try { 
+                    const doc = await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_credentials').doc(target).get(); 
+                    if(doc.exists) { 
+                        handleUserNavigation(target); 
+                        setSearchQuery(""); 
+                    } else alert("Kullanıcı bulunamadı!"); 
+                } catch(e) { alert("Hata."); } 
             };
 
             const toggleDarkMode = () => {
@@ -850,7 +871,7 @@
             const enhanceNote = async () => {
                 if (!note || !note.trim()) return;
                 setIsEnhancingNote(true);
-                const prompt = `Bu gezi günlüğü notunu daha etkileyici, akıcı ve edebi bir dille yeniden yaz. İmla hatalarını düzelt. Orijinal anlamı koru. İşte not: "${note}"`;
+                const prompt = `Bu günlük girişini daha etkileyici, akıcı ve edebi bir dille yeniden yaz. İmla hatalarını düzelt. Orijinal anlamı koru. İşte metin: "${note}"`;
                 const result = await callGeminiAPI(prompt);
                 if (result) {
                     setNote(result);
@@ -1013,7 +1034,7 @@
                 const text = feedCommentInputs[markerId];
                 if(!text || !text.trim()) return;
                 const cleanText = filterProfanity(text);
-                const commentObj = { id: Date.now(), user: myUsername, text: cleanText, date: new Date().toLocaleDateString('tr-TR') };
+                const commentObj = { id: Date.now(), user: myUsername, text: cleanText, date: new Date().toLocaleDateString('tr-TR'), likes: [], replies: [] };
                 
                 try {
                     const docRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_maps').doc(targetUser);
@@ -1142,10 +1163,71 @@
                 setIsModalOpen(false);
             };
 
+            const updateMarkerWithComments = (newComments) => {
+                const originalMarker = markers.find(m => m.cityName === selectedCity.name) || {};
+                const newMarker = {
+                    id: originalMarker.id || Date.now(),
+                    lat: selectedCity.latlng.lat,
+                    lng: selectedCity.latlng.lng,
+                    cityName: selectedCity.name,
+                    note: note, // keep existing note
+                    images: images,
+                    checkedPlaces: checkedPlaces,
+                    comments: newComments,
+                    favoriteImage: favoriteImage,
+                    rating: rating,
+                    status: status,
+                    category: category,
+                    date: originalMarker.date || new Date().toLocaleDateString('tr-TR'),
+                    timestamp: originalMarker.timestamp || Date.now(),
+                    likes: originalMarker.likes || []
+                };
+                const updatedMarkers = [...markers.filter(m => m.cityName !== selectedCity.name), newMarker];
+                setMarkers(updatedMarkers);
+                saveMarkersToUser(currentUsername, updatedMarkers, activeTab === 'couple');
+            };
+
+            const toggleCommentLike = (commentId) => {
+                const updatedComments = comments.map(c => {
+                    if (c.id === commentId) {
+                        const likes = c.likes || [];
+                        if (likes.includes(myUsername)) {
+                            return { ...c, likes: likes.filter(u => u !== myUsername) };
+                        } else {
+                            return { ...c, likes: [...likes, myUsername] };
+                        }
+                    }
+                    return c;
+                });
+                setComments(updatedComments);
+                updateMarkerWithComments(updatedComments);
+            };
+
+            const submitReply = (commentId) => {
+                if (!replyText.trim()) return;
+                const replyObj = {
+                    id: Date.now(),
+                    user: myUsername,
+                    text: filterProfanity(replyText),
+                    date: new Date().toLocaleDateString('tr-TR'),
+                    likes: []
+                };
+                const updatedComments = comments.map(c => {
+                    if (c.id === commentId) {
+                        return { ...c, replies: [...(c.replies || []), replyObj] };
+                    }
+                    return c;
+                });
+                setComments(updatedComments);
+                setReplyText("");
+                setActiveReplyId(null);
+                updateMarkerWithComments(updatedComments);
+            };
+
             const handleAddComment = () => {
                 if (!newComment.trim()) return;
                 const cleanText = filterProfanity(newComment);
-                const commentObj = { id: Date.now(), user: myUsername, text: cleanText, date: new Date().toLocaleDateString('tr-TR') };
+                const commentObj = { id: Date.now(), user: myUsername, text: cleanText, date: new Date().toLocaleDateString('tr-TR'), likes: [], replies: [] };
                 const updatedComments = [...comments, commentObj];
                 setComments(updatedComments);
                 setNewComment("");
@@ -1195,27 +1277,6 @@
 
             const handleImage = (e) => { const files = Array.from(e.target.files); files.forEach(f => { const reader = new FileReader(); reader.onloadend = () => { setImages(prev => { const newImages = [...prev, reader.result]; if (!favoriteImage && newImages.length > 0) setFavoriteImage(newImages[0]); return newImages; }); }; reader.readAsDataURL(f); }); };
             const toggleCheckedPlace = (place) => { if(isReadOnly) return; setCheckedPlaces(prev => prev.includes(place) ? prev.filter(p=>p!==place) : [...prev, place]); };
-            
-            const handleSearch = async (e) => { 
-                e.preventDefault(); 
-                if(!searchQuery.trim()) return; 
-                const target = searchQuery.trim().toLowerCase(); 
-
-                if (target.startsWith("#")) {
-                    setHashtagSearch(target);
-                    setFeedOpen(true);
-                    setSidebarOpen(true);
-                    return;
-                }
-
-                try { 
-                    const doc = await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_credentials').doc(target).get(); 
-                    if(doc.exists) { 
-                        handleUserNavigation(target); // MERKEZİ NAVİGASYON
-                        setSearchQuery(""); 
-                    } else alert("Kullanıcı bulunamadı!"); 
-                } catch(e) { alert("Hata."); } 
-            };
             
             const calculateProgress = (cityName, visitedPlaces) => { 
                 const visitedCount = visitedPlaces ? visitedPlaces.length : 0;
@@ -1520,7 +1581,8 @@
                                             </div>
                                             <div className="text-[10px] text-gray-400 mb-2">{m.date} | {m.category}</div>
                                             {m.images && m.images[0] && <img src={m.images[0]} className="w-full h-32 object-cover rounded-lg mb-2 shadow-sm"/>}
-                                            {m.note && <p className="text-xs text-gray-500 dark:text-gray-300 italic line-clamp-2 leading-relaxed">"{m.note}"</p>}
+                                            {/* GÜNLÜK: SADECE HARİTA SAHİBİ GÖRÜR */}
+                                            {!isReadOnly && m.note && <p className="text-xs text-gray-500 dark:text-gray-300 italic line-clamp-2 leading-relaxed">"{m.note}"</p>}
                                         </div>
                                     ))}
                                 </div>
@@ -1567,7 +1629,8 @@
                                             {item.images && item.images[0] && <img src={item.images[0]} className="w-full h-44 object-cover cursor-zoom-in" onClick={() => openLightbox(item.images[0], item.images)}/>}
                                             
                                             <div className="p-3">
-                                                <div className="text-xs text-gray-600 dark:text-gray-300 italic mb-3">"{renderClickableNote(item.note)}"</div>
+                                                {/* GÜNLÜK (NOTLAR) GİZLİLİĞİ: AKIŞTA GİZLENİR */}
+                                                {/* <div className="text-xs text-gray-600 dark:text-gray-300 italic mb-3">"{renderClickableNote(item.note)}"</div> */}
                                                 
                                                 <div className="flex items-center gap-4 border-t dark:border-gray-600 pt-3 mb-3">
                                                     <button onClick={() => toggleLike(item.username, item.id)} className="flex items-center gap-1 group">
@@ -1694,16 +1757,73 @@
 
                                     <div className="mb-6">
                                         <div className="flex justify-between mb-2 items-center">
-                                            <label className="font-bold text-sm dark:text-white flex items-center gap-2 uppercase tracking-wide"><Icon name="edit-3" className="w-4 h-4"/> Notlar</label>
+                                            {/* GÜNLÜK BAŞLIĞI - GİZLİLİK VURGUSU */}
+                                            <label className="font-bold text-sm dark:text-white flex items-center gap-2 uppercase tracking-wide"><Icon name="edit-3" className="w-4 h-4"/> Günlük (Sadece Sen Görebilirsin)</label>
                                             {!isReadOnly && <button onClick={enhanceNote} disabled={isEnhancingNote || !note} className="text-[10px] text-purple-600 font-bold bg-purple-50 px-2 py-1 rounded-full border border-purple-100 hover:bg-purple-100 transition-all">{isEnhancingNote ? 'Yazılıyor...' : 'AI ile Düzenle'}</button>}
                                         </div>
-                                        {isReadOnly ? <div className="p-4 bg-gray-50 dark:bg-gray-700/50 border dark:border-gray-600 rounded-xl text-sm min-h-[80px] italic text-gray-600 dark:text-gray-300 shadow-inner">{note || "Not yok."}</div> : <textarea className="w-full border border-gray-200 dark:border-gray-600 rounded-xl p-4 text-sm focus:ring-2 focus:ring-red-500 outline-none dark:bg-gray-700 dark:text-white shadow-inner" rows="4" value={note} onChange={e=>setNote(e.target.value)} placeholder="Anılarını #hashtag ile süsle..."></textarea>}
+                                        {/* GÜNLÜK: SADECE SAHİBİ GÖRÜR, OKUMA MODUNDA GİZLİ */}
+                                        {!isReadOnly && (
+                                            <textarea className="w-full border border-gray-200 dark:border-gray-600 rounded-xl p-4 text-sm focus:ring-2 focus:ring-red-500 outline-none dark:bg-gray-700 dark:text-white shadow-inner" rows="4" value={note} onChange={e=>setNote(e.target.value)} placeholder="Günlüğüne yaz... Bu yazıyı sadece sen görebilirsin."></textarea>
+                                        )}
                                     </div>
 
                                     <div className="mt-6 pt-5 border-t dark:border-gray-700">
                                         <h4 className="font-bold text-sm mb-3 dark:text-white flex gap-2 uppercase tracking-wide"><Icon name="message-square" className="w-4 h-4"/> Yorumlar</h4>
-                                        <div className="space-y-3 mb-5 max-h-40 overflow-y-auto custom-scrollbar pr-1">{comments.map(c => (<div key={c.id} className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-xl text-sm border dark:border-gray-600 shadow-sm"><div className="flex justify-between items-start mb-1"><span className="font-bold text-xs text-gray-800 dark:text-white">@{c.user}</span><span className="text-[10px] text-gray-400">{c.date}</span></div><p className="text-gray-600 dark:text-gray-300 text-xs leading-relaxed">{c.text}</p></div>))}</div>
-                                        <div className="flex gap-2"><input type="text" value={newComment} onChange={e=>setNewComment(e.target.value)} placeholder="Yorum bırak..." className="flex-1 border border-gray-200 dark:border-gray-600 rounded-full px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none dark:bg-gray-700 dark:text-white shadow-sm"/><button onClick={handleAddComment} className="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 transition-all shadow-md"><Icon name="send" className="w-4 h-4"/></button></div>
+                                        <div className="space-y-4 mb-5 max-h-64 overflow-y-auto custom-scrollbar pr-1">
+                                            {comments.map(c => (
+                                                <div key={c.id} className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-xl text-sm border dark:border-gray-600 shadow-sm">
+                                                    <div className="flex justify-between items-start mb-1">
+                                                        <span className="font-bold text-xs text-gray-800 dark:text-white">@{c.user}</span>
+                                                        <span className="text-[10px] text-gray-400">{c.date}</span>
+                                                    </div>
+                                                    <p className="text-gray-600 dark:text-gray-300 text-xs leading-relaxed mb-2">{c.text}</p>
+                                                    
+                                                    {/* YORUM AKSİYONLARI */}
+                                                    <div className="flex items-center gap-3">
+                                                        <button onClick={() => toggleCommentLike(c.id)} className={`flex items-center gap-1 text-[10px] font-bold transition-colors ${c.likes?.includes(myUsername) ? 'text-red-500' : 'text-gray-400 hover:text-red-400'}`}>
+                                                            <Icon name="heart" className={`w-3.5 h-3.5 ${c.likes?.includes(myUsername) ? 'fill-current' : ''}`} />
+                                                            {c.likes?.length || 0}
+                                                        </button>
+                                                        <button onClick={() => setActiveReplyId(activeReplyId === c.id ? null : c.id)} className="flex items-center gap-1 text-[10px] font-bold text-gray-400 hover:text-indigo-500 transition-colors">
+                                                            <Icon name="message-circle" className="w-3.5 h-3.5" /> Yanıtla
+                                                        </button>
+                                                    </div>
+
+                                                    {/* YANIT GİRİŞ ALANI */}
+                                                    {activeReplyId === c.id && (
+                                                        <div className="mt-2 flex gap-2 animate-fadeIn">
+                                                            <input 
+                                                                type="text" 
+                                                                value={replyText} 
+                                                                onChange={e=>setReplyText(e.target.value)} 
+                                                                placeholder="Yanıtın..." 
+                                                                className="flex-1 border border-gray-200 dark:border-gray-600 rounded-full px-3 py-1.5 text-xs outline-none dark:bg-gray-800 dark:text-white focus:border-indigo-500"
+                                                                autoFocus
+                                                            />
+                                                            <button onClick={() => submitReply(c.id)} className="bg-indigo-600 text-white p-1.5 rounded-full hover:bg-indigo-700 transition-all">
+                                                                <Icon name="send" className="w-3 h-3"/>
+                                                            </button>
+                                                        </div>
+                                                    )}
+
+                                                    {/* İÇ İÇE YANITLAR */}
+                                                    {c.replies && c.replies.length > 0 && (
+                                                        <div className="mt-2 pl-3 border-l-2 border-gray-200 dark:border-gray-600 space-y-2">
+                                                            {c.replies.map(r => (
+                                                                <div key={r.id} className="text-xs">
+                                                                    <div className="flex items-center gap-1 mb-0.5">
+                                                                        <span className="font-bold text-indigo-600">@{r.user}</span>
+                                                                        <span className="text-[9px] text-gray-400">{r.date}</span>
+                                                                    </div>
+                                                                    <p className="text-gray-600 dark:text-gray-300">{r.text}</p>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div className="flex gap-2"><input type="text" value={newComment} onChange={e=>setNewComment(e.target.value)} placeholder="Yorum yap..." className="flex-1 border border-gray-200 dark:border-gray-600 rounded-full px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none dark:bg-gray-700 dark:text-white shadow-sm"/><button onClick={handleAddComment} className="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 transition-all shadow-md"><Icon name="send" className="w-4 h-4"/></button></div>
                                     </div>
                                 </div>
                                 <div className="p-4 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex justify-between items-center shrink-0">
