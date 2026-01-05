@@ -910,7 +910,8 @@
                         const allUsersDoc = await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_credentials').get();
                         usersToFetch = allUsersDoc.docs.map(d => d.id);
                     } else {
-                        usersToFetch = friends;
+                        // KENDİ ADINI DA EKLEYEREK GÜNCELLEDİM
+                        usersToFetch = [myUsername, ...friends]; 
                     }
 
                     for (const friend of usersToFetch) {
@@ -1626,6 +1627,13 @@
                                                 <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">{item.cityName}</span>
                                             </div>
                                             
+                                            {/* Ziyaret Bilgisi: Fotoğrafın üstüne taşındı */}
+                                            <div className="px-3 pt-3 pb-1 text-sm text-gray-800 dark:text-gray-200">
+                                                <div className="bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg border border-blue-100 dark:border-blue-800/30">
+                                                    <span className="font-bold text-indigo-600 dark:text-indigo-400">@{item.username}</span>, <span className="font-bold">{item.cityName}</span> şehrini {item.status === 'bucket' ? 'gitmek istediği yerlere ekledi 🎯' : 'ziyaret etti 🌍'}.
+                                                </div>
+                                            </div>
+
                                             {item.images && item.images[0] && <img src={item.images[0]} className="w-full h-44 object-cover cursor-zoom-in" onClick={() => openLightbox(item.images[0], item.images)}/>}
                                             
                                             <div className="p-3">
