@@ -283,7 +283,7 @@
             return `${Math.floor(diffInSeconds / 86400)} gün önce aktifti`;
         };
 
-        // --- Şehir ve Kategori Bazlı Öneriler (81 İL) ---
+        // --- Şehir ve Kategori Bazlı Öneriler ---
         const citySuggestionsData = {
             "Adana": { "Genel": ["Taş Köprü", "Sabancı Merkez Camii", "Büyük Saat"], "Yemek": ["Adana Kebap (Kebapçı Mesut)", "Şalgam Suyu (Ali Göde)", "Bıcı Bıcı"], "Doğa": ["Seyhan Baraj Gölü", "Kapıkaya Kanyonu", "Belemedik"], "Tarih": ["Anavarza Antik Kenti", "Varda Köprüsü", "Yılankale"] },
             "Adıyaman": { "Genel": ["Nemrut Dağı", "Cendere Köprüsü", "Karakuş Tümülüsü"], "Yemek": ["Adıyaman Çiğ Köfte", "Besni Tavası", "Tırşik"], "Doğa": ["Gölbaşı Gölleri", "Sugözü", "Gümüşkaya Mağaraları"], "Tarih": ["Perre Antik Kenti", "Arsameia", "Eski Kahta Kalesi"] },
@@ -1347,23 +1347,40 @@
                 saveMarkersToUser(currentUsername, updatedMarkers, activeTab === 'couple');
             };
 
-            // NEW: Updated handleImage to use compressImage
-            const handleImage = async (e) => {
-                const files = Array.from(e.target.files);
-                for (const file of files) {
-                    try {
-                        const compressedBase64 = await compressImage(file);
-                        setImages(prev => {
-                            const newImages = [...prev, compressedBase64];
-                            if (!favoriteImage && newImages.length > 0) setFavoriteImage(newImages[0]);
-                            return newImages;
-                        });
-                    } catch (err) {
-                        console.error("Resim sıkıştırma hatası:", err);
-                        alert("Bir resim yüklenemedi (boyut veya format sorunu).");
-                    }
-                }
+            const handleAvatarUpload = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                try {
+                    const base64 = await compressImage(file);
+                    await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_profiles').doc(myUsername).set({ avatar: base64 }, { merge: true });
+                } catch (err) { alert("Fotoğraf yüklenemedi."); }
             };
+            
+            const linkPartner = async (targetUsername) => { await sendNotification(targetUsername, 'partner'); alert(`Eşleşme isteği gönderildi.`); setIsPartnerModalOpen(false); };
+            const addFriend = async (friendName) => { if(friendName === myUsername) return; if(friends.includes(friendName)) { alert("Zaten arkadaşsınız."); return; } await sendNotification(friendName, 'friend'); alert(`${friendName} eklendi!`); };
+            
+            const handleDelete = async (name) => { 
+                if(!confirm(`${name} verilerini tamamen silmek ve haritayı sıfırlamak istediğine emin misin?`)) return;
+                
+                // Puan istatistiklerini temizle
+                const existing = markers.find(m => m.cityName === name);
+                if (existing && existing.rating > 0) {
+                    const cityRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('city_stats').doc(name);
+                    try {
+                        await cityRef.set({
+                            sum: firebase.firestore.FieldValue.increment(-existing.rating),
+                            count: firebase.firestore.FieldValue.increment(-1)
+                        }, { merge: true });
+                    } catch(e) { console.error("İstatistik silme hatası:", e); }
+                }
+
+                const updated = markers.filter(m => m.cityName !== name); 
+                setMarkers(updated); 
+                saveMarkersToUser(currentUsername, updated, activeTab === 'couple');
+                setIsModalOpen(false);
+            };
+
+            const handleImage = (e) => { const files = Array.from(e.target.files); files.forEach(f => { const reader = new FileReader(); reader.onloadend = () => { setImages(prev => { const newImages = [...prev, reader.result]; if (!favoriteImage && newImages.length > 0) setFavoriteImage(newImages[0]); return newImages; }); }; reader.readAsDataURL(f); }); };
             const toggleCheckedPlace = (place) => { if(isReadOnly) return; setCheckedPlaces(prev => prev.includes(place) ? prev.filter(p=>p!==place) : [...prev, place]); };
             
             const calculateProgress = (cityName, visitedPlaces) => { 
@@ -1927,7 +1944,7 @@
                                                         <span className="font-bold text-xs text-gray-800 dark:text-white">@{c.user}</span>
                                                         <span className="text-[10px] text-gray-400">{c.date}</span>
                                                     </div>
-                                                    <p className="text-gray-600 dark:text-gray-300 text-xs leading-relaxed mb-2">{c.text}</p>
+                                                    <p className="text-gray-600 dark:text-gray-300 text-xs leading-relaxed mb-2">{renderClickableNote(c.text)}</p>
                                                     
                                                     {/* YORUM AKSİYONLARI */}
                                                     <div className="flex items-center gap-3">
@@ -1966,7 +1983,7 @@
                                                                         <span className="font-bold text-indigo-600">@{r.user}</span>
                                                                         <span className="text-[9px] text-gray-400">{r.date}</span>
                                                                     </div>
-                                                                    <p className="text-gray-600 dark:text-gray-300">{r.text}</p>
+                                                                    <p className="text-gray-600 dark:text-gray-300">{renderClickableNote(r.text)}</p>
                                                                 </div>
                                                             ))}
                                                         </div>
