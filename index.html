@@ -148,7 +148,7 @@
         // --- AYARLAR & YAPILANDIRMA ---
         // ==========================================
         
-        const LOGO_URL = "https://raw.githubusercontent.com/simit4sameti-prog/gezi/2dc829678a678bedabc4c8bce4330d8a94c5bea5/65dc1944-b4bd-479c-950a-57336cc7abf1.jpg";
+        const LOGO_URL = "./65dc1944-b4bd-479c-950a-57336cc7abf1.jpg";
 
         const link = document.querySelector("link[rel*='icon']") || document.createElement('link');
         link.type = 'image/jpeg';
@@ -201,15 +201,30 @@
             useEffect(() => {
                 if(window.lucide && ref.current) {
                     const pascalName = name.split('-').map(n => n.charAt(0).toUpperCase() + n.slice(1)).join('');
-                    const iconNode = window.lucide.icons[pascalName];
+                    const iconNode = window.lucide.icons ? window.lucide.icons[pascalName] : null;
                     if(iconNode) {
-                        const svg = window.lucide.createElement(iconNode);
-                        if(className) {
-                            const existingClass = svg.getAttribute('class') || '';
-                            svg.setAttribute('class', `${existingClass} ${className}`.trim());
+                        let svg;
+                        if (typeof window.lucide.createElement === 'function') {
+                            svg = window.lucide.createElement(iconNode);
+                        } else {
+                            // Fallback if createElement is missing (create SVG manually from iconNode)
+                            // iconNode format: [tag, attrs, children] or similar depending on version,
+                            // but usually window.lucide.createElement handles it.
+                            // If missing, we might need a custom builder, but usually createElement is there.
+                            // For robustness, if createElement is missing, we try createIcons API or just skip.
+                            // Assuming createElement is available as per standard unpkg distribution.
+                            console.warn("Lucide createElement not found");
+                            return;
                         }
-                        ref.current.innerHTML = '';
-                        ref.current.appendChild(svg);
+
+                        if(svg) {
+                            if(className) {
+                                const existingClass = svg.getAttribute('class') || '';
+                                svg.setAttribute('class', `${existingClass} ${className}`.trim());
+                            }
+                            ref.current.innerHTML = '';
+                            ref.current.appendChild(svg);
+                        }
                     }
                 }
             }, [name, className]);
@@ -287,7 +302,7 @@
         const citySuggestionsData = {
             "Adana": { "Genel": ["Taş Köprü", "Sabancı Merkez Camii", "Büyük Saat"], "Yemek": ["Adana Kebap (Kebapçı Mesut)", "Şalgam Suyu (Ali Göde)", "Bıcı Bıcı"], "Doğa": ["Seyhan Baraj Gölü", "Kapıkaya Kanyonu", "Belemedik"], "Tarih": ["Anavarza Antik Kenti", "Varda Köprüsü", "Yılankale"] },
             "Adıyaman": { "Genel": ["Nemrut Dağı", "Cendere Köprüsü", "Karakuş Tümülüsü"], "Yemek": ["Adıyaman Çiğ Köfte", "Besni Tavası", "Tırşik"], "Doğa": ["Gölbaşı Gölleri", "Sugözü", "Gümüşkaya Mağaraları"], "Tarih": ["Perre Antik Kenti", "Arsameia", "Eski Kahta Kalesi"] },
-            "Afyonkarahisar": { "Genel": ["Afyon Kalesi", "İmaret Camii", "Zafer Müzesi"], "Yemek": ["Afyon Sucuğu", "Kaymaklı Ekmıek Kadayıfı", "Bükme"], "Doğa": ["Frig Vadisi", "Akdağ Tabiat Parkı", "Eber Gölü"], "Tarih": ["Karahisar Kalesi", "Ayazini Metropolisi", "Ulu Camii"] },
+            "Afyonkarahisar": { "Genel": ["Afyon Kalesi", "İmaret Camii", "Zafer Müzesi"], "Yemek": ["Afyon Sucuğu", "Kaymaklı Ekmek Kadayıfı", "Bükme"], "Doğa": ["Frig Vadisi", "Akdağ Tabiat Parkı", "Eber Gölü"], "Tarih": ["Karahisar Kalesi", "Ayazini Metropolisi", "Ulu Camii"] },
             "Ağrı": { "Genel": ["İshak Paşa Sarayı", "Ağrı Dağı", "Doğubayazıt"], "Yemek": ["Abdigör Köftesi", "Haşıl", "Murtuğa"], "Doğa": ["Balık Gölü", "Diyadin Kaplıcaları", "Meteor Çukuru"], "Tarih": ["İshak Paşa Sarayı", "Ahmed-i Hani Türbesi", "Urartu Kalesi"] },
             "Amasya": { "Genel": ["Kral Kaya Mezarları", "Yalıboyu Evleri", "Amasya Kalesi"], "Yemek": ["Amasya Çöreği", "Bakla Dolması", "Toyga Çorbası"], "Doğa": ["Boraboy Gölü", "Yedi Kuğular Kuş Cenneti", "Yeşilırmak"], "Tarih": ["Hazeranlar Konağı", "Ferhat ile Şirin Müzesi", "Bimarhane"] },
             "Ankara": { "Genel": ["Anıtkabir", "Ankara Kalesi", "Atakule"], "Yemek": ["Ankara Döneri (Süha)", "Ankara Tavası", "Beypazarı Kurusu"], "Doğa": ["Eymir Gölü", "Soğuksu Milli Parkı", "Mogan Gölü"], "Tarih": ["Anadolu Medeniyetleri Müzesi", "Augustus Tapınağı", "İlk Meclis"] },
@@ -302,7 +317,7 @@
             "Burdur": { "Genel": ["Salda Gölü", "Burdur Müzesi", "Saat Kulesi"], "Yemek": ["Burdur Şiş", "Ceviz Ezmesi", "Haşhaş Helvası"], "Doğa": ["Salda Gölü", "İnsuyu Mağarası", "Karanlık Dere Kanyonu"], "Tarih": ["Sagalassos", "Kibyra", "Hacılar Höyüğü"] },
             "Bursa": { "Genel": ["Ulu Camii", "Yeşil Türbe", "Koza Han"], "Yemek": ["İskender Kebap", "Pideli Köfte", "Kestane Şekeri"], "Doğa": ["Uludağ", "Suuçtu Şelalesi", "Gölyazı"], "Tarih": ["Cumalıkızık", "Bursa Kalesi", "Muradiye Külliyesi"] },
             "Çanakkale": { "Genel": ["Truva Atı", "Aynalı Çarşı", "Kordon"], "Yemek": ["Ezine Peyniri", "Peynir Helvası", "Sardalya"], "Doğa": ["Kaz Dağları", "Bozcaada", "Gökçeada"], "Tarih": ["Gelibolu Yarımadası", "Truva Antik Kenti", "Assos"], "Deniz": ["Ayazma Plajı", "Kadırga Koyu", "Güzelyalı"] },
-            "Çankırı": { "Genel": ["Tuz Mağarası", "Çankırı Kalesi", "Taş Mescit"], "Yemek": ["Yumurta Tatlısi", "Sarımsaklı Et", "Çankırı Pidesi"], "Doğa": ["Kadınçayırı", "Kırkpınar Yaylası", "Alpsarı Göleti"], "Tarih": ["Çankırı Kalesi", "Taş Mescit", "Sultan Süleyman Camii"] },
+            "Çankırı": { "Genel": ["Tuz Mağarası", "Çankırı Kalesi", "Taş Mescit"], "Yemek": ["Yumurta Tatlısı", "Sarımsaklı Et", "Çankırı Pidesi"], "Doğa": ["Kadınçayırı", "Kırkpınar Yaylası", "Alpsarı Göleti"], "Tarih": ["Çankırı Kalesi", "Taş Mescit", "Sultan Süleyman Camii"] },
             "Çorum": { "Genel": ["Saat Kulesi", "Çorum Müzesi", "İncesu Kanyonu"], "Yemek": ["Çorum Leblebisi", "İskilip Dolması", "Çatal Aşı"], "Doğa": ["Hattuşaş", "Alacahöyük", "İncesu Kanyonu"], "Tarih": ["Hattuşaş (Hitit Başkenti)", "Alacahöyük", "Yazılıkaya"] },
             "Denizli": { "Genel": ["Pamukkale Travertenleri", "Çınar Meydanı", "Teleferik"], "Yemek": ["Denizli Kebabı", "Zafer Gazozu", "Tavas Baklavası"], "Doğa": ["Pamukkale", "Keloğlan Mağarası", "Güney Şelalesi"], "Tarih": ["Hierapolis", "Laodikeia", "Tripolis"] },
             "Diyarbakır": { "Genel": ["Diyarbakır Surları", "Ulu Camii", "Hasan Paşa Hanı"], "Yemek": ["Ciğer Kebabı", "Meftune", "Burma Kadayıf"], "Doğa": ["Hevsel Bahçeleri", "Dicle Nehri", "Birkleyn Mağaraları"], "Tarih": ["Diyarbakır Surları", "On Gözlü Köprü", "Zerzevan Kalesi"] },
