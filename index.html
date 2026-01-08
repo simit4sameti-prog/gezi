@@ -46,7 +46,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
     <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/lucide@0.263.1"></script>
 
     <!-- Firebase Compat SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -283,11 +283,29 @@
             return `${Math.floor(diffInSeconds / 86400)} gün önce aktifti`;
         };
 
+        // --- Bölgeler ---
+        const cityRegions = {
+            "Marmara": ["İstanbul", "Edirne", "Kırklareli", "Tekirdağ", "Çanakkale", "Kocaeli", "Sakarya", "Bilecik", "Bursa", "Balıkesir", "Yalova"],
+            "Ege": ["İzmir", "Manisa", "Aydın", "Denizli", "Muğla", "Afyonkarahisar", "Kütahya", "Uşak"],
+            "Akdeniz": ["Antalya", "Isparta", "Burdur", "Mersin", "Adana", "Hatay", "Osmaniye", "Kahramanmaraş", "Kilis"],
+            "İç Anadolu": ["Ankara", "Eskişehir", "Konya", "Kayseri", "Nevşehir", "Sivas", "Kırıkkale", "Aksaray", "Karaman", "Kırşehir", "Niğde", "Yozgat", "Çankırı"],
+            "Karadeniz": ["Trabzon", "Rize", "Artvin", "Giresun", "Ordu", "Samsun", "Sinop", "Kastamonu", "Bartın", "Zonguldak", "Düzce", "Bolu", "Karabük", "Çorum", "Amasya", "Tokat", "Gümüşhane", "Bayburt"],
+            "Doğu Anadolu": ["Erzurum", "Erzincan", "Kars", "Ardahan", "Ağrı", "Iğdır", "Van", "Hakkari", "Şırnak", "Bitlis", "Muş", "Bingöl", "Tunceli", "Elazığ", "Malatya"],
+            "Güneydoğu Anadolu": ["Diyarbakır", "Mardin", "Batman", "Siirt", "Şanlıurfa", "Gaziantep", "Adıyaman"]
+        };
+
+        const getRegionForCity = (city) => {
+            for (const [region, cities] of Object.entries(cityRegions)) {
+                if (cities.includes(city)) return region;
+            }
+            return "Diğer";
+        };
+
         // --- Şehir ve Kategori Bazlı Öneriler ---
         const citySuggestionsData = {
             "Adana": { "Genel": ["Taş Köprü", "Sabancı Merkez Camii", "Büyük Saat"], "Yemek": ["Adana Kebap (Kebapçı Mesut)", "Şalgam Suyu (Ali Göde)", "Bıcı Bıcı"], "Doğa": ["Seyhan Baraj Gölü", "Kapıkaya Kanyonu", "Belemedik"], "Tarih": ["Anavarza Antik Kenti", "Varda Köprüsü", "Yılankale"] },
             "Adıyaman": { "Genel": ["Nemrut Dağı", "Cendere Köprüsü", "Karakuş Tümülüsü"], "Yemek": ["Adıyaman Çiğ Köfte", "Besni Tavası", "Tırşik"], "Doğa": ["Gölbaşı Gölleri", "Sugözü", "Gümüşkaya Mağaraları"], "Tarih": ["Perre Antik Kenti", "Arsameia", "Eski Kahta Kalesi"] },
-            "Afyonkarahisar": { "Genel": ["Afyon Kalesi", "İmaret Camii", "Zafer Müzesi"], "Yemek": ["Afyon Sucuğu", "Kaymaklı Ekmıek Kadayıfı", "Bükme"], "Doğa": ["Frig Vadisi", "Akdağ Tabiat Parkı", "Eber Gölü"], "Tarih": ["Karahisar Kalesi", "Ayazini Metropolisi", "Ulu Camii"] },
+            "Afyonkarahisar": { "Genel": ["Afyon Kalesi", "İmaret Camii", "Zafer Müzesi"], "Yemek": ["Afyon Sucuğu", "Kaymaklı Ekmek Kadayıfı", "Bükme"], "Doğa": ["Frig Vadisi", "Akdağ Tabiat Parkı", "Eber Gölü"], "Tarih": ["Karahisar Kalesi", "Ayazini Metropolisi", "Ulu Camii"] },
             "Ağrı": { "Genel": ["İshak Paşa Sarayı", "Ağrı Dağı", "Doğubayazıt"], "Yemek": ["Abdigör Köftesi", "Haşıl", "Murtuğa"], "Doğa": ["Balık Gölü", "Diyadin Kaplıcaları", "Meteor Çukuru"], "Tarih": ["İshak Paşa Sarayı", "Ahmed-i Hani Türbesi", "Urartu Kalesi"] },
             "Amasya": { "Genel": ["Kral Kaya Mezarları", "Yalıboyu Evleri", "Amasya Kalesi"], "Yemek": ["Amasya Çöreği", "Bakla Dolması", "Toyga Çorbası"], "Doğa": ["Boraboy Gölü", "Yedi Kuğular Kuş Cenneti", "Yeşilırmak"], "Tarih": ["Hazeranlar Konağı", "Ferhat ile Şirin Müzesi", "Bimarhane"] },
             "Ankara": { "Genel": ["Anıtkabir", "Ankara Kalesi", "Atakule"], "Yemek": ["Ankara Döneri (Süha)", "Ankara Tavası", "Beypazarı Kurusu"], "Doğa": ["Eymir Gölü", "Soğuksu Milli Parkı", "Mogan Gölü"], "Tarih": ["Anadolu Medeniyetleri Müzesi", "Augustus Tapınağı", "İlk Meclis"] },
@@ -302,7 +320,7 @@
             "Burdur": { "Genel": ["Salda Gölü", "Burdur Müzesi", "Saat Kulesi"], "Yemek": ["Burdur Şiş", "Ceviz Ezmesi", "Haşhaş Helvası"], "Doğa": ["Salda Gölü", "İnsuyu Mağarası", "Karanlık Dere Kanyonu"], "Tarih": ["Sagalassos", "Kibyra", "Hacılar Höyüğü"] },
             "Bursa": { "Genel": ["Ulu Camii", "Yeşil Türbe", "Koza Han"], "Yemek": ["İskender Kebap", "Pideli Köfte", "Kestane Şekeri"], "Doğa": ["Uludağ", "Suuçtu Şelalesi", "Gölyazı"], "Tarih": ["Cumalıkızık", "Bursa Kalesi", "Muradiye Külliyesi"] },
             "Çanakkale": { "Genel": ["Truva Atı", "Aynalı Çarşı", "Kordon"], "Yemek": ["Ezine Peyniri", "Peynir Helvası", "Sardalya"], "Doğa": ["Kaz Dağları", "Bozcaada", "Gökçeada"], "Tarih": ["Gelibolu Yarımadası", "Truva Antik Kenti", "Assos"], "Deniz": ["Ayazma Plajı", "Kadırga Koyu", "Güzelyalı"] },
-            "Çankırı": { "Genel": ["Tuz Mağarası", "Çankırı Kalesi", "Taş Mescit"], "Yemek": ["Yumurta Tatlısi", "Sarımsaklı Et", "Çankırı Pidesi"], "Doğa": ["Kadınçayırı", "Kırkpınar Yaylası", "Alpsarı Göleti"], "Tarih": ["Çankırı Kalesi", "Taş Mescit", "Sultan Süleyman Camii"] },
+            "Çankırı": { "Genel": ["Tuz Mağarası", "Çankırı Kalesi", "Taş Mescit"], "Yemek": ["Yumurta Tatlısı", "Sarımsaklı Et", "Çankırı Pidesi"], "Doğa": ["Kadınçayırı", "Kırkpınar Yaylası", "Alpsarı Göleti"], "Tarih": ["Çankırı Kalesi", "Taş Mescit", "Sultan Süleyman Camii"] },
             "Çorum": { "Genel": ["Saat Kulesi", "Çorum Müzesi", "İncesu Kanyonu"], "Yemek": ["Çorum Leblebisi", "İskilip Dolması", "Çatal Aşı"], "Doğa": ["Hattuşaş", "Alacahöyük", "İncesu Kanyonu"], "Tarih": ["Hattuşaş (Hitit Başkenti)", "Alacahöyük", "Yazılıkaya"] },
             "Denizli": { "Genel": ["Pamukkale Travertenleri", "Çınar Meydanı", "Teleferik"], "Yemek": ["Denizli Kebabı", "Zafer Gazozu", "Tavas Baklavası"], "Doğa": ["Pamukkale", "Keloğlan Mağarası", "Güney Şelalesi"], "Tarih": ["Hierapolis", "Laodikeia", "Tripolis"] },
             "Diyarbakır": { "Genel": ["Diyarbakır Surları", "Ulu Camii", "Hasan Paşa Hanı"], "Yemek": ["Ciğer Kebabı", "Meftune", "Burma Kadayıf"], "Doğa": ["Hevsel Bahçeleri", "Dicle Nehri", "Birkleyn Mağaraları"], "Tarih": ["Diyarbakır Surları", "On Gözlü Köprü", "Zerzevan Kalesi"] },
@@ -441,31 +459,126 @@
             );
         };
 
+        // --- LEADERBOARD MODAL ---
+        const LeaderboardModal = ({ onClose }) => {
+            const [users, setUsers] = useState([]);
+            const [loading, setLoading] = useState(true);
+
+            useEffect(() => {
+                const fetchUsers = async () => {
+                    try {
+                        const snapshot = await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_maps').get();
+                        const usersData = [];
+                        snapshot.forEach(doc => {
+                            const markers = doc.data().markers || [];
+                            const visited = markers.filter(m => m.status !== 'bucket').length;
+                            usersData.push({ username: doc.id, visited });
+                        });
+                        // Sort by visited count desc
+                        usersData.sort((a, b) => b.visited - a.visited);
+                        setUsers(usersData.slice(0, 50)); // Top 50
+                    } catch (e) {
+                        console.error("Liderlik tablosu hatası:", e);
+                    } finally {
+                        setLoading(false);
+                    }
+                };
+                fetchUsers();
+            }, []);
+
+            return (
+                <div className="fixed inset-0 z-[1500] bg-black bg-opacity-70 flex items-center justify-center p-4 animate-fadeIn">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-6 relative overflow-hidden flex flex-col max-h-[80vh]">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-2"><Icon name="trophy" className="w-6 h-6 text-yellow-500"/> Liderlik Tablosu</h2>
+                            <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><Icon name="x" className="w-5 h-5"/></button>
+                        </div>
+                        
+                        {loading ? (
+                            <div className="flex justify-center py-10"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div></div>
+                        ) : (
+                            <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2">
+                                {users.map((u, i) => (
+                                    <div key={u.username} className={`flex items-center justify-between p-3 rounded-xl border ${i===0 ? 'bg-yellow-50 border-yellow-200 dark:bg-yellow-900/20' : i===1 ? 'bg-gray-50 border-gray-200 dark:bg-gray-700' : i===2 ? 'bg-orange-50 border-orange-200 dark:bg-orange-900/20' : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700'}`}>
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${i < 3 ? 'text-white' : 'text-gray-500'} ${i===0?'bg-yellow-500':i===1?'bg-gray-400':i===2?'bg-orange-500':'bg-gray-100 dark:bg-gray-700'}`}>
+                                                {i + 1}
+                                            </div>
+                                            <span className="font-bold text-gray-800 dark:text-white">@{u.username}</span>
+                                        </div>
+                                        <div className="font-bold text-indigo-600">{u.visited} <span className="text-[10px] text-gray-400 font-normal">şehir</span></div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
         // --- STATS MODAL ---
         const StatsModal = ({ markers, onClose }) => {
             const visitedCount = markers.filter(m => m.status !== 'bucket').length;
             const bucketCount = markers.filter(m => m.status === 'bucket').length;
             const progress = Math.round((visitedCount / 81) * 100);
             
+            // Calculate regional progress
+            const visitedCities = markers.filter(m => m.status !== 'bucket').map(m => m.cityName);
+            const regionalStats = Object.entries(cityRegions).map(([region, cities]) => {
+                const count = cities.filter(c => visitedCities.includes(c)).length;
+                const total = cities.length;
+                const percent = Math.round((count / total) * 100);
+                return { region, count, total, percent };
+            });
+
             return (
                 <div className="fixed inset-0 z-[1500] bg-black bg-opacity-70 flex items-center justify-center p-4 animate-fadeIn">
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm p-6 relative overflow-hidden">
-                        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><Icon name="x" className="w-5 h-5"/></button>
-                        <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6 text-center">İstatistikler</h2>
-                        <div className="grid grid-cols-2 gap-4 mb-6">
-                            <div className="bg-blue-50 dark:bg-gray-700/50 p-4 rounded-xl text-center">
-                                <div className="text-3xl font-black text-blue-600">{visitedCount}</div>
-                                <div className="text-xs text-gray-500 font-bold uppercase mt-1">Gezilen</div>
-                            </div>
-                            <div className="bg-yellow-50 dark:bg-gray-700/50 p-4 rounded-xl text-center">
-                                <div className="text-3xl font-black text-yellow-600">{bucketCount}</div>
-                                <div className="text-xs text-gray-500 font-bold uppercase mt-1">Hedef</div>
-                            </div>
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-6 relative overflow-hidden flex flex-col max-h-[85vh]">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-2xl font-bold text-gray-800 dark:text-white">İstatistikler</h2>
+                            <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><Icon name="x" className="w-5 h-5"/></button>
                         </div>
-                        <div className="mb-6">
-                            <div className="flex justify-between text-sm mb-2"><span>Türkiye Keşfi</span><span className="font-bold">%{progress}</span></div>
-                            <div className="w-full bg-gray-200 dark:bg-gray-700 h-4 rounded-full overflow-hidden">
-                                <div className="bg-indigo-500 h-full transition-all duration-1000" style={{width: `${progress}%`}}></div>
+                        
+                        <div className="overflow-y-auto custom-scrollbar pr-2">
+                            <div className="grid grid-cols-2 gap-4 mb-6">
+                                <div className="bg-blue-50 dark:bg-gray-700/50 p-4 rounded-xl text-center">
+                                    <div className="text-3xl font-black text-blue-600">{visitedCount}</div>
+                                    <div className="text-xs text-gray-500 font-bold uppercase mt-1">Gezilen</div>
+                                </div>
+                                <div className="bg-yellow-50 dark:bg-gray-700/50 p-4 rounded-xl text-center">
+                                    <div className="text-3xl font-black text-yellow-600">{bucketCount}</div>
+                                    <div className="text-xs text-gray-500 font-bold uppercase mt-1">Hedef</div>
+                                </div>
+                            </div>
+                            
+                            <div className="mb-6">
+                                <div className="flex justify-between text-sm mb-2 font-bold dark:text-white"><span>Türkiye Keşfi</span><span>%{progress}</span></div>
+                                <div className="w-full bg-gray-200 dark:bg-gray-700 h-4 rounded-full overflow-hidden">
+                                    <div className="bg-indigo-500 h-full transition-all duration-1000" style={{width: `${progress}%`}}></div>
+                                </div>
+                            </div>
+
+                            <h3 className="font-bold text-sm mb-3 text-gray-500 uppercase">Bölgesel Başarımlar</h3>
+                            <div className="space-y-4">
+                                {regionalStats.map(stat => (
+                                    <div key={stat.region} className="bg-gray-50 dark:bg-gray-700/30 p-3 rounded-xl border border-gray-100 dark:border-gray-700">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <span className="font-bold text-sm dark:text-gray-200">{stat.region}</span>
+                                            <span className="text-xs font-bold text-gray-500">{stat.count}/{stat.total}</span>
+                                        </div>
+                                        <div className="w-full bg-gray-200 dark:bg-gray-600 h-2 rounded-full overflow-hidden mb-2">
+                                            <div className={`h-full transition-all duration-1000 ${stat.percent >= 100 ? 'bg-green-500' : stat.percent >= 50 ? 'bg-blue-500' : 'bg-gray-400'}`} style={{width: `${stat.percent}%`}}></div>
+                                        </div>
+                                        {stat.percent >= 20 && (
+                                            <div className="flex items-center gap-1.5 mt-1">
+                                                <Icon name="award" className={`w-3 h-3 ${stat.percent >= 100 ? 'text-green-500' : stat.percent >= 50 ? 'text-blue-500' : 'text-orange-500'}`}/>
+                                                <span className={`text-[10px] font-bold ${stat.percent >= 100 ? 'text-green-600' : stat.percent >= 50 ? 'text-blue-600' : 'text-orange-600'}`}>
+                                                    {stat.percent >= 100 ? `${stat.region} Fatihi 👑` : stat.percent >= 50 ? `${stat.region} Gezgini 🌍` : `${stat.region} Kaşifi 🧭`}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     </div>
@@ -717,6 +830,7 @@
             const [darkMode, setDarkMode] = useState(false); 
             const [isStatsOpen, setIsStatsOpen] = useState(false); 
             const [isCinemaOpen, setIsCinemaOpen] = useState(false); 
+            const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
             const [showCityNames, setShowCityNames] = useState(true);
 
             const [activeTab, setActiveTab] = useState("personal"); 
@@ -1253,17 +1367,17 @@
                 setMarkers(updated);
                 saveMarkersToUser(currentUsername, updated, activeTab === 'couple');
                 
-                if (rating > 0) {
-                    const cityRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('city_stats').doc(selectedCity.name);
-                    const incrementSum = rating - oldRating;
-                    const incrementCount = oldRating === 0 ? 1 : 0;
-                    
-                    if (incrementSum !== 0 || incrementCount !== 0) {
-                        cityRef.set({
-                            sum: firebase.firestore.FieldValue.increment(incrementSum),
-                            count: firebase.firestore.FieldValue.increment(incrementCount)
-                        }, { merge: true });
-                    }
+                const cityRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('city_stats').doc(selectedCity.name);
+                const incrementSum = rating - oldRating;
+                let incrementCount = 0;
+                if (oldRating === 0 && rating > 0) incrementCount = 1;
+                else if (oldRating > 0 && rating === 0) incrementCount = -1;
+                
+                if (incrementSum !== 0 || incrementCount !== 0) {
+                    cityRef.set({
+                        sum: firebase.firestore.FieldValue.increment(incrementSum),
+                        count: firebase.firestore.FieldValue.increment(incrementCount)
+                    }, { merge: true });
                 }
                 setIsModalOpen(false);
             };
@@ -1607,11 +1721,12 @@
                                 </div>
                             </div>
                             
-                            <div className="flex gap-2 items-center justify-between mb-3 bg-black/10 p-2 rounded-lg mx-5 mt-4">
-                                 <button onClick={()=>setIsCinemaOpen(true)} className="flex-1 bg-white/10 hover:bg-white/20 py-1.5 rounded flex flex-col items-center text-[10px] font-bold gap-0.5 transition-colors"><Icon name="play" className="w-4 h-4"/> Sinema</button>
-                                 <button onClick={()=> { setFeedOpen(!feedOpen); setHashtagSearch(""); }} className={`flex-1 py-1.5 rounded flex flex-col items-center text-[10px] font-bold gap-0.5 transition-colors ${feedOpen && !hashtagSearch ? 'bg-white text-red-600 shadow' : 'bg-white/10 hover:bg-white/20 text-white'}`}><Icon name="activity" className="w-4 h-4"/> Akış</button>
-                                 <button onClick={()=>setIsStatsOpen(true)} className="flex-1 bg-white/10 hover:bg-white/20 py-1.5 rounded flex flex-col items-center text-[10px] font-bold gap-0.5 transition-colors"><Icon name="bar-chart-2" className="w-4 h-4"/> İstatistik</button>
-                                 <button onClick={toggleDarkMode} className="flex-1 bg-white/10 hover:bg-white/20 py-1.5 rounded flex flex-col items-center text-[10px] font-bold gap-0.5 transition-colors"><Icon name={darkMode ? "sun" : "moon"} className="w-4 h-4"/> Mod</button>
+                            <div className="grid grid-cols-5 gap-1 mb-3 bg-black/10 p-1.5 rounded-lg mx-5 mt-4">
+                                 <button onClick={()=>setIsCinemaOpen(true)} className="flex flex-col items-center justify-center py-1 rounded text-[9px] font-bold gap-0.5 text-white hover:bg-white/10 transition-colors"><Icon name="play" className="w-4 h-4"/> Sinema</button>
+                                 <button onClick={()=> { setFeedOpen(!feedOpen); setHashtagSearch(""); }} className={`flex flex-col items-center justify-center py-1 rounded text-[9px] font-bold gap-0.5 transition-colors ${feedOpen ? 'bg-white text-red-600 shadow' : 'text-white hover:bg-white/10'}`}><Icon name="activity" className="w-4 h-4"/> Akış</button>
+                                 <button onClick={()=>setIsLeaderboardOpen(true)} className="flex flex-col items-center justify-center py-1 rounded text-[9px] font-bold gap-0.5 text-white hover:bg-white/10 transition-colors"><Icon name="trophy" className="w-4 h-4"/> Liderlik</button>
+                                 <button onClick={()=>setIsStatsOpen(true)} className="flex flex-col items-center justify-center py-1 rounded text-[9px] font-bold gap-0.5 text-white hover:bg-white/10 transition-colors"><Icon name="bar-chart-2" className="w-4 h-4"/> İstatistik</button>
+                                 <button onClick={toggleDarkMode} className="flex flex-col items-center justify-center py-1 rounded text-[9px] font-bold gap-0.5 text-white hover:bg-white/10 transition-colors"><Icon name={darkMode ? "sun" : "moon"} className="w-4 h-4"/> Mod</button>
                             </div>
 
                             <div className="flex bg-black/20 rounded-lg p-1 mb-3 mx-5">
@@ -1845,6 +1960,7 @@
                     
                     {currentChatFriend && <ChatModal myUsername={myUsername} friendUsername={currentChatFriend} onClose={() => setCurrentChatFriend(null)} sendNotif={sendNotification} />}
                     {isStatsOpen && <StatsModal markers={markers} onClose={() => setIsStatsOpen(false)} />}
+                    {isLeaderboardOpen && <LeaderboardModal onClose={() => setIsLeaderboardOpen(false)} />}
                     {isCinemaOpen && <CinemaModal markers={markers} onClose={() => setIsCinemaOpen(false)} />}
                     {isSettingsOpen && <SettingsModal myUsername={myUsername} onClose={()=>setIsSettingsOpen(false)} />}
 
