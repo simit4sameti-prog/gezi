@@ -650,18 +650,165 @@
             );
         };
 
-        const SettingsModal = ({ myUsername, onClose }) => {
+        const SettingsModal = ({ myUsername, onClose, onLogout }) => {
+            const [view, setView] = useState('default');
+            const [question, setQuestion] = useState("");
+            const [realAnswer, setRealAnswer] = useState("");
+            const [inputAnswer, setInputAnswer] = useState("");
+            const [newValue, setNewValue] = useState("");
+            const [loading, setLoading] = useState(false);
+            const [error, setError] = useState("");
+            const [success, setSuccess] = useState("");
+
+            useEffect(() => {
+                const fetchCreds = async () => {
+                    try {
+                        const doc = await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_credentials').doc(myUsername).get();
+                        if(doc.exists) {
+                            setQuestion(doc.data().securityQuestion || "Güvenlik sorusu ayarlanmamış.");
+                            setRealAnswer(doc.data().securityAnswer || "");
+                        }
+                    } catch(e) { console.error(e); }
+                };
+                fetchCreds();
+            }, [myUsername]);
+
+            const handlePasswordChange = async () => {
+                if(!inputAnswer || !newValue) { setError("Tüm alanları doldurun."); return; }
+                if(inputAnswer.toLowerCase().trim() !== realAnswer.toLowerCase().trim()) { setError("Güvenlik cevabı yanlış."); return; }
+
+                setLoading(true);
+                try {
+                    await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_credentials').doc(myUsername).update({ password: newValue });
+                    setSuccess("Şifre başarıyla değiştirildi.");
+                    setTimeout(() => { onClose(); }, 1500);
+                } catch(e) { setError("Hata oluştu."); }
+                setLoading(false);
+            };
+
+            const handleUsernameChange = async () => {
+                if(!inputAnswer || !newValue) { setError("Tüm alanları doldurun."); return; }
+                const targetUser = newValue.toLowerCase().trim();
+                if(targetUser === myUsername) { setError("Aynı kullanıcı adı."); return; }
+                if(targetUser.length < 3) { setError("En az 3 karakter."); return; }
+
+                if(inputAnswer.toLowerCase().trim() !== realAnswer.toLowerCase().trim()) { setError("Güvenlik cevabı yanlış."); return; }
+
+                setLoading(true);
+                try {
+                    const root = db.collection('artifacts').doc(appId).collection('public').doc('data');
+                    const check = await root.collection('user_credentials').doc(targetUser).get();
+                    if(check.exists) { setError("Bu kullanıcı adı dolu."); setLoading(false); return; }
+
+                    const batch = db.batch();
+
+                    // 1. Credentials
+                    const oldCreds = await root.collection('user_credentials').doc(myUsername).get();
+                    batch.set(root.collection('user_credentials').doc(targetUser), { ...oldCreds.data() });
+                    batch.delete(root.collection('user_credentials').doc(myUsername));
+
+                    // 2. Profile
+                    const oldProfile = await root.collection('user_profiles').doc(myUsername).get();
+                    if(oldProfile.exists) batch.set(root.collection('user_profiles').doc(targetUser), oldProfile.data());
+                    batch.delete(root.collection('user_profiles').doc(myUsername));
+
+                    // 3. Map
+                    const oldMap = await root.collection('user_maps').doc(myUsername).get();
+                    if(oldMap.exists) batch.set(root.collection('user_maps').doc(targetUser), oldMap.data());
+                    batch.delete(root.collection('user_maps').doc(myUsername));
+
+                    // 4. Friends List
+                    const oldFriends = await root.collection('user_friends').doc(myUsername).get();
+                    let myFriendList = [];
+                    if(oldFriends.exists) {
+                        myFriendList = oldFriends.data().list || [];
+                        batch.set(root.collection('user_friends').doc(targetUser), oldFriends.data());
+                    }
+                    batch.delete(root.collection('user_friends').doc(myUsername));
+
+                    // 5. Notifications
+                    const oldNotifs = await root.collection('user_notifications').doc(myUsername).get();
+                    if(oldNotifs.exists) batch.set(root.collection('user_notifications').doc(targetUser), oldNotifs.data());
+                    batch.delete(root.collection('user_notifications').doc(myUsername));
+
+                    // 6. Partners
+                    const oldPartner = await root.collection('user_partners').doc(myUsername).get();
+                    if(oldPartner.exists) {
+                        const pData = oldPartner.data();
+                        batch.set(root.collection('user_partners').doc(targetUser), pData);
+                        batch.delete(root.collection('user_partners').doc(myUsername));
+                        if(pData.partner) batch.update(root.collection('user_partners').doc(pData.partner), { partner: targetUser });
+                    }
+
+                    await batch.commit();
+
+                    // 7. Update Friends (Best Effort)
+                    for (const friend of myFriendList) {
+                        try {
+                            const fRef = root.collection('user_friends').doc(friend);
+                            const fDoc = await fRef.get();
+                            if(fDoc.exists) {
+                                let list = fDoc.data().list || [];
+                                if(list.includes(myUsername)) {
+                                    list = list.map(u => u === myUsername ? targetUser : u);
+                                    await fRef.update({ list });
+                                }
+                            }
+                        } catch(e) { console.error("Friend update error:", e); }
+                    }
+
+                    setSuccess("Kullanıcı adı değişti. Çıkış yapılıyor...");
+                    setTimeout(() => { onLogout(); }, 2000);
+
+                } catch(e) { setError("Hata: " + e.message); }
+                setLoading(false);
+            };
+
             return (
                 <div className="fixed inset-0 z-[1700] bg-black/70 flex items-center justify-center p-4 animate-fadeIn backdrop-blur-sm">
                     <div className="bg-white dark:bg-gray-800 w-full max-w-sm rounded-2xl shadow-2xl p-6 border dark:border-gray-700 relative">
                         <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><Icon name="x" className="w-5 h-5"/></button>
                         <h2 className="text-xl font-bold mb-6 flex items-center gap-2 dark:text-white"><Icon name="settings" className="w-5 h-5 text-blue-500"/> Ayarlar</h2>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Kullanıcı Adı</label>
-                                <input type="text" value={myUsername} readOnly className="w-full bg-gray-100 dark:bg-gray-900 dark:text-gray-400 border border-gray-200 dark:border-gray-700 rounded-lg p-2.5 text-sm cursor-not-allowed"/>
+
+                        {view === 'default' && (
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Kullanıcı Adı</label>
+                                    <input type="text" value={myUsername} readOnly className="w-full bg-gray-100 dark:bg-gray-900 dark:text-gray-400 border border-gray-200 dark:border-gray-700 rounded-lg p-2.5 text-sm cursor-not-allowed"/>
+                                </div>
+                                <button onClick={()=>setView('username')} className="w-full bg-indigo-600 text-white font-bold py-2.5 rounded-lg hover:bg-indigo-700 transition-all text-sm">Kullanıcı Adı Değiştir</button>
+                                <button onClick={()=>setView('password')} className="w-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white font-bold py-2.5 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-all text-sm">Şifre Değiştir</button>
                             </div>
-                        </div>
+                        )}
+
+                        {(view === 'username' || view === 'password') && (
+                            <div className="space-y-4 animate-fadeIn">
+                                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-100 dark:border-blue-800">
+                                    <label className="block text-[10px] font-bold text-blue-600 dark:text-blue-300 uppercase mb-1">Güvenlik Sorusu</label>
+                                    <p className="text-sm font-medium text-gray-800 dark:text-white">{question}</p>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Cevabınız</label>
+                                    <input type="text" value={inputAnswer} onChange={e=>setInputAnswer(e.target.value)} className="w-full border border-gray-200 dark:border-gray-600 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"/>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">{view === 'username' ? 'Yeni Kullanıcı Adı' : 'Yeni Şifre'}</label>
+                                    <input type={view === 'username' ? 'text' : 'password'} value={newValue} onChange={e=>setNewValue(e.target.value)} className="w-full border border-gray-200 dark:border-gray-600 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"/>
+                                </div>
+
+                                {error && <div className="text-red-500 text-xs font-bold">{error}</div>}
+                                {success && <div className="text-green-500 text-xs font-bold">{success}</div>}
+
+                                <div className="flex gap-2 pt-2">
+                                    <button onClick={()=>{setView('default'); setError(""); setSuccess("");}} className="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-bold py-2 rounded-lg text-sm">İptal</button>
+                                    <button onClick={view === 'username' ? handleUsernameChange : handlePasswordChange} disabled={loading} className="flex-1 bg-blue-600 text-white font-bold py-2 rounded-lg text-sm hover:bg-blue-700 transition-all">
+                                        {loading ? 'İşleniyor...' : 'Onayla'}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             );
@@ -1956,7 +2103,7 @@
                     {isStatsOpen && <StatsModal markers={markers} onClose={() => setIsStatsOpen(false)} />}
                     {isLeaderboardOpen && <LeaderboardModal appId={appId} myUsername={myUsername} friends={friends} onClose={() => setIsLeaderboardOpen(false)} />}
                     {isCinemaOpen && <CinemaModal markers={markers} onClose={() => setIsCinemaOpen(false)} />}
-                    {isSettingsOpen && <SettingsModal myUsername={myUsername} onClose={()=>setIsSettingsOpen(false)} />}
+                    {isSettingsOpen && <SettingsModal myUsername={myUsername} onClose={()=>setIsSettingsOpen(false)} onLogout={onLogout} />}
 
                     <div id="map-container" className="flex-1 z-0 relative bg-slate-100">{loading && <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-[999] backdrop-blur-sm"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mr-2"></div></div>}</div>
                     
