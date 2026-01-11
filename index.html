@@ -816,13 +816,18 @@
 
         // --- LOGIN SCREEN ---
         const LoginScreen = ({ onLogin }) => {
+            const [mode, setMode] = useState("login"); // login, register, forgot
             const [username, setUsername] = useState("");
             const [password, setPassword] = useState("");
-            const [isRegistering, setIsRegistering] = useState(false);
             const [securityQuestion, setSecurityQuestion] = useState("");
             const [securityAnswer, setSecurityAnswer] = useState("");
             const [error, setError] = useState("");
             const [loading, setLoading] = useState(false);
+            const [success, setSuccess] = useState("");
+
+            // Forgot Password States
+            const [forgotStep, setForgotStep] = useState(1);
+            const [newForgotPass, setNewForgotPass] = useState("");
 
             const securityQuestions = [
                 "İlkokuldaki sınıf öğretmeninizin adı nedir?",
@@ -840,15 +845,49 @@
             const handleSubmit = async (e) => {
                 e.preventDefault();
                 setError("");
+                setSuccess("");
+                
+                if (mode === "forgot") {
+                    if (forgotStep === 1) {
+                        if (!username.trim() || !securityQuestion || !securityAnswer.trim()) { setError("Tüm alanları doldurun."); return; }
+                        setLoading(true);
+                        try {
+                            const userRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_credentials').doc(username.toLowerCase());
+                            const doc = await userRef.get();
+                            if (!doc.exists) { setError("Bilgiler hatalı."); setLoading(false); return; }
+                            
+                            const data = doc.data();
+                            // Check if question and answer match
+                            if (data.securityQuestion !== securityQuestion || data.securityAnswer.toLowerCase().trim() !== securityAnswer.toLowerCase().trim()) {
+                                setError("Güvenlik bilgileri hatalı."); setLoading(false); return;
+                            }
+                            
+                            setForgotStep(2);
+                        } catch (e) { setError("Hata oluştu."); }
+                        setLoading(false);
+                    } else {
+                        if (!newForgotPass.trim()) { setError("Yeni şifre girin."); return; }
+                        setLoading(true);
+                        try {
+                            const userRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_credentials').doc(username.toLowerCase());
+                            await userRef.update({ password: newForgotPass });
+                            setSuccess("Şifre başarıyla değiştirildi. Giriş yapabilirsiniz.");
+                            setTimeout(() => { setMode("login"); setForgotStep(1); setSuccess(""); setUsername(""); setPassword(""); setSecurityQuestion(""); setSecurityAnswer(""); setNewForgotPass(""); }, 2000);
+                        } catch (e) { setError("Hata oluştu."); }
+                        setLoading(false);
+                    }
+                    return;
+                }
+
                 if (!username.trim() || !password.trim()) { setError("Kullanıcı adı ve şifre zorunludur."); return; }
-                if (isRegistering && (!securityQuestion || !securityAnswer.trim())) { setError("Güvenlik sorusu ve cevabı zorunludur."); return; }
+                if (mode === "register" && (!securityQuestion || !securityAnswer.trim())) { setError("Güvenlik sorusu ve cevabı zorunludur."); return; }
                 
                 setLoading(true);
                 try {
                     const userRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_credentials').doc(username.toLowerCase());
                     const doc = await userRef.get();
                     
-                    if (isRegistering) {
+                    if (mode === "register") {
                         if (doc.exists) { setError("Bu kullanıcı adı alınmış."); setLoading(false); return; }
                         await userRef.set({ 
                             password,
@@ -886,47 +925,92 @@
                         <p className="text-sm text-gray-500 dark:text-gray-400 mb-8 font-medium">Anılarını biriktir, rotanı paylaş.</p>
                         
                         <div className="bg-gray-100 dark:bg-gray-700 p-1 rounded-lg flex mb-6">
-                            <button className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${!isRegistering ? 'bg-white dark:bg-gray-600 text-gray-800 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`} onClick={() => { setIsRegistering(false); setError(null); }}>Giriş Yap</button>
-                            <button className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${isRegistering ? 'bg-white dark:bg-gray-600 text-gray-800 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`} onClick={() => { setIsRegistering(true); setError(null); }}>Kayıt Ol</button>
+                            <button className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${mode === "login" ? 'bg-white dark:bg-gray-600 text-gray-800 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`} onClick={() => { setMode("login"); setError(""); }}>Giriş Yap</button>
+                            <button className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${mode === "register" ? 'bg-white dark:bg-gray-600 text-gray-800 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'}`} onClick={() => { setMode("register"); setError(""); }}>Kayıt Ol</button>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div className="relative">
-                                <Icon name="user" className="absolute left-3 top-3 w-5 h-5 text-gray-400"/>
-                                <input type="text" className="w-full border border-gray-200 dark:border-gray-600 rounded-lg pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 dark:bg-gray-700 dark:text-white transition-all" placeholder="Kullanıcı Adı" value={username} onChange={e => setUsername(e.target.value)} disabled={loading} />
-                            </div>
-                            
-                            {isRegistering && (
-                                <>
-                                    <div className="relative animate-fadeIn">
-                                        <Icon name="help-circle" className="absolute left-3 top-3 w-5 h-5 text-gray-400"/>
-                                        <select 
-                                            className="w-full border border-gray-200 dark:border-gray-600 rounded-lg pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-red-500 dark:bg-gray-700 dark:text-white appearance-none" 
-                                            value={securityQuestion} 
-                                            onChange={e => setSecurityQuestion(e.target.value)}
-                                        >
-                                            <option value="">Güvenlik Sorusu Seçin</option>
-                                            {securityQuestions.map((q, i) => <option key={i} value={q}>{q}</option>)}
-                                        </select>
-                                    </div>
-                                    <div className="relative animate-fadeIn">
-                                        <Icon name="key" className="absolute left-3 top-3 w-5 h-5 text-gray-400"/>
-                                        <input type="text" className="w-full border border-gray-200 dark:border-gray-600 rounded-lg pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-red-500 dark:bg-gray-700 dark:text-white" placeholder="Cevabınız" value={securityAnswer} onChange={e => setSecurityAnswer(e.target.value)} />
-                                    </div>
-                                </>
-                            )}
-                            
-                            <div className="relative">
-                                <Icon name="lock" className="absolute left-3 top-3 w-5 h-5 text-gray-400"/>
-                                <input type="password" className="w-full border border-gray-200 dark:border-gray-600 rounded-lg pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 dark:bg-gray-700 dark:text-white transition-all" placeholder="Şifre" value={password} onChange={e => setPassword(e.target.value)} disabled={loading} />
-                            </div>
+                        {mode === "forgot" ? (
+                            <form onSubmit={handleSubmit} className="space-y-4 animate-fadeIn">
+                                <h3 className="text-lg font-bold text-gray-700 dark:text-white mb-2">Şifremi Unuttum</h3>
+                                {forgotStep === 1 ? (
+                                    <>
+                                        <div className="relative">
+                                            <Icon name="user" className="absolute left-3 top-3 w-5 h-5 text-gray-400"/>
+                                            <input type="text" className="w-full border border-gray-200 dark:border-gray-600 rounded-lg pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 dark:bg-gray-700 dark:text-white transition-all" placeholder="Kullanıcı Adı" value={username} onChange={e => setUsername(e.target.value)} disabled={loading} />
+                                        </div>
+                                        <div className="relative">
+                                            <Icon name="help-circle" className="absolute left-3 top-3 w-5 h-5 text-gray-400"/>
+                                            <select 
+                                                className="w-full border border-gray-200 dark:border-gray-600 rounded-lg pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-red-500 dark:bg-gray-700 dark:text-white appearance-none" 
+                                                value={securityQuestion} 
+                                                onChange={e => setSecurityQuestion(e.target.value)}
+                                            >
+                                                <option value="">Güvenlik Sorusu Seçin</option>
+                                                {securityQuestions.map((q, i) => <option key={i} value={q}>{q}</option>)}
+                                            </select>
+                                        </div>
+                                        <div className="relative">
+                                            <Icon name="key" className="absolute left-3 top-3 w-5 h-5 text-gray-400"/>
+                                            <input type="text" className="w-full border border-gray-200 dark:border-gray-600 rounded-lg pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-red-500 dark:bg-gray-700 dark:text-white" placeholder="Cevabınız" value={securityAnswer} onChange={e => setSecurityAnswer(e.target.value)} />
+                                        </div>
+                                        <button type="submit" className="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition-all shadow-lg active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed mt-2" disabled={loading}>
+                                            {loading ? "Doğrulanıyor..." : "Doğrula"}
+                                        </button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="relative">
+                                            <Icon name="lock" className="absolute left-3 top-3 w-5 h-5 text-gray-400"/>
+                                            <input type="password" className="w-full border border-gray-200 dark:border-gray-600 rounded-lg pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 dark:bg-gray-700 dark:text-white transition-all" placeholder="Yeni Şifre" value={newForgotPass} onChange={e => setNewForgotPass(e.target.value)} disabled={loading} />
+                                        </div>
+                                        <button type="submit" className="w-full bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition-all shadow-lg active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed mt-2" disabled={loading}>
+                                            {loading ? "Kaydediliyor..." : "Şifreyi Yenile"}
+                                        </button>
+                                    </>
+                                )}
+                                <button type="button" onClick={() => { setMode("login"); setError(""); setSuccess(""); }} className="text-sm text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white underline">Geri Dön</button>
+                            </form>
+                        ) : (
+                            <form onSubmit={handleSubmit} className="space-y-4">
+                                <div className="relative">
+                                    <Icon name="user" className="absolute left-3 top-3 w-5 h-5 text-gray-400"/>
+                                    <input type="text" className="w-full border border-gray-200 dark:border-gray-600 rounded-lg pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 dark:bg-gray-700 dark:text-white transition-all" placeholder="Kullanıcı Adı" value={username} onChange={e => setUsername(e.target.value)} disabled={loading} />
+                                </div>
+                                
+                                {mode === "register" && (
+                                    <>
+                                        <div className="relative animate-fadeIn">
+                                            <Icon name="help-circle" className="absolute left-3 top-3 w-5 h-5 text-gray-400"/>
+                                            <select 
+                                                className="w-full border border-gray-200 dark:border-gray-600 rounded-lg pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-red-500 dark:bg-gray-700 dark:text-white appearance-none" 
+                                                value={securityQuestion} 
+                                                onChange={e => setSecurityQuestion(e.target.value)}
+                                            >
+                                                <option value="">Güvenlik Sorusu Seçin</option>
+                                                {securityQuestions.map((q, i) => <option key={i} value={q}>{q}</option>)}
+                                            </select>
+                                        </div>
+                                        <div className="relative animate-fadeIn">
+                                            <Icon name="key" className="absolute left-3 top-3 w-5 h-5 text-gray-400"/>
+                                            <input type="text" className="w-full border border-gray-200 dark:border-gray-600 rounded-lg pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-red-500 dark:bg-gray-700 dark:text-white" placeholder="Cevabınız" value={securityAnswer} onChange={e => setSecurityAnswer(e.target.value)} />
+                                        </div>
+                                    </>
+                                )}
+                                
+                                <div className="relative">
+                                    <Icon name="lock" className="absolute left-3 top-3 w-5 h-5 text-gray-400"/>
+                                    <input type="password" className="w-full border border-gray-200 dark:border-gray-600 rounded-lg pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 dark:bg-gray-700 dark:text-white transition-all" placeholder="Şifre" value={password} onChange={e => setPassword(e.target.value)} disabled={loading} />
+                                </div>
 
-                            {error && <div className="p-3 bg-red-50 text-red-600 text-xs rounded-lg text-left font-medium flex gap-2 items-start"><Icon name="alert-circle" className="w-4 h-4 shrink-0"/> {error}</div>}
-                            
-                            <button type="submit" className="w-full bg-red-600 text-white font-bold py-3 rounded-lg hover:bg-red-700 transition-all shadow-lg hover:shadow-red-500/30 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed mt-2" disabled={loading}>
-                                {loading ? "İşleniyor..." : (isRegistering ? "Hesap Oluştur" : "Giriş Yap")}
-                            </button>
-                        </form>
+                                {error && <div className="p-3 bg-red-50 text-red-600 text-xs rounded-lg text-left font-medium flex gap-2 items-start"><Icon name="alert-circle" className="w-4 h-4 shrink-0"/> {error}</div>}
+                                {success && <div className="p-3 bg-green-50 text-green-600 text-xs rounded-lg text-left font-medium flex gap-2 items-start"><Icon name="check-circle" className="w-4 h-4 shrink-0"/> {success}</div>}
+                                
+                                <button type="submit" className="w-full bg-red-600 text-white font-bold py-3 rounded-lg hover:bg-red-700 transition-all shadow-lg hover:shadow-red-500/30 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed mt-2" disabled={loading}>
+                                    {loading ? "İşleniyor..." : (mode === "register" ? "Hesap Oluştur" : "Giriş Yap")}
+                                </button>
+                                {mode === "login" && <button type="button" onClick={() => { setMode("forgot"); setError(""); setSuccess(""); }} className="text-xs text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white underline mt-4 block mx-auto">Şifremi Unuttum</button>}
+                            </form>
+                        )}
                     </div>
                 </div>
             );
