@@ -648,8 +648,7 @@
 
             useEffect(() => {
                 const loadConversations = async () => {
-                    const results = [];
-                    for (const friend of friends) {
+                    const promises = friends.map(async (friend) => {
                         try {
                             const chatId = [myUsername, friend].sort().join('_');
                             const chatDoc = await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('direct_messages').doc(chatId).get();
@@ -660,11 +659,14 @@
                                     const lastMsg = msgs[msgs.length - 1];
                                     const profileDoc = await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_profiles').doc(friend).get();
                                     const avatar = profileDoc.exists ? profileDoc.data().avatar : null;
-                                    results.push({ friend, lastMsg, avatar });
+                                    return { friend, lastMsg, avatar };
                                 }
                             }
                         } catch (e) { console.error(e); }
-                    }
+                        return null;
+                    });
+                    
+                    const results = (await Promise.all(promises)).filter(Boolean);
                     results.sort((a, b) => b.lastMsg.timestamp - a.lastMsg.timestamp);
                     setConversations(results);
                     setLoading(false);
