@@ -250,7 +250,7 @@
         };
 
         const compressImage = (file) => {
-            return new Promise((resolve) => {
+            return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.readAsDataURL(file);
                 reader.onload = (event) => {
@@ -258,7 +258,7 @@
                     img.src = event.target.result;
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
-                        const MAX_WIDTH = 600; 
+                        const MAX_WIDTH = 500;
                         let width = img.width;
                         let height = img.height;
                         if (width > height) { if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; } } 
@@ -266,9 +266,11 @@
                         canvas.width = width; canvas.height = height;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, width, height);
-                        resolve(canvas.toDataURL('image/jpeg', 0.5));
+                        resolve(canvas.toDataURL('image/jpeg', 0.4));
                     };
+                    img.onerror = (e) => reject(e);
                 };
+                reader.onerror = (e) => reject(e);
             });
         };
 
@@ -2199,7 +2201,7 @@
                                                             <div key={c.id} className="text-[10px]">
                                                                 <div className="flex justify-between items-start">
                                                                     <div className="flex-1">
-                                                                        <span className="font-bold text-indigo-600 mr-1">@{c.user}</span>
+                                                                        <span onClick={(e) => { e.stopPropagation(); handleUserNavigation(c.user); }} className="font-bold text-indigo-600 mr-1 cursor-pointer hover:underline">@{c.user}</span>
                                                                         <span className="text-gray-600 dark:text-gray-300">{renderClickableNote(c.text)}</span>
                                                                     </div>
                                                                     {/* YORUM SİLME BUTONU */}
@@ -2239,7 +2241,7 @@
                                                                     <div className="mt-1 pl-2 border-l border-gray-300 dark:border-gray-600 space-y-1">
                                                                         {c.replies.map(r => (
                                                                             <div key={r.id} className="text-[9px] text-gray-500 dark:text-gray-400">
-                                                                                <span className="font-bold text-indigo-500 mr-1">@{r.user}</span>
+                                                                                <span onClick={(e) => { e.stopPropagation(); handleUserNavigation(r.user); }} className="font-bold text-indigo-500 mr-1 cursor-pointer hover:underline">@{r.user}</span>
                                                                                 {renderClickableNote(r.text)}
                                                                             </div>
                                                                         ))}
@@ -2383,7 +2385,7 @@
                                             {comments.map(c => (
                                                 <div key={c.id} className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-xl text-sm border dark:border-gray-600 shadow-sm">
                                                     <div className="flex justify-between items-start mb-1">
-                                                        <span className="font-bold text-xs text-gray-800 dark:text-white">@{c.user}</span>
+                                                        <span onClick={() => handleUserNavigation(c.user)} className="font-bold text-xs text-gray-800 dark:text-white cursor-pointer hover:underline">@{c.user}</span>
                                                         <span className="text-[10px] text-gray-400">{c.date}</span>
                                                     </div>
                                                     <p className="text-gray-600 dark:text-gray-300 text-xs leading-relaxed mb-2">{renderClickableNote(c.text)}</p>
@@ -2422,7 +2424,7 @@
                                                             {c.replies.map(r => (
                                                                 <div key={r.id} className="text-xs">
                                                                     <div className="flex items-center gap-1 mb-0.5">
-                                                                        <span className="font-bold text-indigo-600">@{r.user}</span>
+                                                                        <span onClick={() => handleUserNavigation(r.user)} className="font-bold text-indigo-600 cursor-pointer hover:underline">@{r.user}</span>
                                                                         <span className="text-[9px] text-gray-400">{r.date}</span>
                                                                     </div>
                                                                     <p className="text-gray-600 dark:text-gray-300">{renderClickableNote(r.text)}</p>
