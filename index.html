@@ -258,15 +258,28 @@
                     img.src = event.target.result;
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
-                        const MAX_WIDTH = 500;
                         let width = img.width;
                         let height = img.height;
+
+                        // İlk boyutlandırma
+                        const MAX_WIDTH = 500;
                         if (width > height) { if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; } } 
                         else { if (height > MAX_WIDTH) { width *= MAX_WIDTH / height; height = MAX_WIDTH; } }
+
                         canvas.width = width; canvas.height = height;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, width, height);
-                        resolve(canvas.toDataURL('image/jpeg', 0.4));
+
+                        // Hedef boyut: < 60KB
+                        let quality = 0.5;
+                        let dataUrl = canvas.toDataURL('image/jpeg', quality);
+
+                        while (dataUrl.length > 60 * 1024 && quality > 0.1) {
+                            quality -= 0.1;
+                            dataUrl = canvas.toDataURL('image/jpeg', quality);
+                        }
+
+                        resolve(dataUrl);
                     };
                     img.onerror = (e) => reject(e);
                 };
@@ -2314,7 +2327,7 @@
                                         </div>
                                     )}
                                     
-                                    {status === 'visited' && (
+                                    {(status === 'visited' || status === 'bucket') && (
                                         <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-800/50 p-4 rounded-xl mb-6 shadow-sm">
                                             <h4 className="text-sm font-bold text-orange-800 dark:text-orange-300 mb-3 flex gap-2 items-center"><Icon name="compass" className="w-4 h-4"/> Öneriler</h4>
                                             <div className="space-y-2">{((citySuggestionsData[selectedCity?.name] && citySuggestionsData[selectedCity?.name][category]) || citySuggestionsData[selectedCity?.name]?.["Genel"] || ["Gezilecek Yer 1", "Gezilecek Yer 2", "Gezilecek Yer 3", "Gezilecek Yer 4"]).slice(0, 4).map((place, idx) => { const isChecked = checkedPlaces.includes(place); return (<div key={idx} onClick={()=>toggleCheckedPlace(place)} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${isChecked ? 'bg-green-50 border-green-200' : 'bg-white dark:bg-gray-700 border-gray-100 dark:border-gray-600'}`}><div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${isChecked ? 'bg-green-500 border-green-500' : 'bg-white border-gray-300'}`}>{isChecked && <Icon name="check" className="w-3 h-3 text-white"/>}</div><span className={`text-sm ${isChecked ? 'text-green-800 dark:text-green-300 font-bold' : 'text-gray-700 dark:text-gray-300'}`}>{place}</span></div>); })}</div>
