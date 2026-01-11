@@ -1123,6 +1123,7 @@
             const [categoryFilter, setCategoryFilter] = useState("Tümü");
               
             const [note, setNote] = useState("");
+            const [memory, setMemory] = useState("");
             const [images, setImages] = useState([]);
             const [rating, setRating] = useState(0); 
             const [cityStats, setCityStats] = useState({ avg: 0, count: 0 }); 
@@ -1154,10 +1155,10 @@
                 setSelectedCity({ name: cityName, latlng: center });
                 const existing = markersRef.current.find(m => m.cityName === cityName);
                 if(existing) {
-                    setNote(existing.note || ""); setImages(existing.images || []); setCheckedPlaces(existing.checkedPlaces || []); setComments(existing.comments || []); setFavoriteImage(existing.favoriteImage || null);
+                    setNote(existing.note || ""); setMemory(existing.memory || ""); setImages(existing.images || []); setCheckedPlaces(existing.checkedPlaces || []); setComments(existing.comments || []); setFavoriteImage(existing.favoriteImage || null);
                     setStatus(existing.status || "visited"); setCategory(existing.category || "Genel"); setRating(existing.rating || 0);
                 } else {
-                    setNote(""); setImages([]); setCheckedPlaces([]); setComments([]); setFavoriteImage(null);
+                    setNote(""); setMemory(""); setImages([]); setCheckedPlaces([]); setComments([]); setFavoriteImage(null);
                     setStatus("visited"); setCategory("Genel"); setRating(0);
                 }
                 setIsModalOpen(true);
@@ -1345,16 +1346,28 @@
                         usersToFetch = [myUsername, ...friends]; 
                     }
 
-                    for (const friend of usersToFetch) {
-                        const doc = await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_maps').doc(friend).get();
-                        const pDoc = await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_profiles').doc(friend).get();
-                        const fAvatar = pDoc.exists ? pDoc.data().avatar : null;
-                        if (doc.exists) {
-                            const m = doc.data().markers || [];
-                            const mWithUser = m.map(i => ({...i, username: friend, userAvatar: fAvatar})); 
-                            allItems = [...allItems, ...mWithUser];
+                    // Parallel Fetching for Better Performance
+                    const promises = usersToFetch.map(async (friend) => {
+                        try {
+                            const [doc, pDoc] = await Promise.all([
+                                db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_maps').doc(friend).get(),
+                                db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_profiles').doc(friend).get()
+                            ]);
+                            const fAvatar = pDoc.exists ? pDoc.data().avatar : null;
+                            if (doc.exists) {
+                                const m = doc.data().markers || [];
+                                return m.map(i => ({...i, username: friend, userAvatar: fAvatar}));
+                            }
+                            return [];
+                        } catch (e) {
+                            console.error(`Error fetching data for ${friend}:`, e);
+                            return [];
                         }
-                    }
+                    });
+
+                    const results = await Promise.all(promises);
+                    allItems = results.flat();
+                    
                     allItems.sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
                     setFeedItems(allItems);
                 };
@@ -1661,12 +1674,13 @@
             const handleSave = () => {
                 if (!selectedCity) return;
                 const cleanNote = filterProfanity(note);
+                const cleanMemory = filterProfanity(memory);
                 const existingMarker = markers.find(m => m.cityName === selectedCity.name);
                 const oldRating = existingMarker ? (existingMarker.rating || 0) : 0;
                 
                 const newMarker = {
                     id: Date.now(), lat: selectedCity.latlng.lat, lng: selectedCity.latlng.lng,
-                    cityName: selectedCity.name, note: cleanNote, images: images, checkedPlaces: checkedPlaces,
+                    cityName: selectedCity.name, note: cleanNote, memory: cleanMemory, images: images, checkedPlaces: checkedPlaces,
                     comments: comments, favoriteImage: favoriteImage, rating: rating,
                     status: status, category: category, date: new Date().toLocaleDateString('tr-TR'), timestamp: Date.now(), likes: [] 
                 };
@@ -1697,6 +1711,7 @@
                     lng: selectedCity.latlng.lng,
                     cityName: selectedCity.name,
                     note: note, // keep existing note
+                    memory: memory, // keep existing memory
                     images: images,
                     checkedPlaces: checkedPlaces,
                     comments: newComments,
@@ -1760,7 +1775,7 @@
                 const originalMarker = markers.find(m => m.cityName === selectedCity.name) || {};
                 const newMarker = {
                     id: originalMarker.id || Date.now(), lat: selectedCity.latlng.lat, lng: selectedCity.latlng.lng,
-                    cityName: selectedCity.name, note: note, images: images, checkedPlaces: checkedPlaces,
+                    cityName: selectedCity.name, note: note, memory: memory, images: images, checkedPlaces: checkedPlaces,
                     comments: updatedComments, favoriteImage: favoriteImage, rating: rating,
                     status: status, category: category, date: new Date().toLocaleDateString('tr-TR'), timestamp: Date.now(), likes: originalMarker.likes || []
                 };
@@ -2337,15 +2352,28 @@
                                         </div>
                                     </div>
 
-                                    <div className="mb-6">
-                                        <div className="flex justify-between mb-2 items-center">
-                                            {/* GÜNLÜK BAŞLIĞI - GİZLİLİK VURGUSU */}
-                                            <label className="font-bold text-sm dark:text-white flex items-center gap-2 uppercase tracking-wide"><Icon name="edit-3" className="w-4 h-4"/> Günlük (Sadece Sen Görebilirsin)</label>
-                                            {!isReadOnly && <button onClick={enhanceNote} disabled={isEnhancingNote || !note} className="text-[10px] text-purple-600 font-bold bg-purple-50 px-2 py-1 rounded-full border border-purple-100 hover:bg-purple-100 transition-all">{isEnhancingNote ? 'Yazılıyor...' : 'AI ile Düzenle'}</button>}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                        {/* ANI KISMI (HERKESE AÇIK) */}
+                                        <div>
+                                            <label className="font-bold text-sm dark:text-white flex items-center gap-2 uppercase tracking-wide mb-2"><Icon name="book-open" className="w-4 h-4"/> Anı (Herkese Açık)</label>
+                                            {!isReadOnly ? (
+                                                <textarea className="w-full border border-gray-200 dark:border-gray-600 rounded-xl p-4 text-sm focus:ring-2 focus:ring-blue-500 outline-none dark:bg-gray-700 dark:text-white shadow-inner min-h-[150px]" rows="6" value={memory} onChange={e=>setMemory(e.target.value)} placeholder="Bu şehirle ilgili anılarını paylaş..."></textarea>
+                                            ) : (
+                                                <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl text-sm text-gray-700 dark:text-gray-300 min-h-[100px] border border-gray-100 dark:border-gray-600 italic">
+                                                    {memory || "Henüz bir anı paylaşılmamış."}
+                                                </div>
+                                            )}
                                         </div>
-                                        {/* GÜNLÜK: SADECE SAHİBİ GÖRÜR, OKUMA MODUNDA GİZLİ */}
+
+                                        {/* GÜNLÜK KISMI (SADECE SAHİBİ GÖRÜR) */}
                                         {!isReadOnly && (
-                                            <textarea className="w-full border border-gray-200 dark:border-gray-600 rounded-xl p-4 text-sm focus:ring-2 focus:ring-red-500 outline-none dark:bg-gray-700 dark:text-white shadow-inner" rows="4" value={note} onChange={e=>setNote(e.target.value)} placeholder="Günlüğüne yaz... Bu yazıyı sadece sen görebilirsin."></textarea>
+                                            <div>
+                                                <div className="flex justify-between mb-2 items-center">
+                                                    <label className="font-bold text-sm dark:text-white flex items-center gap-2 uppercase tracking-wide"><Icon name="lock" className="w-4 h-4"/> Günlük (Gizli)</label>
+                                                    <button onClick={enhanceNote} disabled={isEnhancingNote || !note} className="text-[10px] text-purple-600 font-bold bg-purple-50 px-2 py-1 rounded-full border border-purple-100 hover:bg-purple-100 transition-all">{isEnhancingNote ? 'Yazılıyor...' : 'AI ile Düzenle'}</button>
+                                                </div>
+                                                <textarea className="w-full border border-gray-200 dark:border-gray-600 rounded-xl p-4 text-sm focus:ring-2 focus:ring-red-500 outline-none dark:bg-gray-700 dark:text-white shadow-inner min-h-[150px]" rows="6" value={note} onChange={e=>setNote(e.target.value)} placeholder="Günlüğüne yaz... Bu yazıyı sadece sen görebilirsin."></textarea>
+                                            </div>
                                         )}
                                     </div>
 
