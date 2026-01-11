@@ -672,15 +672,29 @@
             const [username, setUsername] = useState("");
             const [password, setPassword] = useState("");
             const [isRegistering, setIsRegistering] = useState(false);
-            const [inputEmail, setInputEmail] = useState(""); 
-            const [inputPhone, setInputPhone] = useState(""); 
+            const [securityQuestion, setSecurityQuestion] = useState("");
+            const [securityAnswer, setSecurityAnswer] = useState("");
             const [error, setError] = useState("");
             const [loading, setLoading] = useState(false);
+
+            const securityQuestions = [
+                "İlkokuldaki sınıf öğretmeninizin adı nedir?",
+                "İlk evcil hayvanınızın adı nedir?",
+                "Çocukken en sevdiğiniz oyuncağın adı nedir?",
+                "İlkokula başladığınız okulun adı nedir?",
+                "Annenizin kızlık soyadı nedir?",
+                "En sevdiğiniz çocukluk arkadaşınızın adı nedir?",
+                "İlk gittiğiniz tatil yerinin adı nedir?",
+                "Çocukken en sevdiğiniz çizgi filmin adı nedir?",
+                "Doğduğunuz şehir neresidir?",
+                "Küçükken en çok sevdiğiniz yemeğin adı nedir?"
+            ];
 
             const handleSubmit = async (e) => {
                 e.preventDefault();
                 setError("");
-                if (!username.trim() || !password.trim()) return;
+                if (!username.trim() || !password.trim()) { setError("Kullanıcı adı ve şifre zorunludur."); return; }
+                if (isRegistering && (!securityQuestion || !securityAnswer.trim())) { setError("Güvenlik sorusu ve cevabı zorunludur."); return; }
                 
                 setLoading(true);
                 try {
@@ -691,8 +705,8 @@
                         if (doc.exists) { setError("Bu kullanıcı adı alınmış."); setLoading(false); return; }
                         await userRef.set({ 
                             password,
-                            email: inputEmail,
-                            phone: inputPhone
+                            securityQuestion,
+                            securityAnswer
                         });
                         await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_profiles').doc(username.toLowerCase()).set({ lastActive: new Date().toISOString() });
                         await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_friends').doc(username.toLowerCase()).set({ list: [] });
@@ -738,12 +752,19 @@
                             {isRegistering && (
                                 <>
                                     <div className="relative animate-fadeIn">
-                                        <Icon name="mail" className="absolute left-3 top-3 w-5 h-5 text-gray-400"/>
-                                        <input type="email" className="w-full border border-gray-200 dark:border-gray-600 rounded-lg pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-red-500 dark:bg-gray-700 dark:text-white" placeholder="E-posta" value={inputEmail} onChange={e => setInputEmail(e.target.value)} />
+                                        <Icon name="help-circle" className="absolute left-3 top-3 w-5 h-5 text-gray-400"/>
+                                        <select 
+                                            className="w-full border border-gray-200 dark:border-gray-600 rounded-lg pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-red-500 dark:bg-gray-700 dark:text-white appearance-none" 
+                                            value={securityQuestion} 
+                                            onChange={e => setSecurityQuestion(e.target.value)}
+                                        >
+                                            <option value="">Güvenlik Sorusu Seçin</option>
+                                            {securityQuestions.map((q, i) => <option key={i} value={q}>{q}</option>)}
+                                        </select>
                                     </div>
                                     <div className="relative animate-fadeIn">
-                                        <Icon name="phone" className="absolute left-3 top-3 w-5 h-5 text-gray-400"/>
-                                        <input type="tel" className="w-full border border-gray-200 dark:border-gray-600 rounded-lg pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-red-500 dark:bg-gray-700 dark:text-white" placeholder="Telefon No" value={inputPhone} onChange={e => setInputPhone(e.target.value)} />
+                                        <Icon name="key" className="absolute left-3 top-3 w-5 h-5 text-gray-400"/>
+                                        <input type="text" className="w-full border border-gray-200 dark:border-gray-600 rounded-lg pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-red-500 dark:bg-gray-700 dark:text-white" placeholder="Cevabınız" value={securityAnswer} onChange={e => setSecurityAnswer(e.target.value)} />
                                     </div>
                                 </>
                             )}
