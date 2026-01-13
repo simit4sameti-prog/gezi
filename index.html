@@ -617,6 +617,9 @@
                                 <div className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm shadow-sm ${m.sender === myUsername ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-white border border-gray-200 text-gray-800 dark:bg-gray-700 dark:border-gray-600 dark:text-white rounded-bl-none'}`}>
                                     {m.image && <img src={m.image} className="w-full rounded-lg mb-1" />}
                                     {m.text && <div>{m.text}</div>}
+                                    <div className={`text-[10px] mt-1 text-right ${m.sender === myUsername ? 'text-indigo-200' : 'text-gray-400'}`}>
+                                        {new Date(m.timestamp || m.id).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+                                    </div>
                                 </div>
                             </div>
                         ))}
