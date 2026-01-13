@@ -291,6 +291,23 @@
             });
         };
 
+        const createThumbnail = (base64) => {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_W = 120; 
+                    let w = img.width; let h = img.height;
+                    if (w > MAX_W) { h *= MAX_W / w; w = MAX_W; }
+                    canvas.width = w; canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, w, h);
+                    resolve(canvas.toDataURL('image/jpeg', 0.4));
+                };
+                img.src = base64;
+            });
+        };
+
         const formatTimeAgo = (isoDate) => {
             if (!isoDate) return "Bilinmiyor";
             const now = new Date();
@@ -1291,12 +1308,31 @@
 
             const isReadOnly = (myUsername !== currentUsername) && (activeTab === 'personal');
             
-            const handleCitySelect = (cityName, center) => {
+            const handleCitySelect = async (cityName, center) => {
                 setSelectedCity({ name: cityName, latlng: center });
                 const existing = markersRef.current.find(m => m.cityName === cityName);
                 if(existing) {
-                    setNote(existing.note || ""); setMemory(existing.memory || ""); setImages(existing.images || []); setCheckedPlaces(existing.checkedPlaces || []); setComments(existing.comments || []); setFavoriteImage(existing.favoriteImage || null);
+                    setNote(existing.note || ""); setMemory(existing.memory || ""); setCheckedPlaces(existing.checkedPlaces || []); setComments(existing.comments || []); setFavoriteImage(existing.favoriteImage || null);
                     setStatus(existing.status || "visited"); setCategory(existing.category || "Genel"); setRating(existing.rating || 0);
+                    
+                    // Resimleri Yükle (Eğer external ise)
+                    if (existing.hasImages && (!existing.images || existing.images.length === 0)) {
+                        setImages([]); // Yükleniyor...
+                        try {
+                            const collectionName = (activeTab === 'couple' && coupleId) ? 'couple_photos' : 'user_photos';
+                            const targetUser = (activeTab === 'couple' && coupleId) ? coupleId : currentUsername;
+                            const docId = `${targetUser}_${cityName}`;
+                            const imgDoc = await db.collection('artifacts').doc(appId).collection('public').doc('data').collection(collectionName).doc(docId).get();
+                            if (imgDoc.exists) {
+                                setImages(imgDoc.data().images || []);
+                            } else {
+                                setImages([]);
+                            }
+                        } catch(e) { console.error("Resim yükleme hatası", e); }
+                    } else {
+                        setImages(existing.images || []);
+                    }
+
                 } else {
                     setNote(""); setMemory(""); setImages([]); setCheckedPlaces([]); setComments([]); setFavoriteImage(null);
                     setStatus("visited"); setCategory("Genel"); setRating(0);
@@ -1393,6 +1429,29 @@
                       </div>
                 );
             };
+
+            // --- Migration Logic ---
+            useEffect(() => {
+                const checkAndMigrate = async () => {
+                    if (loading || !markers || markers.length === 0) return;
+                    
+                    const needsMigration = markers.some(m => m.images && m.images.length > 0 && !m.hasImages);
+                    if (!needsMigration) return;
+
+                    console.log("Migration needed. Optimizing storage...");
+                    try {
+                        await saveMarkersToUser(currentUsername, markers, activeTab === 'couple');
+                        console.log("Migration complete.");
+                    } catch(e) {
+                        console.error("Migration failed:", e);
+                    }
+                };
+                
+                // Only run migration if it's my map
+                if (myUsername === currentUsername && !loading) {
+                    checkAndMigrate();
+                }
+            }, [markers, loading, myUsername, currentUsername, activeTab]);
 
             useEffect(() => {
                 if (mapRef.current) {
@@ -1843,28 +1902,60 @@
             const saveMarkersToUser = async (targetUser, newMarkers, isCoupleMode = false) => {
                 try {
                     let docRef;
-                    if (isCoupleMode && coupleId) docRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('couple_maps').doc(coupleId);
-                    else docRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_maps').doc(targetUser);
+                    let photosCollection;
+                    
+                    if (isCoupleMode && coupleId) {
+                        docRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('couple_maps').doc(coupleId);
+                        photosCollection = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('couple_photos');
+                    } else {
+                        docRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_maps').doc(targetUser);
+                        photosCollection = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_photos');
+                    }
+
+                    const optimizedMarkers = await Promise.all(newMarkers.map(async (m) => {
+                        // Eğer büyük resim verisi varsa, bunu ayır
+                        if (m.images && m.images.length > 0) {
+                            // Sadece dolu base64 stringleri için işlem yap (zaten referans ise atla)
+                            // Basit kontrol: uzunluk > 1000 ise resimdir, değilse referans olabilir ama biz her zaman external tutacağız
+                            // Eğer zaten boşaltılmışsa m.images boştur veya doludur.
+                            
+                            // Yeni eklenen veya mevcut büyük resimleri ayıkla
+                            // Burada veriyi external koleksiyona yazıyoruz
+                            const imageDocId = `${targetUser}_${m.cityName}`;
+                            await photosCollection.doc(imageDocId).set({ images: m.images });
+
+                            // Thumbnail oluştur (ilk resimden)
+                            let thumb = m.thumbnail;
+                            if (!thumb && m.images[0]) {
+                                thumb = await createThumbnail(m.images[0]);
+                            }
+
+                            return {
+                                ...m,
+                                images: [], // Ana belgede resimleri boşalt
+                                thumbnail: thumb,
+                                hasImages: true // İşaret koy
+                            };
+                        } else {
+                            // Resim yoksa veya silindiyse
+                            return { ...m, thumbnail: m.thumbnail || null };
+                        }
+                    }));
                     
                     // Veri boyutunu kontrol et (Firestore limiti ~1MB)
-                    const payload = { markers: newMarkers, lastUpdated: new Date().toISOString() };
+                    const payload = { markers: optimizedMarkers, lastUpdated: new Date().toISOString() };
                     const jsonString = JSON.stringify(payload);
                     const bytes = new Blob([jsonString]).size;
                     
-                    // 950KB üzeri ise uyar (1MB = 1,048,576 bytes)
                     if (bytes > 950000) {
-                        alert("HATA: Depolama alanı doldu! Çok fazla fotoğraf eklenmiş olabilir. Lütfen bazı eski fotoğrafları silerek yer açınız.");
+                        alert("HATA: Depolama alanı doldu! Çok fazla veri var. Lütfen bazı kayıtları siliniz.");
                         return;
                     }
 
                     await docRef.set(payload, { merge: true });
                 } catch (e) { 
                     console.error("Kayıt Hatası:", e);
-                    if (e.code === 'invalid-argument' && e.message.includes('exceeds the maximum allowed size')) {
-                         alert("HATA: Veri boyutu çok büyük! Lütfen daha az veya daha düşük boyutlu fotoğraf yükleyin.");
-                    } else {
-                         alert("Kayıt sırasında bir hata oluştu! İnternet bağlantınızı kontrol edin.");
-                    }
+                    alert("Kayıt sırasında bir hata oluştu! " + e.message);
                 }
             };
 
@@ -2103,8 +2194,8 @@
                               .bindTooltip(labelContent, { permanent: true, direction: 'center', className: '' }).addTo(labelLayerRef.current);
                         }
 
-                        if (progress === 100 && (marker.favoriteImage || (marker.images && marker.images.length > 0))) {
-                            const imgUrl = marker.favoriteImage || marker.images[0];
+                        if (progress === 100 && (marker.thumbnail || marker.favoriteImage || (marker.images && marker.images.length > 0))) {
+                            const imgUrl = marker.thumbnail || marker.favoriteImage || marker.images[0];
                             const icon = L.divIcon({ className: 'custom-img-icon', html: `<img src="${imgUrl}" class="city-marker-img" />`, iconSize: [48, 48], iconAnchor: [24, 24] });
                             L.marker(layer.getBounds().getCenter(), { icon: icon, interactive: false }).addTo(imageMarkersRef.current);
                         }
@@ -2350,7 +2441,7 @@
                                                 {!isReadOnly && <button onClick={(e)=>{e.stopPropagation(); handleDelete(m.cityName)}} className="text-gray-300 hover:text-red-500 transition-colors p-1.5 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20"><Icon name="trash-2" className="w-4 h-4"/></button>}
                                             </div>
                                             <div className="text-[10px] text-gray-400 mb-2">{m.date} | {m.category}</div>
-                                            {m.images && m.images[0] && <img src={m.images[0]} className="w-full h-32 object-cover rounded-lg mb-2 shadow-sm"/>}
+                                            {(m.thumbnail || (m.images && m.images[0])) && <img src={m.thumbnail || m.images[0]} className="w-full h-32 object-cover rounded-lg mb-2 shadow-sm"/>}
                                             {/* GÜNLÜK: SADECE HARİTA SAHİBİ GÖRÜR */}
                                             {!isReadOnly && m.note && <p className="text-xs text-gray-500 dark:text-gray-300 italic line-clamp-2 leading-relaxed">"{m.note}"</p>}
                                         </div>
@@ -2403,7 +2494,7 @@
                                                 </div>
                                             </div>
 
-                                            {item.images && item.images[0] && <img src={item.images[0]} className="w-full h-44 object-cover cursor-zoom-in" onClick={() => openLightbox(item.images[0], item.images)}/>}
+                                            {(item.thumbnail || (item.images && item.images[0])) && <img src={item.thumbnail || item.images[0]} className="w-full h-44 object-cover cursor-zoom-in" onClick={() => { if(item.images && item.images.length > 0) openLightbox(item.images[0], item.images); else if(item.thumbnail) openLightbox(item.thumbnail, [item.thumbnail]); }}/>}
                                             
                                             <div className="p-3">
                                                 {/* GÜNLÜK (NOTLAR) GİZLİLİĞİ: TAM METİN GİZLİ, SADECE HASHTAGLER GÖSTERİLİR */}
