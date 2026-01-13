@@ -295,6 +295,23 @@
             return `${Math.floor(diffInSeconds / 86400)} gün önce aktifti`;
         };
 
+        const formatMessageDate = (timestamp) => {
+            if (!timestamp) return "";
+            const date = new Date(timestamp);
+            const now = new Date();
+            const isToday = date.getDate() === now.getDate() && date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+            
+            const yesterday = new Date(now);
+            yesterday.setDate(now.getDate() - 1);
+            const isYesterday = date.getDate() === yesterday.getDate() && date.getMonth() === yesterday.getMonth() && date.getFullYear() === yesterday.getFullYear();
+    
+            const timeStr = date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+    
+            if (isToday) return timeStr;
+            if (isYesterday) return `Dün ${timeStr}`;
+            return `${date.toLocaleDateString('tr-TR')} ${timeStr}`;
+        };
+
         // --- Şehir ve Kategori Bazlı Öneriler ---
         const citySuggestionsData = {
             "Adana": { "Genel": ["Taş Köprü", "Sabancı Merkez Camii", "Büyük Saat", "Kazancılar Çarşısı"], "Yemek": ["Adana Kebap ", "Şalgam Suyu", "Bici Bici", "Şırdan"], "Doğa": ["Seyhan Baraj Gölü", "Kapıkaya Kanyonu", "Belemedik", "Karataş Tabiat Parkı "], "Eğlence": ["Playland", "GoKart Yarış Pisti", "Kano", "Optimum"], "Tarih": ["Anavarza Antik Kenti", "Varda Köprüsü", "Yılankale", "Ramazanoğlu Konağı"] },
@@ -565,13 +582,6 @@
             const scrollRef = useRef(null);
 
             useEffect(() => {
-                if (friendUsername === 'TestFriend') {
-                    setMessages([
-                        { id: 1, sender: myUsername, text: 'Selam, saat kaç?', timestamp: Date.now() - 3600000 },
-                        { id: 2, sender: 'TestFriend', text: 'Tam şu an gönderdim.', timestamp: Date.now() }
-                    ]);
-                    return;
-                }
                 const chatRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('direct_messages').doc(chatId);
                 const unsub = chatRef.onSnapshot(doc => {
                     if (doc.exists) setMessages(doc.data().msgs || []);
@@ -625,7 +635,7 @@
                                     {m.image && <img src={m.image} className="w-full rounded-lg mb-1" />}
                                     {m.text && <div>{m.text}</div>}
                                     <div className={`text-[10px] mt-1 text-right ${m.sender === myUsername ? 'text-indigo-200' : 'text-gray-400'}`}>
-                                        {new Date(m.timestamp || m.id).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+                                        {formatMessageDate(m.timestamp || m.id)}
                                     </div>
                                 </div>
                             </div>
@@ -703,7 +713,7 @@
                                         <div className="flex-1 min-w-0">
                                             <div className="flex justify-between items-center mb-0.5">
                                                 <span className="font-bold text-gray-800 dark:text-white text-sm">@{c.friend}</span>
-                                                <span className="text-[10px] text-gray-400">{formatTimeAgo(new Date(c.lastMsg.timestamp).toISOString())}</span>
+                                                 <span className="text-[10px] text-gray-400">{formatMessageDate(c.lastMsg.timestamp)}</span>
                                             </div>
                                             <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                                                 {c.lastMsg.sender === myUsername && <span className="text-indigo-500">Sen: </span>}
@@ -2465,7 +2475,6 @@
                         </div>
                     )}
                     
-                    <ChatModal myUsername={myUsername} friendUsername="TestFriend" onClose={() => {}} sendNotif={() => {}} />
                     {currentChatFriend && <ChatModal myUsername={myUsername} friendUsername={currentChatFriend} onClose={() => setCurrentChatFriend(null)} sendNotif={sendNotification} />}
                     {isMessagesOpen && <MessagesModal myUsername={myUsername} friends={friends} onClose={() => setIsMessagesOpen(false)} onChatOpen={(friend) => { setIsMessagesOpen(false); setCurrentChatFriend(friend); }} />}
                     {isStatsOpen && <StatsModal markers={markers} onClose={() => setIsStatsOpen(false)} />}
