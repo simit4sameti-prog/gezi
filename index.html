@@ -257,8 +257,8 @@
                 img.onload = () => {
                     URL.revokeObjectURL(url);
                     const canvas = document.createElement('canvas');
-                    // Hafıza ve Firestore limiti için 600px ideal (hem kalite hem boyut dengesi)
-                    const MAX_DIMENSION = 600; 
+                    // Daha net görseller için çözünürlük artırıldı
+                    const MAX_DIMENSION = 1200; 
                     let width = img.width;
                     let height = img.height;
                     
@@ -273,12 +273,12 @@
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
                     
-                    // Kalite 0.5 - JPEG formatı zorlanmalı
-                    let dataUrl = canvas.toDataURL('image/jpeg', 0.5);
+                    // Kalite 0.8 - Daha net
+                    let dataUrl = canvas.toDataURL('image/jpeg', 0.8);
                     
-                    // Eğer boyut hala çok büyükse kaliteyi düşür
-                    if (dataUrl.length > 100000) {
-                         dataUrl = canvas.toDataURL('image/jpeg', 0.3);
+                    // Çok büyükse kaliteyi hafif düşür ama boyutu koru
+                    if (dataUrl.length > 500000) {
+                         dataUrl = canvas.toDataURL('image/jpeg', 0.6);
                     }
 
                     resolve(dataUrl);
@@ -296,13 +296,30 @@
                 const img = new Image();
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
-                    const MAX_W = 120; 
+                    // Thumbnail boyutunu artırdık (netlik için)
+                    const MAX_W = 400; 
                     let w = img.width; let h = img.height;
                     if (w > MAX_W) { h *= MAX_W / w; w = MAX_W; }
                     canvas.width = w; canvas.height = h;
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, w, h);
-                    resolve(canvas.toDataURL('image/jpeg', 0.4));
+                    resolve(canvas.toDataURL('image/jpeg', 0.6));
+                };
+                img.src = base64;
+            });
+        };
+
+        const resizeBase64 = (base64, maxWidth = 600, quality = 0.6) => {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let w = img.width; let h = img.height;
+                    if (w > maxWidth) { h *= maxWidth / w; w = maxWidth; }
+                    canvas.width = w; canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, w, h);
+                    resolve(canvas.toDataURL('image/jpeg', quality));
                 };
                 img.src = base64;
             });
@@ -449,7 +466,8 @@
         // --- CINEMA MODAL ---
         const CinemaModal = ({ markers, onClose }) => {
             const [currentIndex, setCurrentIndex] = useState(0);
-            const visualMarkers = markers.filter(m => m.images && m.images.length > 0);
+            // Görsel içeren (optimize edilmiş veya edilmemiş) tüm markerları filtrele
+            const visualMarkers = markers.filter(m => (m.images && m.images.length > 0) || m.favoriteImage || m.hasImages);
 
             if (visualMarkers.length === 0) return (
                 <div className="fixed inset-0 z-[1600] bg-black flex items-center justify-center text-white flex-col p-6 animate-fadeIn">
@@ -461,7 +479,7 @@
             );
 
             const current = visualMarkers[currentIndex];
-            const cover = current.favoriteImage || current.images[0];
+            const cover = current.favoriteImage || (current.images && current.images[0]) || current.thumbnail;
             
             const next = () => setCurrentIndex((prev) => (prev + 1) % visualMarkers.length);
             const prev = () => setCurrentIndex((prev) => (prev - 1 + visualMarkers.length) % visualMarkers.length);
@@ -471,8 +489,8 @@
                     <button onClick={onClose} className="absolute top-4 right-4 z-50 p-2 bg-black/50 rounded-full text-white hover:bg-white/20 transition-colors"><Icon name="x" className="w-8 h-8"/></button>
                     <div className="relative w-full h-full md:w-[450px] md:h-[90%] bg-gray-900 md:rounded-2xl overflow-hidden shadow-2xl flex flex-col">
                         <div className="flex-1 relative group">
-                             <img src={cover} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent"></div>
+                             <img src={cover} className="w-full h-full object-contain bg-black transition-transform duration-700" />
+                             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent pointer-events-none"></div>
                              <div className="absolute bottom-0 left-0 w-full p-8 text-white">
                                 <div className="flex items-center gap-2 mb-2">
                                     <Icon name="map-pin" className="w-5 h-5 text-red-500 fill-current"/>
@@ -1930,10 +1948,18 @@
                                 thumb = await createThumbnail(m.images[0]);
                             }
 
+                            // favoriteImage'i ana belge için küçült (Feed'de net görünsün ama 1MB limitini aşmasın)
+                            let previewImg = m.favoriteImage;
+                            if (previewImg && previewImg.length > 200000) {
+                                // Eğer 200KB'dan büyükse küçült (yaklaşık 600px - 800px)
+                                previewImg = await resizeBase64(previewImg, 800, 0.7);
+                            }
+
                             return {
                                 ...m,
-                                images: [], // Ana belgede resimleri boşalt
+                                images: [], // Ana belgede resim dizisini boşalt (External'a taşıdık)
                                 thumbnail: thumb,
+                                favoriteImage: previewImg, // Feed için optimize edilmiş ama net versiyonu tut
                                 hasImages: true // İşaret koy
                             };
                         } else {
