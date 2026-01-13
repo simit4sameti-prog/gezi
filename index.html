@@ -1557,6 +1557,11 @@
                     setPartner(notif.from);
                     const ids = [myUsername, notif.from].sort();
                     setCoupleId(ids.join('_'));
+
+                    // Harita ve sekmeyi otomatik aç
+                    setActiveTab('couple');
+                    setViewMode('map');
+
                     alert(`Tebrikler! ${notif.from} ile sevgili haritanız aktif. ❤️`);
                 }
             };
@@ -1727,14 +1732,30 @@
             };
 
             const breakUpPartner = async () => {
-                 if(!confirm("Eşleşmeyi sonlandırmak istediğine emin misin?")) return;
-                 await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_partners').doc(myUsername).delete();
+                 if(!confirm("Eşleşmeyi sonlandırmak istediğine emin misin? Ortak haritanız da silinecek.")) return;
+
+                 const batch = db.batch();
+                 const root = db.collection('artifacts').doc(appId).collection('public').doc('data');
+
+                 batch.delete(root.collection('user_partners').doc(myUsername));
                  if(partner) {
-                     await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_partners').doc(partner).delete();
+                     batch.delete(root.collection('user_partners').doc(partner));
                  }
-                 setPartner(null);
-                 setCoupleId(null);
-                 alert("Birliktelik sona erdi.");
+
+                 if (coupleId) {
+                     batch.delete(root.collection('couple_maps').doc(coupleId));
+                 }
+
+                 try {
+                    await batch.commit();
+                    setPartner(null);
+                    setCoupleId(null);
+                    setActiveTab('personal');
+                    alert("Birliktelik sona erdi ve ortak harita silindi.");
+                 } catch (e) {
+                     console.error(e);
+                     alert("Hata oluştu.");
+                 }
             };
 
             useEffect(() => {
@@ -1925,7 +1946,29 @@
                 } catch (err) { alert("Fotoğraf yüklenemedi."); }
             };
             
-            const linkPartner = async (targetUsername) => { await sendNotification(targetUsername, 'partner'); alert(`Eşleşme isteği gönderildi.`); setIsPartnerModalOpen(false); };
+            const linkPartner = async (targetUsername) => {
+                if (!targetUsername || targetUsername.trim() === "") return alert("Kullanıcı adı giriniz.");
+                const target = targetUsername.toLowerCase().trim();
+                if (target === myUsername) return alert("Kendine istek atamazsın.");
+                if (partner) return alert("Zaten bir sevgilin var!");
+
+                try {
+                    // 1. Kullanıcı var mı?
+                    const userDoc = await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_credentials').doc(target).get();
+                    if (!userDoc.exists) return alert("Kullanıcı bulunamadı!");
+
+                    // 2. Hedefin sevgilisi var mı?
+                    const partnerDoc = await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_partners').doc(target).get();
+                    if (partnerDoc.exists && partnerDoc.data().partner) return alert("Bu kullanıcının zaten bir sevgilisi var.");
+
+                    await sendNotification(target, 'partner');
+                    alert(`Eşleşme isteği gönderildi.`);
+                    setIsPartnerModalOpen(false);
+                } catch (error) {
+                    console.error(error);
+                    alert("Bir hata oluştu.");
+                }
+            };
             const addFriend = async (friendName) => { if(friendName === myUsername) return; if(friends.includes(friendName)) { alert("Zaten arkadaşsınız."); return; } await sendNotification(friendName, 'friend'); alert(`${friendName} eklendi!`); };
             
             const handleDelete = async (name) => { 
