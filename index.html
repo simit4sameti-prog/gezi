@@ -257,8 +257,8 @@
                 img.onload = () => {
                     URL.revokeObjectURL(url);
                     const canvas = document.createElement('canvas');
-                    // Hafıza ve Firestore limiti için 500px yeterli
-                    const MAX_DIMENSION = 500; 
+                    // Hafıza ve Firestore limiti için 600px ideal (hem kalite hem boyut dengesi)
+                    const MAX_DIMENSION = 600; 
                     let width = img.width;
                     let height = img.height;
                     
@@ -273,8 +273,15 @@
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
                     
-                    // Kalite 0.4
-                    resolve(canvas.toDataURL('image/jpeg', 0.4));
+                    // Kalite 0.5 - JPEG formatı zorlanmalı
+                    let dataUrl = canvas.toDataURL('image/jpeg', 0.5);
+                    
+                    // Eğer boyut hala çok büyükse kaliteyi düşür
+                    if (dataUrl.length > 100000) {
+                         dataUrl = canvas.toDataURL('image/jpeg', 0.3);
+                    }
+
+                    resolve(dataUrl);
                 };
                 img.onerror = (e) => {
                     URL.revokeObjectURL(url);
@@ -1838,10 +1845,26 @@
                     let docRef;
                     if (isCoupleMode && coupleId) docRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('couple_maps').doc(coupleId);
                     else docRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_maps').doc(targetUser);
-                    await docRef.set({ markers: newMarkers, lastUpdated: new Date().toISOString() }, { merge: true });
+                    
+                    // Veri boyutunu kontrol et (Firestore limiti ~1MB)
+                    const payload = { markers: newMarkers, lastUpdated: new Date().toISOString() };
+                    const jsonString = JSON.stringify(payload);
+                    const bytes = new Blob([jsonString]).size;
+                    
+                    // 950KB üzeri ise uyar (1MB = 1,048,576 bytes)
+                    if (bytes > 950000) {
+                        alert("HATA: Depolama alanı doldu! Çok fazla fotoğraf eklenmiş olabilir. Lütfen bazı eski fotoğrafları silerek yer açınız.");
+                        return;
+                    }
+
+                    await docRef.set(payload, { merge: true });
                 } catch (e) { 
-                    console.error("Kayıt Hatası:", e); 
-                    alert("Kayıt sırasında bir hata oluştu! Fotoğraf boyutu çok büyük olabilir veya internet bağlantınız kopmuş olabilir.");
+                    console.error("Kayıt Hatası:", e);
+                    if (e.code === 'invalid-argument' && e.message.includes('exceeds the maximum allowed size')) {
+                         alert("HATA: Veri boyutu çok büyük! Lütfen daha az veya daha düşük boyutlu fotoğraf yükleyin.");
+                    } else {
+                         alert("Kayıt sırasında bir hata oluştu! İnternet bağlantınızı kontrol edin.");
+                    }
                 }
             };
 
