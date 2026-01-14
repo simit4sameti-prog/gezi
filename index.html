@@ -1317,6 +1317,7 @@
               
             const [viewedUserFriendCount, setViewedUserFriendCount] = useState(0);
             const [viewedUserLastActive, setViewedUserLastActive] = useState(null);
+            const [dataOwner, setDataOwner] = useState(null); // Fix for copying bug
 
             const [activeReplyId, setActiveReplyId] = useState(null);
             const [replyText, setReplyText] = useState("");
@@ -1465,11 +1466,14 @@
                     }
                 };
                 
-                // Only run migration if it's my map
-                if (myUsername === currentUsername && !loading) {
+                // Only run migration if it's my map AND we are sure the data belongs to me
+                // This prevents overwriting my map with viewed user's data during transition
+                const isMyData = (activeTab === 'couple') ? (dataOwner === coupleId) : (dataOwner === myUsername);
+
+                if (myUsername === currentUsername && !loading && isMyData) {
                     checkAndMigrate();
                 }
-            }, [markers, loading, myUsername, currentUsername, activeTab]);
+            }, [markers, loading, myUsername, currentUsername, activeTab, dataOwner, coupleId]);
 
             useEffect(() => {
                 if (mapRef.current) {
@@ -1880,22 +1884,37 @@
             }, [myUsername, currentUsername]);
 
             useEffect(() => {
+                // Clear state immediately to prevent race conditions
+                setMarkers([]);
+                setDataOwner(null);
+
                 let docRef;
+                let expectedOwner = null;
+
                 if (myUsername !== currentUsername) {
                     docRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_maps').doc(currentUsername);
+                    expectedOwner = currentUsername;
                 } else {
                     if (activeTab === 'couple' && coupleId) {
                          docRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('couple_maps').doc(coupleId);
+                         expectedOwner = coupleId;
                     } else if (activeTab === 'couple' && !coupleId) {
                          setMarkers([]); 
+                         setDataOwner(null);
                          return;
                     } else {
                          docRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_maps').doc(myUsername);
+                         expectedOwner = myUsername;
                     }
                 }
                 const unsubscribe = docRef.onSnapshot((doc) => {
-                    if (doc.exists) setMarkers(doc.data().markers || []);
-                    else setMarkers([]);
+                    if (doc.exists) {
+                        setMarkers(doc.data().markers || []);
+                        setDataOwner(expectedOwner);
+                    } else {
+                        setMarkers([]);
+                        setDataOwner(expectedOwner); // Empty but owned by expected user
+                    }
                 });
                 return () => unsubscribe();
             }, [currentUsername, activeTab, coupleId, myUsername]);
@@ -1987,6 +2006,17 @@
 
             const handleSave = () => {
                 if (!selectedCity) return;
+
+                // Safety check: ensure we are modifying our own data
+                if (activeTab === 'personal' && dataOwner !== myUsername) {
+                    console.error("Data ownership mismatch. Save aborted.");
+                    return;
+                }
+                if (activeTab === 'couple' && dataOwner !== coupleId) {
+                     console.error("Couple data ownership mismatch. Save aborted.");
+                     return;
+                }
+
                 const cleanNote = filterProfanity(note);
                 const cleanMemory = filterProfanity(memory);
                 const existingMarker = markers.find(m => m.cityName === selectedCity.name);
