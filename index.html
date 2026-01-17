@@ -1641,6 +1641,22 @@
             };
 
             const handleAcceptNotif = async (notif) => {
+                if (notif.type === 'partner') {
+                     // Check self
+                     const myPartnerDoc = await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_partners').doc(myUsername).get();
+                     if (myPartnerDoc.exists && myPartnerDoc.data().partner) {
+                         alert("Zaten bir sevgilin var! Önce ayrılmalısın.");
+                         return;
+                     }
+         
+                     // Check sender
+                     const senderPartnerDoc = await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_partners').doc(notif.from).get();
+                     if (senderPartnerDoc.exists && senderPartnerDoc.data().partner) {
+                         alert("Bu kullanıcının zaten bir sevgilisi var!");
+                         return;
+                     }
+                }
+
                 // Bildirimi silmek yerine durumunu güncelle
                 const updatedNotifs = notifications.map(n => 
                     n.id === notif.id ? { ...n, status: 'accepted', processedAt: Date.now() } : n
@@ -1842,16 +1858,32 @@
             const breakUpPartner = async () => {
                  if(!confirm("Eşleşmeyi sonlandırmak istediğine emin misin? Ortak haritanız da silinecek.")) return;
                  
-                 const batch = db.batch();
                  const root = db.collection('artifacts').doc(appId).collection('public').doc('data');
+                 
+                 // Fetch latest partner info from DB to be sure
+                 let targetPartner = partner;
+                 try {
+                     const myDoc = await root.collection('user_partners').doc(myUsername).get();
+                     if (myDoc.exists && myDoc.data().partner) {
+                         targetPartner = myDoc.data().partner;
+                     }
+                 } catch(e) { console.error("Partner check error", e); }
+
+                 const batch = db.batch();
 
                  batch.delete(root.collection('user_partners').doc(myUsername));
-                 if(partner) {
-                     batch.delete(root.collection('user_partners').doc(partner));
+                 if(targetPartner) {
+                     batch.delete(root.collection('user_partners').doc(targetPartner));
                  }
                  
-                 if (coupleId) {
-                     batch.delete(root.collection('couple_maps').doc(coupleId));
+                 // Recalculate coupleId just in case
+                 let targetCoupleId = coupleId;
+                 if (!targetCoupleId && targetPartner) {
+                     targetCoupleId = [myUsername, targetPartner].sort().join('_');
+                 }
+
+                 if (targetCoupleId) {
+                     batch.delete(root.collection('couple_maps').doc(targetCoupleId));
                  }
 
                  try {
@@ -2143,6 +2175,10 @@
                 if (partner) return alert("Zaten bir sevgilin var!");
 
                 try {
+                    // 0. Kendimin sevgilisi var mı (DB check)?
+                    const myPartnerDoc = await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_partners').doc(myUsername).get();
+                    if (myPartnerDoc.exists && myPartnerDoc.data().partner) return alert("Zaten bir sevgilin var! (Veritabanı kaydı mevcut)");
+
                     // 1. Kullanıcı var mı?
                     const userDoc = await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_credentials').doc(target).get();
                     if (!userDoc.exists) return alert("Kullanıcı bulunamadı!");
