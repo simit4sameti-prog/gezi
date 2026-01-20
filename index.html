@@ -1990,7 +1990,11 @@
                     const doc = await docRef.get();
                     if(doc.exists) {
                         let markersList = doc.data().markers || [];
+                        let postsList = doc.data().posts || [];
+
                         const markerIndex = markersList.findIndex(m => m.id === markerId);
+                        const postIndex = postsList.findIndex(p => p.id === markerId);
+
                         if(markerIndex > -1) {
                             if(!markersList[markerIndex].comments) markersList[markerIndex].comments = [];
                             markersList[markerIndex].comments.push(commentObj);
@@ -2001,6 +2005,16 @@
                             }));
                             setFeedInput(markerId, ""); 
                             await sendNotification(targetUser, 'message', `${myUsername} bir paylaşımına yorum yaptı!`);
+                        } else if (postIndex > -1) {
+                            if(!postsList[postIndex].comments) postsList[postIndex].comments = [];
+                            postsList[postIndex].comments.push(commentObj);
+                            await docRef.set({ posts: postsList }, { merge: true });
+                            setFeedItems(prev => prev.map(item => {
+                                if (item.id === markerId) return { ...item, comments: [...(item.comments || []), commentObj] };
+                                return item;
+                            }));
+                            setFeedInput(markerId, "");
+                            await sendNotification(targetUser, 'message', `${myUsername} bir gönderine yorum yaptı!`);
                         }
                     }
                 } catch(e) { console.error(e); }
@@ -2013,12 +2027,25 @@
                     const doc = await docRef.get();
                     if(doc.exists) {
                         let markersList = doc.data().markers || [];
+                        let postsList = doc.data().posts || [];
+
                         const markerIndex = markersList.findIndex(m => m.id === markerId);
+                        const postIndex = postsList.findIndex(p => p.id === markerId);
+
                         if(markerIndex > -1) {
                             let comments = markersList[markerIndex].comments || [];
                             const updatedComments = comments.filter(c => c.id !== commentId);
                             markersList[markerIndex].comments = updatedComments;
                             await docRef.set({ markers: markersList }, { merge: true });
+                            setFeedItems(prev => prev.map(item => {
+                                if (item.id === markerId) return { ...item, comments: updatedComments };
+                                return item;
+                            }));
+                        } else if (postIndex > -1) {
+                            let comments = postsList[postIndex].comments || [];
+                            const updatedComments = comments.filter(c => c.id !== commentId);
+                            postsList[postIndex].comments = updatedComments;
+                            await docRef.set({ posts: postsList }, { merge: true });
                             setFeedItems(prev => prev.map(item => {
                                 if (item.id === markerId) return { ...item, comments: updatedComments };
                                 return item;
@@ -2100,7 +2127,11 @@
                     const doc = await docRef.get();
                     if(doc.exists) {
                         let markersList = doc.data().markers || [];
+                        let postsList = doc.data().posts || [];
+
                         const markerIndex = markersList.findIndex(m => m.id === markerId);
+                        const postIndex = postsList.findIndex(p => p.id === markerId);
+
                         if(markerIndex > -1) {
                             let comments = markersList[markerIndex].comments || [];
                             const commentIndex = comments.findIndex(c => c.id === commentId);
@@ -2110,6 +2141,22 @@
                                 comments[commentIndex].replies = replies;
                                 markersList[markerIndex].comments = comments;
                                 await docRef.set({ markers: markersList }, { merge: true });
+                                setFeedItems(prev => prev.map(item => {
+                                    if (item.id === markerId) return { ...item, comments: comments };
+                                    return item;
+                                }));
+                                setFeedReplyText("");
+                                setActiveFeedReplyId(null);
+                            }
+                        } else if (postIndex > -1) {
+                            let comments = postsList[postIndex].comments || [];
+                            const commentIndex = comments.findIndex(c => c.id === commentId);
+                            if(commentIndex > -1) {
+                                let replies = comments[commentIndex].replies || [];
+                                replies.push(replyObj);
+                                comments[commentIndex].replies = replies;
+                                postsList[postIndex].comments = comments;
+                                await docRef.set({ posts: postsList }, { merge: true });
                                 setFeedItems(prev => prev.map(item => {
                                     if (item.id === markerId) return { ...item, comments: comments };
                                     return item;
