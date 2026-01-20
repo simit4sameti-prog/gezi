@@ -1990,7 +1990,11 @@
                     const doc = await docRef.get();
                     if(doc.exists) {
                         let markersList = doc.data().markers || [];
+                        let postsList = doc.data().posts || [];
+
                         const markerIndex = markersList.findIndex(m => m.id === markerId);
+                        const postIndex = postsList.findIndex(p => p.id === markerId);
+
                         if(markerIndex > -1) {
                             if(!markersList[markerIndex].comments) markersList[markerIndex].comments = [];
                             markersList[markerIndex].comments.push(commentObj);
@@ -2001,6 +2005,16 @@
                             }));
                             setFeedInput(markerId, ""); 
                             await sendNotification(targetUser, 'message', `${myUsername} bir paylaşımına yorum yaptı!`);
+                        } else if (postIndex > -1) {
+                            if(!postsList[postIndex].comments) postsList[postIndex].comments = [];
+                            postsList[postIndex].comments.push(commentObj);
+                            await docRef.set({ posts: postsList }, { merge: true });
+                            setFeedItems(prev => prev.map(item => { 
+                                if (item.id === markerId) return { ...item, comments: [...(item.comments || []), commentObj] }; 
+                                return item; 
+                            }));
+                            setFeedInput(markerId, ""); 
+                            await sendNotification(targetUser, 'message', `${myUsername} bir gönderine yorum yaptı!`);
                         }
                     }
                 } catch(e) { console.error(e); }
