@@ -1056,8 +1056,132 @@
             );
         };
 
+        // --- POLICIES CONSTANTS ---
+        const POLICIES = {
+            terms: {
+                title: "HİZMET KOŞULLARI",
+                content: `Hizmet Koşulları
+
+Bu Hizmet Koşulları, Maporys.com (“Platform”) üzerinden sunulan tüm hizmetlerin kullanımına ilişkin şartları düzenler. Platforma erişen veya kayıt olan her kullanıcı bu koşulları kabul etmiş sayılır.
+
+Hizmetin Kapsamı
+
+Maporys, kullanıcıların konum bazlı içerik paylaşmasına, harita üzerinde anı, bilgi veya deneyim eklemesine olanak tanıyan bir dijital platformdur.
+
+Kullanıcı Yükümlülükleri
+
+Kullanıcılar;
+• Paylaştıkları içeriklerin hukuka uygun olduğunu,
+• Başkalarının haklarını ihlal etmediğini,
+• Yanıltıcı, zararlı veya yasa dışı içerik paylaşmayacaklarını
+kabul ve taahhüt eder.
+
+İçerikler
+
+Kullanıcılar tarafından paylaşılan tüm içeriklerin sorumluluğu ilgili kullanıcıya aittir. Maporys, gerekli gördüğü durumlarda içeriği kaldırma veya erişimi kısıtlama hakkını saklı tutar.
+
+Hizmetin Değiştirilmesi
+
+Maporys, platformun içeriğini ve sunulan hizmetleri önceden bildirimde bulunmaksızın değiştirme, durdurma veya sonlandırma hakkını saklı tutar.
+
+Sorumluluğun Sınırlandırılması
+
+Platform “olduğu gibi” sunulmaktadır. Teknik aksaklıklar, veri kaybı veya hizmet kesintilerinden doğabilecek zararlardan Maporys sorumlu tutulamaz.`
+            },
+            privacy: {
+                title: "GİZLİLİK POLİTİKASI",
+                content: `Gizlilik Politikası
+
+Bu Gizlilik Politikası, Maporys.com üzerinden toplanan kişisel verilerin nasıl işlendiğini açıklamaktadır.
+
+Toplanan Veriler
+
+Platformu kullanırken aşağıdaki veriler toplanabilir:
+• Ad, kullanıcı adı, e-posta adresi
+• Konum bilgileri (kullanıcı izni ile)
+• IP adresi ve cihaz bilgileri
+• Kullanıcı tarafından paylaşılan içerikler
+
+Verilerin Kullanım Amacı
+
+Toplanan veriler;
+• Hizmetlerin sunulması ve geliştirilmesi
+• Kullanıcı deneyiminin iyileştirilmesi
+• Güvenliğin sağlanması
+• Yasal yükümlülüklerin yerine getirilmesi
+amaçlarıyla işlenir.
+
+Verilerin Paylaşımı
+
+Kişisel veriler, yasal zorunluluklar dışında üçüncü kişilerle paylaşılmaz.
+
+Veri Güvenliği
+
+Maporys, kişisel verilerin korunması için teknik ve idari güvenlik önlemleri alır.
+
+Kullanıcı Hakları
+
+Kullanıcılar;
+• Kişisel verilerine erişme
+• Düzeltme veya silinmesini talep etme
+• Veri işlemeye itiraz etme
+haklarına sahiptir.`
+            },
+            cookies: {
+                title: "ÇEREZ POLİTİKASI",
+                content: `Çerez Politikası
+
+Bu Çerez Politikası, Maporys.com’da kullanılan çerezlere ilişkin bilgileri içerir.
+
+Çerez Nedir?
+
+Çerezler, web sitesi ziyaretiniz sırasında tarayıcınıza kaydedilen küçük metin dosyalarıdır.
+
+Kullanılan Çerez Türleri
+
+Maporys’te:
+• Zorunlu çerezler
+• Performans ve analiz çerezleri
+• Kullanıcı tercihlerini hatırlayan çerezler
+kullanılabilir.
+
+Çerezlerin Amacı
+
+Çerezler;
+• Platformun düzgün çalışması
+• Kullanıcı deneyiminin iyileştirilmesi
+• Site performansının analiz edilmesi
+amacıyla kullanılmaktadır.
+
+Çerezlerin Kontrolü
+
+Kullanıcılar, tarayıcı ayarları üzerinden çerezleri kontrol edebilir veya silebilir. Ancak bazı çerezlerin devre dışı bırakılması platformun işlevselliğini etkileyebilir.`
+            }
+        };
+
+        const PolicyModal = ({ title, content, onClose }) => {
+            return (
+                <div className="fixed inset-0 z-[2000] bg-black/70 flex items-center justify-center p-4 animate-fadeIn backdrop-blur-sm">
+                    <div className="bg-white dark:bg-gray-800 w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-[85vh]">
+                        <div className="p-4 border-b dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-900 rounded-t-2xl">
+                            <h2 className="text-lg font-bold text-gray-800 dark:text-white">{title}</h2>
+                            <button onClick={onClose} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors"><Icon name="x" className="w-5 h-5 text-gray-500"/></button>
+                        </div>
+                        <div className="p-6 overflow-y-auto custom-scrollbar text-sm text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
+                            {content}
+                        </div>
+                        <div className="p-4 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-900 rounded-b-2xl flex justify-end">
+                            <button onClick={onClose} className="px-6 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition-colors">Kapat</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
         // --- LOGIN SCREEN ---
         const LoginScreen = ({ onLogin }) => {
+            const [activePolicy, setActivePolicy] = useState(null);
+            const [policyAccepted, setPolicyAccepted] = useState(false);
             const [mode, setMode] = useState("login"); // login, register, forgot
             const [username, setUsername] = useState("");
             const [password, setPassword] = useState("");
@@ -1244,10 +1368,25 @@
                                     <input type="password" className="w-full border border-gray-200 dark:border-gray-600 rounded-lg pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 dark:bg-gray-700 dark:text-white transition-all" placeholder="Şifre" value={password} onChange={e => setPassword(e.target.value)} disabled={loading} />
                                 </div>
 
+                                {mode === "register" && (
+                                    <div className="flex items-start justify-center gap-2 mt-2 mb-2 px-2">
+                                        <input
+                                            type="checkbox"
+                                            id="policy-checkbox"
+                                            checked={policyAccepted}
+                                            onChange={(e) => setPolicyAccepted(e.target.checked)}
+                                            className="mt-1 w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600"
+                                        />
+                                        <label htmlFor="policy-checkbox" className="text-[10px] text-gray-500 dark:text-gray-400 leading-tight text-left">
+                                            Kaydol butonuna tıklayarak <span role="button" tabIndex="0" onClick={(e) => { e.preventDefault(); setActivePolicy('terms'); }} onKeyDown={(e) => { if(e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActivePolicy('terms'); }}} className="text-blue-600 dark:text-blue-400 cursor-pointer hover:underline font-bold">Hizmet Koşullarımızı</span>, <span role="button" tabIndex="0" onClick={(e) => { e.preventDefault(); setActivePolicy('privacy'); }} onKeyDown={(e) => { if(e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActivePolicy('privacy'); }}} className="text-blue-600 dark:text-blue-400 cursor-pointer hover:underline font-bold">Gizlilik Politikamızı</span> ve <span role="button" tabIndex="0" onClick={(e) => { e.preventDefault(); setActivePolicy('cookies'); }} onKeyDown={(e) => { if(e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActivePolicy('cookies'); }}} className="text-blue-600 dark:text-blue-400 cursor-pointer hover:underline font-bold">Çerez Politikamızı</span> kabul etmiş olursunuz.
+                                        </label>
+                                    </div>
+                                )}
+
                                 {error && <div className="p-3 bg-red-50 text-red-600 text-xs rounded-lg text-left font-medium flex gap-2 items-start"><Icon name="alert-circle" className="w-4 h-4 shrink-0"/> {error}</div>}
                                 {success && <div className="p-3 bg-green-50 text-green-600 text-xs rounded-lg text-left font-medium flex gap-2 items-start"><Icon name="check-circle" className="w-4 h-4 shrink-0"/> {success}</div>}
                                 
-                                <button type="submit" className="w-full bg-red-600 text-white font-bold py-3 rounded-lg hover:bg-red-700 transition-all shadow-lg hover:shadow-red-500/30 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed mt-2" disabled={loading}>
+                                <button type="submit" className="w-full bg-red-600 text-white font-bold py-3 rounded-lg hover:bg-red-700 transition-all shadow-lg hover:shadow-red-500/30 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed mt-2" disabled={loading || (mode === "register" && !policyAccepted)}>
                                     {loading ? "İşleniyor..." : (mode === "register" ? "Hesap Oluştur" : "Giriş Yap")}
                                 </button>
                                 {mode === "login" && <button type="button" onClick={() => { setMode("forgot"); setError(""); setSuccess(""); }} className="text-xs text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white underline mt-4 block mx-auto">Şifremi Unuttum</button>}
@@ -1259,6 +1398,13 @@
                             </a>
                         </div>
                     </div>
+                    {activePolicy && (
+                        <PolicyModal
+                            title={POLICIES[activePolicy].title}
+                            content={POLICIES[activePolicy].content}
+                            onClose={() => setActivePolicy(null)}
+                        />
+                    )}
                 </div>
             );
         };
