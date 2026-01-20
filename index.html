@@ -260,7 +260,14 @@
                 });
 
                 if (!response.ok) {
-                    throw new Error('Upload failed');
+                    let errorMsg = 'Upload failed';
+                    try {
+                        const errData = await response.json();
+                        errorMsg = errData.error || errorMsg;
+                    } catch(e) {
+                        errorMsg = `Upload failed with status ${response.status}`;
+                    }
+                    throw new Error(errorMsg);
                 }
 
                 const data = await response.json();
@@ -270,6 +277,7 @@
                 return data.url;
             } catch (error) {
                 console.error("Upload error:", error);
+                alert("Yükleme hatası: " + error.message);
                 throw error;
             }
         };
