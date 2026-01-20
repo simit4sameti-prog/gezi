@@ -2230,7 +2230,15 @@
 
                 const updated = markers.filter(m => m.cityName !== name); 
                 setMarkers(updated); 
-                saveMarkersToUser(currentUsername, updated, activeTab === 'couple');
+                
+                // Bekleyerek kaydet ve akışı güncelle
+                await saveMarkersToUser(currentUsername, updated, activeTab === 'couple');
+                
+                // Akıştan anında sil (Local State Update)
+                if (feedItems.length > 0) {
+                    setFeedItems(prev => prev.filter(item => !(item.username === currentUsername && item.cityName === name)));
+                }
+
                 setIsModalOpen(false);
             };
 
@@ -2610,6 +2618,9 @@
                                             <div className="p-3">
                                                 {/* GÜNLÜK (NOTLAR) GİZLİLİĞİ: TAM METİN GİZLİ, SADECE HASHTAGLER GÖSTERİLİR */}
                                                 {renderHashtagsOnly(item.note)}
+                                                
+                                                {/* Herkese Açık Anı (Memory) */}
+                                                {item.memory && <p className="text-sm text-gray-700 dark:text-gray-300 mb-3 italic">"{item.memory}"</p>}
                                                 
                                                 <div className="flex items-center gap-4 border-t dark:border-gray-600 pt-3 mb-3">
                                                     <button onClick={() => toggleLike(item.username, item.id)} className="flex items-center gap-1 group">
