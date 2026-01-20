@@ -1750,8 +1750,10 @@
                             ]);
                             const fAvatar = pDoc.exists ? pDoc.data().avatar : null;
                             if (doc.exists) {
-                                const m = doc.data().markers || [];
-                                return m.map(i => ({...i, username: friend, userAvatar: fAvatar}));
+                                const data = doc.data();
+                                const m = (data.markers || []).map(i => ({...i, username: friend, userAvatar: fAvatar, type: 'marker'}));
+                                const p = (data.posts || []).map(i => ({...i, username: friend, userAvatar: fAvatar, type: 'post'}));
+                                return [...m, ...p];
                             }
                             return [];
                         } catch (e) {
@@ -1895,12 +1897,28 @@
                 }
             };
 
-            const toggleLike = async (targetUser, markerId) => {
+            const toggleLike = async (targetUser, itemId) => {
+                // Optimistic Update
+                setFeedItems(prev => prev.map(item => {
+                    if(item.id === itemId) {
+                        const likes = item.likes || [];
+                        const isLiked = likes.includes(myUsername);
+                        const newLikes = isLiked ? likes.filter(u => u !== myUsername) : [...likes, myUsername];
+                        return { ...item, likes: newLikes };
+                    }
+                    return item;
+                }));
+
                 const docRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_maps').doc(targetUser);
                 const doc = await docRef.get();
                 if(doc.exists) {
-                    let markersList = doc.data().markers || [];
-                    const markerIndex = markersList.findIndex(m => m.id === markerId);
+                    const data = doc.data();
+                    let markersList = data.markers || [];
+                    let postsList = data.posts || [];
+                    
+                    const markerIndex = markersList.findIndex(m => m.id === itemId);
+                    const postIndex = postsList.findIndex(p => p.id === itemId);
+
                     if(markerIndex > -1) {
                         let likes = markersList[markerIndex].likes || [];
                         if(likes.includes(myUsername)) {
@@ -1911,7 +1929,16 @@
                         }
                         markersList[markerIndex].likes = likes;
                         await docRef.set({ markers: markersList }, { merge: true });
-                        setFeedItems(prev => prev.map(item => { if(item.id === markerId) return {...item, likes: likes}; return item; }));
+                    } else if (postIndex > -1) {
+                        let likes = postsList[postIndex].likes || [];
+                        if(likes.includes(myUsername)) {
+                            likes = likes.filter(u => u !== myUsername);
+                        } else {
+                            likes.push(myUsername);
+                            await sendNotification(targetUser, 'message', `${myUsername} bir gönderini beğendi!`);
+                        }
+                        postsList[postIndex].likes = likes;
+                        await docRef.set({ posts: postsList }, { merge: true });
                     }
                 }
             };
@@ -1967,13 +1994,35 @@
                 } catch(e) { console.error("Silme hatası:", e); }
             };
 
-            const toggleFeedCommentLike = async (targetUser, markerId, commentId) => {
+            const toggleFeedCommentLike = async (targetUser, itemId, commentId) => {
+                // Optimistic Update
+                setFeedItems(prev => prev.map(item => {
+                    if (item.id === itemId) {
+                        const updatedComments = (item.comments || []).map(c => {
+                            if (c.id === commentId) {
+                                const likes = c.likes || [];
+                                const isLiked = likes.includes(myUsername);
+                                const newLikes = isLiked ? likes.filter(u => u !== myUsername) : [...likes, myUsername];
+                                return { ...c, likes: newLikes };
+                            }
+                            return c;
+                        });
+                        return { ...item, comments: updatedComments };
+                    }
+                    return item;
+                }));
+
                 try {
                     const docRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_maps').doc(targetUser);
                     const doc = await docRef.get();
                     if(doc.exists) {
-                        let markersList = doc.data().markers || [];
-                        const markerIndex = markersList.findIndex(m => m.id === markerId);
+                        const data = doc.data();
+                        let markersList = data.markers || [];
+                        let postsList = data.posts || [];
+                        
+                        const markerIndex = markersList.findIndex(m => m.id === itemId);
+                        const postIndex = postsList.findIndex(p => p.id === itemId);
+
                         if(markerIndex > -1) {
                             let comments = markersList[markerIndex].comments || [];
                             const commentIndex = comments.findIndex(c => c.id === commentId);
@@ -1987,10 +2036,20 @@
                                 comments[commentIndex].likes = likes;
                                 markersList[markerIndex].comments = comments;
                                 await docRef.set({ markers: markersList }, { merge: true });
-                                setFeedItems(prev => prev.map(item => {
-                                    if (item.id === markerId) return { ...item, comments: comments };
-                                    return item;
-                                }));
+                            }
+                        } else if(postIndex > -1) {
+                            let comments = postsList[postIndex].comments || [];
+                            const commentIndex = comments.findIndex(c => c.id === commentId);
+                            if(commentIndex > -1) {
+                                let likes = comments[commentIndex].likes || [];
+                                if(likes.includes(myUsername)) {
+                                    likes = likes.filter(u => u !== myUsername);
+                                } else {
+                                    likes.push(myUsername);
+                                }
+                                comments[commentIndex].likes = likes;
+                                postsList[postIndex].comments = comments;
+                                await docRef.set({ posts: postsList }, { merge: true });
                             }
                         }
                     }
@@ -2207,6 +2266,31 @@
                 } catch (e) { 
                     console.error("Kayıt Hatası:", e);
                     alert("Kayıt sırasında bir hata oluştu! " + e.message);
+                }
+            };
+
+            const savePostToUser = async (targetUser, newPost) => {
+                try {
+                    const docRef = db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_maps').doc(targetUser);
+                    
+                    // Transaction to ensure we don't overwrite existing posts safely
+                    await db.runTransaction(async (transaction) => {
+                        const doc = await transaction.get(docRef);
+                        if (!doc.exists) {
+                            transaction.set(docRef, { posts: [newPost] });
+                        } else {
+                            const data = doc.data();
+                            const currentPosts = data.posts || [];
+                            transaction.update(docRef, { posts: [newPost, ...currentPosts] });
+                        }
+                    });
+                    
+                    // Optimistic update for Feed
+                    setFeedItems(prev => [ { ...newPost, username: targetUser, userAvatar: userAvatar, type: 'post' }, ...prev ]);
+
+                } catch (e) {
+                    console.error("Post Kayıt Hatası:", e);
+                    alert("Paylaşım yapılamadı.");
                 }
             };
 
