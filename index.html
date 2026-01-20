@@ -303,29 +303,12 @@
             return new Blob([u8arr], {type:mime});
         };
 
-        const uploadImage = async (blob) => {
-            const formData = new FormData();
-            formData.append('file', blob, 'image.jpg');
-            try {
-                const response = await fetch('upload.php', {
-                    method: 'POST',
-                    body: formData
-                });
-                const result = await response.json();
-                if (result.success) {
-                    return result.url;
-                } else {
-                    throw new Error(result.error || 'Upload failed');
-                }
-            } catch (error) {
-                console.error("Upload error:", error);
-                // Fallback to Base64 if upload fails (offline or server error)
-                return new Promise((resolve) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => resolve(reader.result);
-                    reader.readAsDataURL(blob);
-                });
-            }
+        const uploadImageToFirebase = async (blob, path) => {
+            if (!storage) throw new Error("Storage not initialized");
+            const storageRef = storage.ref();
+            const fileRef = storageRef.child(path);
+            await fileRef.put(blob);
+            return await fileRef.getDownloadURL();
         };
 
         const createThumbnail = (base64) => {
