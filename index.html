@@ -1342,14 +1342,30 @@
                             const targetUser = (activeTab === 'couple' && coupleId) ? coupleId : currentUsername;
                             const docId = `${targetUser}_${cityName}`;
                             const imgDoc = await db.collection('artifacts').doc(appId).collection('public').doc('data').collection(collectionName).doc(docId).get();
-                            if (imgDoc.exists) {
-                                setImages(imgDoc.data().images || []);
-                            } else {
-                                setImages([]);
+                            
+                            let loadedImages = [];
+                            if (imgDoc.exists) loadedImages = imgDoc.data().images || [];
+                            
+                            // Fallback: Eğer hiç resim yoksa kapağı ekle
+                            if (loadedImages.length === 0) {
+                                if (existing.favoriteImage) loadedImages.push(existing.favoriteImage);
+                                else if (existing.thumbnail) loadedImages.push(existing.thumbnail);
                             }
-                        } catch(e) { console.error("Resim yükleme hatası", e); }
+                            setImages(loadedImages);
+                        } catch(e) { 
+                            console.error("Resim yükleme hatası", e); 
+                            const fallback = [];
+                            if (existing.favoriteImage) fallback.push(existing.favoriteImage);
+                            else if (existing.thumbnail) fallback.push(existing.thumbnail);
+                            setImages(fallback);
+                        }
                     } else {
-                        setImages(existing.images || []);
+                        let localImages = existing.images || [];
+                        if (localImages.length === 0) {
+                            if (existing.favoriteImage) localImages.push(existing.favoriteImage);
+                            else if (existing.thumbnail) localImages.push(existing.thumbnail);
+                        }
+                        setImages(localImages);
                     }
 
                 } else {
@@ -2224,7 +2240,10 @@
                     const compressedFiles = await Promise.all(files.map(file => compressImage(file)));
                     setImages(prev => { 
                         const newImages = [...prev, ...compressedFiles]; 
-                        if (!favoriteImage && newImages.length > 0) setFavoriteImage(newImages[0]); 
+                        // Yeni fotoğraf eklendiğinde onu kapak (favori) yap
+                        if (compressedFiles.length > 0) {
+                            setFavoriteImage(compressedFiles[compressedFiles.length - 1]);
+                        }
                         return newImages; 
                     });
                 } catch (error) {
@@ -2586,7 +2605,7 @@
                                                 </div>
                                             </div>
 
-                                            {(item.thumbnail || (item.images && item.images[0])) && <img src={item.thumbnail || item.images[0]} className="w-full h-44 object-cover cursor-zoom-in" onClick={() => { if(item.images && item.images.length > 0) openLightbox(item.images[0], item.images); else if(item.thumbnail) openLightbox(item.thumbnail, [item.thumbnail]); }}/>}
+                                            {(item.favoriteImage || item.thumbnail || (item.images && item.images[0])) && <img src={item.favoriteImage || item.thumbnail || (item.images && item.images[0])} className="w-full h-44 object-cover cursor-zoom-in" onClick={() => { if(item.images && item.images.length > 0) openLightbox(item.images[0], item.images); else if(item.favoriteImage) openLightbox(item.favoriteImage, [item.favoriteImage]); else if(item.thumbnail) openLightbox(item.thumbnail, [item.thumbnail]); }}/>}
                                             
                                             <div className="p-3">
                                                 {/* GÜNLÜK (NOTLAR) GİZLİLİĞİ: TAM METİN GİZLİ, SADECE HASHTAGLER GÖSTERİLİR */}
