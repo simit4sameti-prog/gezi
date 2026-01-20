@@ -249,43 +249,51 @@
             } catch (error) { return "Yapay zeka servisine ulaşılamıyor."; }
         };
 
-        const uploadImage = async (file) => {
-            const formData = new FormData();
-            formData.append('file', file);
-            
-            try {
-                const response = await fetch('upload.php', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                if (!response.ok) {
-                    let errorMsg = 'Upload failed';
-                    try {
-                        const errData = await response.json();
-                        errorMsg = errData.error || errorMsg;
-                    } catch(e) {
-                        errorMsg = `Upload failed with status ${response.status}`;
+        const compressImage = (file) => {
+            return new Promise((resolve, reject) => {
+                // Büyük dosyalarda bellek sorununu önlemek için createObjectURL kullanıyoruz
+                const url = URL.createObjectURL(file);
+                const img = new Image();
+                img.onload = () => {
+                    URL.revokeObjectURL(url);
+                    const canvas = document.createElement('canvas');
+                    // Daha net görseller için çözünürlük artırıldı
+                    const MAX_DIMENSION = 1200; 
+                    let width = img.width;
+                    let height = img.height;
+                    
+                    if (width > height) { 
+                        if (width > MAX_DIMENSION) { height *= MAX_DIMENSION / width; width = MAX_DIMENSION; } 
+                    } else { 
+                        if (height > MAX_DIMENSION) { width *= MAX_DIMENSION / height; height = MAX_DIMENSION; } 
                     }
-                    throw new Error(errorMsg);
-                }
-                
-                const data = await response.json();
-                if (data.error) {
-                    throw new Error(data.error);
-                }
-                return data.url;
-            } catch (error) {
-                console.error("Upload error:", error);
-                alert("Yükleme hatası: " + error.message);
-                throw error;
-            }
+                    
+                    canvas.width = width; 
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    // Kalite 0.8 - Daha net
+                    let dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                    
+                    // Çok büyükse kaliteyi hafif düşür ama boyutu koru
+                    if (dataUrl.length > 500000) {
+                         dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+                    }
+
+                    resolve(dataUrl);
+                };
+                img.onerror = (e) => {
+                    URL.revokeObjectURL(url);
+                    reject(e);
+                };
+                img.src = url;
+            });
         };
 
         const createThumbnail = (base64) => {
             return new Promise((resolve) => {
                 const img = new Image();
-                img.crossOrigin = 'Anonymous';
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
                     // Thumbnail boyutunu artırdık (netlik için)
@@ -304,7 +312,6 @@
         const resizeBase64 = (base64, maxWidth = 600, quality = 0.6) => {
             return new Promise((resolve) => {
                 const img = new Image();
-                img.crossOrigin = 'Anonymous';
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
                     let w = img.width; let h = img.height;
@@ -369,7 +376,7 @@
             "Çorum": { "Genel": ["Saat Kulesi", "Çorum Müzesi", "İncesu Kanyonu", "Katipler Konağı"], "Yemek": ["Çorum Leblebisi", "İskilip Dolması", "Çatal Aşı", "Sırık Kebabı"], "Doğa": ["Hattuşaş", "Alacahöyük", "İncesu Kanyonu", "Çatak Tabiat Parkı"],"Eğlence": ["AHL Park AVM", "Çorum Lunaparkı", "Gazi / İnönü Caddesi", "Üniversite Çevresi"], "Tarih": ["Hattuşaş (Hitit Başkenti)", "Alacahöyük", "Yazılıkaya", "Şapinuva"] },
             "Denizli": { "Genel": ["Pamukkale Travertenleri", "Çınar Meydanı", "Teleferik", "Bayramyeri Meydanı"], "Yemek": ["Denizli Kebabı", "Zafer Gazozu", "Tavas Baklavası", "Çaput Aşı"], "Doğa": ["Pamukkale", "Keloğlan Mağarası", "Güney Şelalesi", "Honaz Dağı"],"Eğlence": ["Forum Çamlık AVM", "Denizli Hayvanat Bahçesi", "Bayram Yeri", "Çamlık/Forum Çevrsi"], "Tarih": ["Hierapolis", "Laodikeia", "Tripolis", "Akhan Kervansarayı"] },
             "Diyarbakır": { "Genel": ["Diyarbakır Surları", "Ulu Camii", "Hasan Paşa Hanı", "Cahit Sıtkı Tarancı Müzesi"], "Yemek": ["Ciğer Kebabı", "Meftune", "Burma Kadayıf", "Duvaklı Pilav"], "Doğa": ["Hevsel Bahçeleri", "Dicle Nehri", "Birkleyn Mağaraları", "Çermik Kaplıcaları"],"Eğlence": ["Kayapınar", "Suriçi", "Diyarbakır Hayvanat Bahçesi", "Forum Diyarbakır AVM"], "Tarih": ["Diyarbakır Surları", "On Gözlü Köprü", "Zerzevan Kalesi", "Malabadi Köprüsü"] },
-            "Edirne": { "Genel": ["Selimiye Camii", "Meriç Köprüsü", "Karaağaç", "Edirne Arkeoloji Müzesi"], "Deniz": ["Erikli Plajı", "Mecidiye Sahili", "Altınkum Plajı", "Yayla Sahili"], "Yemek": ["Tava Ciğer", "Edirne Peyniri", "Badem Ezmesi", "Mamzana"], "Doğa": ["Gala Gölü", "İbrice Limanı", "Saros Körfezi", "Söğütlük Kent Ormanı"],"Eğlence": ["Saraçlar Caddesi", "Karaağaç", "Erasta Edirme AVM", "Meriç Nehri Çevresi"], "Tarih": ["Selimiye Camii", "Rüstem Paşa Kervansarayı", "Adalet Kasrı", "Eski Camii"] },
+            "Edirne": { "Genel": ["Selimiye Camii", "Meriç Köprüsü", "Karaağaç", "Edirne Arkeoloji Müzesi"], "Yemek": ["Tava Ciğer", "Edirne Peyniri", "Badem Ezmesi", "Mamzana"], "Doğa": ["Gala Gölü", "İbrice Limanı", "Saros Körfezi", "Söğütlük Kent Ormanı"],"Eğlence": ["Saraçlar Caddesi", "Karaağaç", "Erasta Edirme AVM", "Meriç Nehri Çevresi"], "Tarih": ["Selimiye Camii", "Rüstem Paşa Kervansarayı", "Adalet Kasrı", "Eski Camii"] },
             "Elazığ": { "Genel": ["Harput Kalesi", "Kapalı Çarşı", "Kültür Park", "Keban Barajı"], "Yemek": ["Gakgoş Döner", "Harput Köfte", "Orcik", "Peynirli Ekmek"], "Doğa": ["Hazar Gölü", "Buzluk Mağarası", "Çırçır Şelalesi", "Golan Kaplıcaları"],"Eğlence": ["Park 23 AVM", "Üniversite Mahallesi", "Gazi Caddesi", "Elazığ Lunaparkı"], "Tarih": ["Harput Kalesi", "Ulu Camii", "Meryem Ana Kilisesi", "Palu Kalesi"] },
             "Erzincan": { "Genel": ["Ergan Dağı", "Saat Kulesi", "Bakırcılar Çarşısı", "Erzincan Müzesi"], "Yemek": ["Erzincan Döneri", "Kesme Çorbası", "Tulum Peyniri", "Kelecoş"], "Doğa": ["Girlevik Şelalesi", "Karanlık Kanyon", "Ekşisu", "Otlukbeli Gölü"],"Eğlence": ["Erzincan Piazza AVM", "Kordonboyu", "Ergan Kayam Merkezi", "Atatürk Caddesi"], "Tarih": ["Altıntepe Ören Yeri", "Mama Hatun Türbesi", "Terzibaba Türbesi", "Kemah Kalesi"] },
             "Erzurum": { "Genel": ["Çifte Minareli Medrese", "Palandöken", "Üç Kümbetler", "Erzurum Kongre Binası"], "Yemek": ["Cağ Kebabı", "Kadayıf Dolması", "Ayran Aşı", "Su Böreği"], "Doğa": ["Tortum Şelalesi", "Narman Peribacaları", "Yedi Göller", "Çoruh Vadisi"],"Eğlence": ["Cumhuriyet Caddesi", "Erzurum Piazza AVM", "Palandöken Kayak Merkezi", "Erzurum Forum AVM"], "Tarih": ["Erzurum Kalesi", "Yakutiye Medresesi", "Çobandede Köprüsü", "Rüstem Paşa Kervansarayı"] },
@@ -387,7 +394,7 @@
             "Kars": { "Genel": ["Kars Kalesi", "Taş Köprü", "Fethiye Camii", "Kars Peynir Müzesi"], "Yemek": ["Kars Kazı", "Kaşar Peyniri", "Hangel", "Evelik Çorbası"], "Doğa": ["Çıldır Gölü", "Sarıkamış", "Kuyucuk Gölü", "Kars Çayı"],"Eğlence": ["Sarıkamış Kayak Merkezi", "Atatürk Caddesi", "Faikbey Caddesi", "Karsaş"], "Tarih": ["Ani Harabeleri", "Havariler Kilisesi", "Kars Tabyaları", "Fethiye Cami"] },
             "Kastamonu": { "Genel": ["Kastamonu Kalesi", "Saat Kulesi", "Nasrullah Meydanı", "Kastamonu Saat Kulesi"], "Deniz": ["Cide Sahili", "Boyranaltı Plajı", "Abana Plajı", "Ginolu Kalesi ve Koyu"], "Yemek": ["Etli Ekmek", "Banduma", "Çekme Helva", "Simit Tiridi"], "Doğa": ["Valla Kanyonu", "Ilıca Şelalesi", "Küre Dağları", "Ilgaz Dağı"],"Eğlence": ["Kastamall AVM", "Santra Park", "Nasrullah Meydanı", "Kuzeykent Gençlik Merkezi Çevresi"], "Tarih": ["Mahmut Bey Camii", "İsmail Bey Külliyesi", "Pompeipolis", "Yılanlı Külliyesi"] },
             "Kayseri": { "Genel": ["Erciyes Dağı", "Cumhuriyet Meydanı", "Kayseri Kalesi", "Kayseri Lisesi Milli Mücadele Müzesi"], "Yemek": ["Kayseri Mantısı", "Pastırma", "Yağlama", "Nevzine Tatlısı"], "Doğa": ["Kapuzbaşı Şelaleleri", "Sultan Sazlığı", "Hacer Ormanları", "Ali Dağı"],"Eğlence": ["Hayvanat Bahçesi", "Lunapark", "Forum Kayseri", "Erciyes Kayak Merkezi"], "Tarih": ["Kültepe", "Hunat Hatun Külliyesi", "Gevher Nesibe Müzesi", "Ağırnas Yer Altı Şehri"] },
-            "Kırklareli": { "Genel": ["İğneada", "Dupnisa Mağarası", "Kıyıköy", "Atatürk Evi"], "Deniz": ["İğneada Plajı", "Kıyıköy Plajı", "İğneada Feneri", "Selvez Koyu"], "Yemek": ["Kırklareli Köftesi", "Hardaliye", "Oğlak Kebabı", "Papara"], "Doğa": ["Longoz Ormanları", "Balkaya", "Cehennem Şelaleleri", "İğneada Longoz Ormanları Milli Parkı"],"Eğlence": ["39 Burda AVM", "Lunapark", "İstasyon Caddesi", "Yayla Mahallesi"], "Tarih": ["Vize Kalesi", "Küçük Ayasofya", "Hızırbey Camii", "Sokollu Mehmet Paşa Külliyesi"] },
+            "Kırklareli": { "Genel": ["İğneada", "Dupnisa Mağarası", "Kıyıköy", "Atatürk Evi"], "Yemek": ["Kırklareli Köftesi", "Hardaliye", "Oğlak Kebabı", "Papara"], "Doğa": ["Longoz Ormanları", "Balkaya", "Cehennem Şelaleleri", "İğneada Longoz Ormanları Milli Parkı"],"Eğlence": ["39 Burda AVM", "Lunapark", "İstasyon Caddesi", "Yayla Mahallesi"], "Tarih": ["Vize Kalesi", "Küçük Ayasofya", "Hızırbey Camii", "Sokollu Mehmet Paşa Külliyesi"] },
             "Kırşehir": { "Genel": ["Cacabey Medresesi", "Ahi Evran Külliyesi", "Kent Park", "Kırşehir Müzesi"], "Yemek": ["Ahi Pilavı", "Kırşehir Köftesi", "Pekmezli Pelte", "Çömlekte Kuru Fasulye"], "Doğa": ["Seyfe Gölü", "Hirfanlı Barajı", "Japon Bahçesi", "Aşıkpaşa Tabiat Parkı"],"Eğlence": ["Terme Caddesi ve Ankara Caddesi", "Yeraltı Çarşısı", "Kent Park", "Kaman Japon Bahçesi (Mikasanomiya)"], "Tarih": ["Kalehöyük", "Mucur Yeraltı Şehri", "Aşık Paşa Türbesi", "Cacabey Gökbilim Medresesi"] },
             "Kocaeli": { "Genel": ["Maşukiye", "Kartepe", "Sekapark", "Gayret Gemi Müzesi"], "Deniz": ["Kerpe Plajı", "Kumcağız Plajı", "Mavi Bayraklı Plaj", "Killi Koyu"], "Yemek": ["Pişmaniye", "Mancar Yemeği", "Cızlama", "Değirmendere Fındığı"], "Doğa": ["Ormanya", "Ballıkayalar", "Yuvacık Barajı", "Kefken Pembe Kayalar"],"Eğlence": ["41 Burda AVM", "Hayvanat Bahçesi", "Ters Ev", "Seka Park"], "Tarih": ["Hannibal Mezarı", "Kasr-ı Hümayun", "Saat Kulesi", "Eskihisar Kalesi"] },
             "Konya": { "Genel": ["Mevlana Müzesi", "Alaaddin Tepesi", "Tropikal Kelebek Bahçesi", "Sille Köyü"], "Yemek": ["Etli Ekmek", "Fırın Kebabı", "Bamya Çorbası", "Tirit"], "Doğa": ["Tuz Gölü", "Beyşehir Gölü", "Meke Krater Gölü", "Meram Bağları"],"Eğlence": ["Kent Plaza AVM", "Hayvanat Bahçesi", "Kelebek Vadisi", "Bosna Hersek Mahallesi"], "Tarih": ["Çatalhöyük", "İnce Minareli Medrese", "Karatay Medresesi", "Nasreddin Hoca Türbesi"] },
@@ -454,11 +461,6 @@
             let cleanText = text;
             BAD_WORDS.forEach(word => { const regex = new RegExp(word, "gi"); cleanText = cleanText.replace(regex, "*".repeat(word.length)); });
             return cleanText;
-        };
-
-        const sanitizeForFirestore = (obj) => {
-            if (obj === undefined) return null;
-            return JSON.parse(JSON.stringify(obj, (k, v) => (v === undefined ? null : v)));
         };
 
         // --- CINEMA MODAL ---
@@ -656,9 +658,9 @@
             const handleImageSelect = async (e) => {
                 if (e.target.files && e.target.files[0]) {
                     try {
-                        const url = await uploadImage(e.target.files[0]);
-                        setPendingImage(url);
-                    } catch (err) { alert("Resim yüklenemedi"); }
+                        const base64 = await compressImage(e.target.files[0]);
+                        setPendingImage(base64);
+                    } catch (err) { alert("Resim işlenemedi"); }
                 }
             };
 
@@ -1329,30 +1331,25 @@
                 setSelectedCity({ name: cityName, latlng: center });
                 const existing = markersRef.current.find(m => m.cityName === cityName);
                 if(existing) {
-                    setNote(existing.note || ""); setMemory(existing.memory || ""); setCheckedPlaces(existing.checkedPlaces || []); setComments(existing.comments || []); 
+                    setNote(existing.note || ""); setMemory(existing.memory || ""); setCheckedPlaces(existing.checkedPlaces || []); setComments(existing.comments || []); setFavoriteImage(existing.favoriteImage || null);
                     setStatus(existing.status || "visited"); setCategory(existing.category || "Genel"); setRating(existing.rating || 0);
                     
-                    // Resimleri ve Favori Resmi Yükle (Eğer external ise veya optimize edilmişse)
-                    if (existing.hasImages) {
-                         // Önce eldeki veriyi (küçük resim olabilir) set et
-                         setImages(existing.images || []);
-                         setFavoriteImage(existing.favoriteImage || null);
-
+                    // Resimleri Yükle (Eğer external ise)
+                    if (existing.hasImages && (!existing.images || existing.images.length === 0)) {
+                        setImages([]); // Yükleniyor...
                         try {
                             const collectionName = (activeTab === 'couple' && coupleId) ? 'couple_photos' : 'user_photos';
                             const targetUser = (activeTab === 'couple' && coupleId) ? coupleId : currentUsername;
                             const docId = `${targetUser}_${cityName}`;
                             const imgDoc = await db.collection('artifacts').doc(appId).collection('public').doc('data').collection(collectionName).doc(docId).get();
                             if (imgDoc.exists) {
-                                const d = imgDoc.data();
-                                if (d.images) setImages(d.images);
-                                // Eğer external doc'ta favoriteImage varsa (yüksek kalite), onu kullan
-                                if (d.favoriteImage) setFavoriteImage(d.favoriteImage); 
+                                setImages(imgDoc.data().images || []);
+                            } else {
+                                setImages([]);
                             }
                         } catch(e) { console.error("Resim yükleme hatası", e); }
                     } else {
                         setImages(existing.images || []);
-                        setFavoriteImage(existing.favoriteImage || null);
                     }
 
                 } else {
@@ -1985,57 +1982,41 @@
                     }
 
                     const optimizedMarkers = await Promise.all(newMarkers.map(async (m) => {
-                        // Resim veya favori resim varsa external saklama kontrolü
-                        // Sadece Base64 verisi varsa veya favori resim çok büyükse external'a taşıyoruz.
-                        // URL'ler (yeni sistem) ana belgede kalabilir.
-                        const hasBase64Images = m.images && m.images.some(img => img && img.startsWith('data:'));
-                        const hasLargeFavorite = m.favoriteImage && m.favoriteImage.length > 100000;
-                        const shouldSaveExternal = hasBase64Images || hasLargeFavorite;
-                        
-                        if (shouldSaveExternal) {
-                            const imageDocId = `${targetUser}_${m.cityName}`;
-                            const extPayload = { 
-                                images: m.images || [],
-                                // High-res favori resmi de external'a yedekle
-                                ...(m.favoriteImage ? { favoriteImage: m.favoriteImage } : {}) 
-                            };
+                        // Eğer büyük resim verisi varsa, bunu ayır
+                        if (m.images && m.images.length > 0) {
+                            // Sadece dolu base64 stringleri için işlem yap (zaten referans ise atla)
+                            // Basit kontrol: uzunluk > 1000 ise resimdir, değilse referans olabilir ama biz her zaman external tutacağız
+                            // Eğer zaten boşaltılmışsa m.images boştur veya doludur.
                             
-                            await photosCollection.doc(imageDocId).set(sanitizeForFirestore(extPayload), { merge: true });
-                        }
-                        
-                        // Thumbnail optimizasyonu (Map ikonu için - çok küçük)
-                        let thumb = m.thumbnail;
-                        if (!thumb && m.images && m.images.length > 0) {
-                             // URL ise crossOrigin ile fetch edip thumbnail oluşturur
-                             try {
-                                 thumb = await createThumbnail(m.images[0]);
-                             } catch(e) {
-                                 console.warn("Thumbnail oluşturulamadı:", e);
-                                 // URL ise direkt kullanmayı deneyebiliriz ama çok büyük olabilir.
-                                 // Yine de thumb null kalırsa map ikonu bozulmaz, varsayılan görünür.
-                             }
-                        }
-                        // Thumbnail'i 100px'e zorla (Eskiden 400px idi)
-                        if (thumb && thumb.length > 5000 && thumb.startsWith('data:')) {
-                             thumb = await resizeBase64(thumb, 100, 0.6);
-                        }
+                            // Yeni eklenen veya mevcut büyük resimleri ayıkla
+                            // Burada veriyi external koleksiyona yazıyoruz
+                            const imageDocId = `${targetUser}_${m.cityName}`;
+                            await photosCollection.doc(imageDocId).set({ images: m.images });
 
-                        // Feed ve Modal Önizlemesi için FavoriteImage Optimizasyonu
-                        // Ana belgede saklanacak olan bu resim max 300px olacak (~15-20KB)
-                        let previewImg = m.favoriteImage;
-                        if (previewImg && previewImg.length > 30000 && previewImg.startsWith('data:')) { // 30KB'dan büyükse küçült (sadece base64 ise)
-                            previewImg = await resizeBase64(previewImg, 300, 0.6);
-                        }
+                            // Thumbnail oluştur (ilk resimden)
+                            let thumb = m.thumbnail;
+                            if (!thumb && m.images[0]) {
+                                thumb = await createThumbnail(m.images[0]);
+                            }
 
-                        const mOptimized = {
-                            ...m,
-                            // External'a kaydettiysek images boşalt, yoksa (URL ise) koru
-                            images: shouldSaveExternal ? [] : (m.images || []), 
-                            thumbnail: thumb || null,
-                            favoriteImage: previewImg || null, // Ana belgede küçük versiyon veya URL
-                            hasImages: (m.images && m.images.length > 0) || !!m.favoriteImage || !!m.hasImages // İşaret
-                        };
-                        return sanitizeForFirestore(mOptimized);
+                            // favoriteImage'i ana belge için küçült (Feed'de net görünsün ama 1MB limitini aşmasın)
+                            let previewImg = m.favoriteImage;
+                            if (previewImg && previewImg.length > 200000) {
+                                // Eğer 200KB'dan büyükse küçült (yaklaşık 600px - 800px)
+                                previewImg = await resizeBase64(previewImg, 800, 0.7);
+                            }
+
+                            return {
+                                ...m,
+                                images: [], // Ana belgede resim dizisini boşalt (External'a taşıdık)
+                                thumbnail: thumb,
+                                favoriteImage: previewImg, // Feed için optimize edilmiş ama net versiyonu tut
+                                hasImages: true // İşaret koy
+                            };
+                        } else {
+                            // Resim yoksa veya silindiyse
+                            return { ...m, thumbnail: m.thumbnail || null };
+                        }
                     }));
                     
                     // Veri boyutunu kontrol et (Firestore limiti ~1MB)
@@ -2182,8 +2163,8 @@
                 const file = e.target.files[0];
                 if (!file) return;
                 try {
-                    const url = await uploadImage(file);
-                    await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_profiles').doc(myUsername).set({ avatar: url }, { merge: true });
+                    const base64 = await compressImage(file);
+                    await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_profiles').doc(myUsername).set({ avatar: base64 }, { merge: true });
                 } catch (err) { alert("Fotoğraf yüklenemedi."); }
             };
             
@@ -2240,9 +2221,9 @@
             const handleImage = async (e) => { 
                 const files = Array.from(e.target.files); 
                 try {
-                    const uploadedUrls = await Promise.all(files.map(file => uploadImage(file)));
+                    const compressedFiles = await Promise.all(files.map(file => compressImage(file)));
                     setImages(prev => { 
-                        const newImages = [...prev, ...uploadedUrls]; 
+                        const newImages = [...prev, ...compressedFiles]; 
                         if (!favoriteImage && newImages.length > 0) setFavoriteImage(newImages[0]); 
                         return newImages; 
                     });
