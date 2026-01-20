@@ -1990,7 +1990,7 @@
                             }
 
                             // favoriteImage'i ana belge için küçült (Feed'de net görünsün ama 1MB limitini aşmasın)
-                            let previewImg = m.favoriteImage;
+                            let previewImg = m.favoriteImage || null;
                             if (previewImg && previewImg.length > 200000) {
                                 // Eğer 200KB'dan büyükse küçült (yaklaşık 600px - 800px)
                                 previewImg = await resizeBase64(previewImg, 800, 0.7);
@@ -1999,8 +1999,8 @@
                             return {
                                 ...m,
                                 images: [], // Ana belgede resim dizisini boşalt (External'a taşıdık)
-                                thumbnail: thumb,
-                                favoriteImage: previewImg, // Feed için optimize edilmiş ama net versiyonu tut
+                                thumbnail: thumb || null,
+                                favoriteImage: previewImg || null, // Feed için optimize edilmiş ama net versiyonu tut
                                 hasImages: true // İşaret koy
                             };
                         } else {
