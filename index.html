@@ -453,6 +453,11 @@
             return cleanText;
         };
 
+        const sanitizeForFirestore = (obj) => {
+            if (obj === undefined) return null;
+            return JSON.parse(JSON.stringify(obj, (k, v) => (v === undefined ? null : v)));
+        };
+
         // --- CINEMA MODAL ---
         const CinemaModal = ({ markers, onClose }) => {
             const [currentIndex, setCurrentIndex] = useState(0);
@@ -1995,7 +2000,7 @@
                             // m.images doluysa buraya giriyoruz, o yüzden sorun yok.
                             // Eğer sadece favori resim güncellendiyse (images boş), o zaman images alanını ezmemeliyiz?
                             // Hayır, saveMarkers çağrıldığında m.images state'teki güncel halidir. Boşsa boştur.
-                            await photosCollection.doc(imageDocId).set(extPayload, { merge: true });
+                            await photosCollection.doc(imageDocId).set(sanitizeForFirestore(extPayload), { merge: true });
                         }
                         
                         // Thumbnail optimizasyonu (Map ikonu için - çok küçük)
@@ -2015,13 +2020,14 @@
                             previewImg = await resizeBase64(previewImg, 300, 0.6);
                         }
 
-                        return {
+                        const mOptimized = {
                             ...m,
                             images: [], // Ana belgede resim dizisini her zaman boşalt
                             thumbnail: thumb || null,
                             favoriteImage: previewImg || null, // Ana belgede küçük versiyon
-                            hasImages: (m.images && m.images.length > 0) || !!m.favoriteImage || m.hasImages // İşaret
+                            hasImages: (m.images && m.images.length > 0) || !!m.favoriteImage || !!m.hasImages // İşaret
                         };
+                        return sanitizeForFirestore(mOptimized);
                     }));
                     
                     // Veri boyutunu kontrol et (Firestore limiti ~1MB)
