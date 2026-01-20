@@ -1321,25 +1321,30 @@
                 setSelectedCity({ name: cityName, latlng: center });
                 const existing = markersRef.current.find(m => m.cityName === cityName);
                 if(existing) {
-                    setNote(existing.note || ""); setMemory(existing.memory || ""); setCheckedPlaces(existing.checkedPlaces || []); setComments(existing.comments || []); setFavoriteImage(existing.favoriteImage || null);
+                    setNote(existing.note || ""); setMemory(existing.memory || ""); setCheckedPlaces(existing.checkedPlaces || []); setComments(existing.comments || []);
                     setStatus(existing.status || "visited"); setCategory(existing.category || "Genel"); setRating(existing.rating || 0);
                     
-                    // Resimleri Yükle (Eğer external ise)
-                    if (existing.hasImages && (!existing.images || existing.images.length === 0)) {
-                        setImages([]); // Yükleniyor...
+                    // Resimleri ve Favori Resmi Yükle (Eğer external ise veya optimize edilmişse)
+                    if (existing.hasImages) {
+                         // Önce eldeki veriyi (küçük resim olabilir) set et
+                         setImages(existing.images || []);
+                         setFavoriteImage(existing.favoriteImage || null);
+
                         try {
                             const collectionName = (activeTab === 'couple' && coupleId) ? 'couple_photos' : 'user_photos';
                             const targetUser = (activeTab === 'couple' && coupleId) ? coupleId : currentUsername;
                             const docId = `${targetUser}_${cityName}`;
                             const imgDoc = await db.collection('artifacts').doc(appId).collection('public').doc('data').collection(collectionName).doc(docId).get();
                             if (imgDoc.exists) {
-                                setImages(imgDoc.data().images || []);
-                            } else {
-                                setImages([]);
+                                const d = imgDoc.data();
+                                if (d.images) setImages(d.images);
+                                // Eğer external doc'ta favoriteImage varsa (yüksek kalite), onu kullan
+                                if (d.favoriteImage) setFavoriteImage(d.favoriteImage);
                             }
                         } catch(e) { console.error("Resim yükleme hatası", e); }
                     } else {
                         setImages(existing.images || []);
+                        setFavoriteImage(existing.favoriteImage || null);
                     }
 
                 } else {
@@ -1972,41 +1977,51 @@
                     }
 
                     const optimizedMarkers = await Promise.all(newMarkers.map(async (m) => {
-                        // Eğer büyük resim verisi varsa, bunu ayır
-                        if (m.images && m.images.length > 0) {
-                            // Sadece dolu base64 stringleri için işlem yap (zaten referans ise atla)
-                            // Basit kontrol: uzunluk > 1000 ise resimdir, değilse referans olabilir ama biz her zaman external tutacağız
-                            // Eğer zaten boşaltılmışsa m.images boştur veya doludur.
-                            
-                            // Yeni eklenen veya mevcut büyük resimleri ayıkla
-                            // Burada veriyi external koleksiyona yazıyoruz
+                        // Resim veya favori resim varsa external saklama kontrolü
+                        // Eğer zaten hasImages varsa ama images boşsa daha önce external'a atılmış demektir.
+                        // Ancak yeni resim eklendiyse (m.images > 0) veya favori resim çok büyükse (m.favoriteImage > 100kb) güncelle
+                        const shouldSaveExternal = (m.images && m.images.length > 0) || (m.favoriteImage && m.favoriteImage.length > 100000);
+
+                        if (shouldSaveExternal) {
                             const imageDocId = `${targetUser}_${m.cityName}`;
-                            await photosCollection.doc(imageDocId).set({ images: m.images });
-
-                            // Thumbnail oluştur (ilk resimden)
-                            let thumb = m.thumbnail;
-                            if (!thumb && m.images[0]) {
-                                thumb = await createThumbnail(m.images[0]);
-                            }
-
-                            // favoriteImage'i ana belge için küçült (Feed'de net görünsün ama 1MB limitini aşmasın)
-                            let previewImg = m.favoriteImage;
-                            if (previewImg && previewImg.length > 200000) {
-                                // Eğer 200KB'dan büyükse küçült (yaklaşık 600px - 800px)
-                                previewImg = await resizeBase64(previewImg, 800, 0.7);
-                            }
-
-                            return {
-                                ...m,
-                                images: [], // Ana belgede resim dizisini boşalt (External'a taşıdık)
-                                thumbnail: thumb,
-                                favoriteImage: previewImg, // Feed için optimize edilmiş ama net versiyonu tut
-                                hasImages: true // İşaret koy
+                            const extPayload = {
+                                images: m.images || [],
+                                // High-res favori resmi de external'a yedekle
+                                ...(m.favoriteImage ? { favoriteImage: m.favoriteImage } : {})
                             };
-                        } else {
-                            // Resim yoksa veya silindiyse
-                            return { ...m, thumbnail: m.thumbnail || null };
+
+                            // Merge true ile kaydet ki varsa eski veriler (örn: images boşsa) korunmasın, üstüne yazsın.
+                            // Bekle, merge true yaparsak ve images: [] gönderirsek silinmez mi?
+                            // m.images doluysa buraya giriyoruz, o yüzden sorun yok.
+                            // Eğer sadece favori resim güncellendiyse (images boş), o zaman images alanını ezmemeliyiz?
+                            // Hayır, saveMarkers çağrıldığında m.images state'teki güncel halidir. Boşsa boştur.
+                            await photosCollection.doc(imageDocId).set(extPayload, { merge: true });
                         }
+
+                        // Thumbnail optimizasyonu (Map ikonu için - çok küçük)
+                        let thumb = m.thumbnail;
+                        if (!thumb && m.images && m.images.length > 0) {
+                             thumb = await createThumbnail(m.images[0]);
+                        }
+                        // Thumbnail'i 100px'e zorla (Eskiden 400px idi)
+                        if (thumb && thumb.length > 5000) {
+                             thumb = await resizeBase64(thumb, 100, 0.6);
+                        }
+
+                        // Feed ve Modal Önizlemesi için FavoriteImage Optimizasyonu
+                        // Ana belgede saklanacak olan bu resim max 300px olacak (~15-20KB)
+                        let previewImg = m.favoriteImage;
+                        if (previewImg && previewImg.length > 30000) { // 30KB'dan büyükse küçült
+                            previewImg = await resizeBase64(previewImg, 300, 0.6);
+                        }
+
+                        return {
+                            ...m,
+                            images: [], // Ana belgede resim dizisini her zaman boşalt
+                            thumbnail: thumb,
+                            favoriteImage: previewImg, // Ana belgede küçük versiyon
+                            hasImages: (m.images && m.images.length > 0) || !!m.favoriteImage || m.hasImages // İşaret
+                        };
                     }));
                     
                     // Veri boyutunu kontrol et (Firestore limiti ~1MB)

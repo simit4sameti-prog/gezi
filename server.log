@@ -1,0 +1,10 @@
+127.0.0.1 - - [20/Jan/2026 13:00:26] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [20/Jan/2026 13:01:22] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [20/Jan/2026 13:05:27] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [20/Jan/2026 13:05:31] "GET /index.html HTTP/1.1" 304 -
+127.0.0.1 - - [20/Jan/2026 13:05:56] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [20/Jan/2026 13:06:00] "GET /index.html HTTP/1.1" 304 -
+127.0.0.1 - - [20/Jan/2026 13:06:20] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [20/Jan/2026 13:06:25] "GET /index.html HTTP/1.1" 304 -
+127.0.0.1 - - [20/Jan/2026 13:07:03] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [20/Jan/2026 13:07:07] "GET /index.html HTTP/1.1" 304 -
