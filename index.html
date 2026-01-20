@@ -1200,6 +1200,7 @@ Kullanıcılar, tarayıcı ayarları üzerinden çerezleri kontrol edebilir veya
 
         // --- LOGIN SCREEN ---
         const LoginScreen = ({ onLogin }) => {
+            const [activePolicy, setActivePolicy] = useState(null);
             const [mode, setMode] = useState("login"); // login, register, forgot
             const [username, setUsername] = useState("");
             const [password, setPassword] = useState("");
@@ -1386,6 +1387,12 @@ Kullanıcılar, tarayıcı ayarları üzerinden çerezleri kontrol edebilir veya
                                     <input type="password" className="w-full border border-gray-200 dark:border-gray-600 rounded-lg pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 dark:bg-gray-700 dark:text-white transition-all" placeholder="Şifre" value={password} onChange={e => setPassword(e.target.value)} disabled={loading} />
                                 </div>
 
+                                {mode === "register" && (
+                                    <div className="text-[10px] text-gray-500 dark:text-gray-400 mt-2 mb-2 leading-tight px-2 text-center">
+                                        Kaydol butonuna tıklayarak <span onClick={() => setActivePolicy('terms')} className="text-blue-600 dark:text-blue-400 cursor-pointer hover:underline font-bold">Hizmet Koşullarımızı</span>, <span onClick={() => setActivePolicy('privacy')} className="text-blue-600 dark:text-blue-400 cursor-pointer hover:underline font-bold">Gizlilik Politikamızı</span> ve <span onClick={() => setActivePolicy('cookies')} className="text-blue-600 dark:text-blue-400 cursor-pointer hover:underline font-bold">Çerez Politikamızı</span> kabul etmiş olursunuz.
+                                    </div>
+                                )}
+
                                 {error && <div className="p-3 bg-red-50 text-red-600 text-xs rounded-lg text-left font-medium flex gap-2 items-start"><Icon name="alert-circle" className="w-4 h-4 shrink-0"/> {error}</div>}
                                 {success && <div className="p-3 bg-green-50 text-green-600 text-xs rounded-lg text-left font-medium flex gap-2 items-start"><Icon name="check-circle" className="w-4 h-4 shrink-0"/> {success}</div>}
                                 
@@ -1401,6 +1408,13 @@ Kullanıcılar, tarayıcı ayarları üzerinden çerezleri kontrol edebilir veya
                             </a>
                         </div>
                     </div>
+                    {activePolicy && (
+                        <PolicyModal 
+                            title={POLICIES[activePolicy].title} 
+                            content={POLICIES[activePolicy].content} 
+                            onClose={() => setActivePolicy(null)} 
+                        />
+                    )}
                 </div>
             );
         };
