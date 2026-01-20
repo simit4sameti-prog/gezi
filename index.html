@@ -249,25 +249,35 @@
             } catch (error) { return "Yapay zeka servisine ulaşılamıyor."; }
         };
 
-        const compressImage = (file) => {
-            return new Promise((resolve, reject) => {
-                // TEST İÇİN SIKIŞTIRMA KAPATILDI - DOĞRUDAN BASE64 OKU
-                // Kullanıcı isteği üzerine orijinal dosya doğrudan yükleniyor.
-                console.log("Sıkıştırma devre dışı: Orijinal dosya yükleniyor...", file.name);
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const result = e.target.result;
-                    console.log("Dosya okundu. Boyut:", result.length, "karakter (base64)");
-                    resolve(result);
-                };
-                reader.onerror = (e) => reject(e);
-                reader.readAsDataURL(file);
-            });
+        const uploadImage = async (file) => {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('upload.php', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error('Upload failed');
+                }
+
+                const data = await response.json();
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                return data.url;
+            } catch (error) {
+                console.error("Upload error:", error);
+                throw error;
+            }
         };
 
         const createThumbnail = (base64) => {
             return new Promise((resolve) => {
                 const img = new Image();
+                img.crossOrigin = 'Anonymous';
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
                     // Thumbnail boyutunu artırdık (netlik için)
@@ -286,6 +296,7 @@
         const resizeBase64 = (base64, maxWidth = 600, quality = 0.6) => {
             return new Promise((resolve) => {
                 const img = new Image();
+                img.crossOrigin = 'Anonymous';
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
                     let w = img.width; let h = img.height;
@@ -637,9 +648,9 @@
             const handleImageSelect = async (e) => {
                 if (e.target.files && e.target.files[0]) {
                     try {
-                        const base64 = await compressImage(e.target.files[0]);
-                        setPendingImage(base64);
-                    } catch (err) { alert("Resim işlenemedi"); }
+                        const url = await uploadImage(e.target.files[0]);
+                        setPendingImage(url);
+                    } catch (err) { alert("Resim yüklenemedi"); }
                 }
             };
 
@@ -1967,9 +1978,11 @@
 
                     const optimizedMarkers = await Promise.all(newMarkers.map(async (m) => {
                         // Resim veya favori resim varsa external saklama kontrolü
-                        // Eğer zaten hasImages varsa ama images boşsa daha önce external'a atılmış demektir.
-                        // Ancak yeni resim eklendiyse (m.images > 0) veya favori resim çok büyükse (m.favoriteImage > 100kb) güncelle
-                        const shouldSaveExternal = (m.images && m.images.length > 0) || (m.favoriteImage && m.favoriteImage.length > 100000); 
+                        // Sadece Base64 verisi varsa veya favori resim çok büyükse external'a taşıyoruz.
+                        // URL'ler (yeni sistem) ana belgede kalabilir.
+                        const hasBase64Images = m.images && m.images.some(img => img && img.startsWith('data:'));
+                        const hasLargeFavorite = m.favoriteImage && m.favoriteImage.length > 100000;
+                        const shouldSaveExternal = hasBase64Images || hasLargeFavorite;
                         
                         if (shouldSaveExternal) {
                             const imageDocId = `${targetUser}_${m.cityName}`;
@@ -1979,36 +1992,39 @@
                                 ...(m.favoriteImage ? { favoriteImage: m.favoriteImage } : {}) 
                             };
                             
-                            // Merge true ile kaydet ki varsa eski veriler (örn: images boşsa) korunmasın, üstüne yazsın.
-                            // Bekle, merge true yaparsak ve images: [] gönderirsek silinmez mi?
-                            // m.images doluysa buraya giriyoruz, o yüzden sorun yok.
-                            // Eğer sadece favori resim güncellendiyse (images boş), o zaman images alanını ezmemeliyiz?
-                            // Hayır, saveMarkers çağrıldığında m.images state'teki güncel halidir. Boşsa boştur.
                             await photosCollection.doc(imageDocId).set(sanitizeForFirestore(extPayload), { merge: true });
                         }
                         
                         // Thumbnail optimizasyonu (Map ikonu için - çok küçük)
                         let thumb = m.thumbnail;
                         if (!thumb && m.images && m.images.length > 0) {
-                             thumb = await createThumbnail(m.images[0]);
+                             // URL ise crossOrigin ile fetch edip thumbnail oluşturur
+                             try {
+                                 thumb = await createThumbnail(m.images[0]);
+                             } catch(e) {
+                                 console.warn("Thumbnail oluşturulamadı:", e);
+                                 // URL ise direkt kullanmayı deneyebiliriz ama çok büyük olabilir.
+                                 // Yine de thumb null kalırsa map ikonu bozulmaz, varsayılan görünür.
+                             }
                         }
                         // Thumbnail'i 100px'e zorla (Eskiden 400px idi)
-                        if (thumb && thumb.length > 5000) {
+                        if (thumb && thumb.length > 5000 && thumb.startsWith('data:')) {
                              thumb = await resizeBase64(thumb, 100, 0.6);
                         }
 
                         // Feed ve Modal Önizlemesi için FavoriteImage Optimizasyonu
                         // Ana belgede saklanacak olan bu resim max 300px olacak (~15-20KB)
                         let previewImg = m.favoriteImage;
-                        if (previewImg && previewImg.length > 30000) { // 30KB'dan büyükse küçült
+                        if (previewImg && previewImg.length > 30000 && previewImg.startsWith('data:')) { // 30KB'dan büyükse küçült (sadece base64 ise)
                             previewImg = await resizeBase64(previewImg, 300, 0.6);
                         }
 
                         const mOptimized = {
                             ...m,
-                            images: [], // Ana belgede resim dizisini her zaman boşalt
+                            // External'a kaydettiysek images boşalt, yoksa (URL ise) koru
+                            images: shouldSaveExternal ? [] : (m.images || []),
                             thumbnail: thumb || null,
-                            favoriteImage: previewImg || null, // Ana belgede küçük versiyon
+                            favoriteImage: previewImg || null, // Ana belgede küçük versiyon veya URL
                             hasImages: (m.images && m.images.length > 0) || !!m.favoriteImage || !!m.hasImages // İşaret
                         };
                         return sanitizeForFirestore(mOptimized);
@@ -2158,8 +2174,8 @@
                 const file = e.target.files[0];
                 if (!file) return;
                 try {
-                    const base64 = await compressImage(file);
-                    await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_profiles').doc(myUsername).set({ avatar: base64 }, { merge: true });
+                    const url = await uploadImage(file);
+                    await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('user_profiles').doc(myUsername).set({ avatar: url }, { merge: true });
                 } catch (err) { alert("Fotoğraf yüklenemedi."); }
             };
             
@@ -2216,9 +2232,9 @@
             const handleImage = async (e) => { 
                 const files = Array.from(e.target.files); 
                 try {
-                    const compressedFiles = await Promise.all(files.map(file => compressImage(file)));
+                    const uploadedUrls = await Promise.all(files.map(file => uploadImage(file)));
                     setImages(prev => { 
-                        const newImages = [...prev, ...compressedFiles]; 
+                        const newImages = [...prev, ...uploadedUrls];
                         if (!favoriteImage && newImages.length > 0) setFavoriteImage(newImages[0]); 
                         return newImages; 
                     });
