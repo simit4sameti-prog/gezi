@@ -2588,7 +2588,9 @@
                     const uploadedUrls = await Promise.all(files.map(async (file) => {
                         const compressedDataUrl = await compressImage(file);
                         const blob = dataURLtoBlob(compressedDataUrl);
-                        return await uploadImage(blob);
+                        // Generate a unique path: user_uploads/{username}/{timestamp}_{random}.jpg
+                        const filename = `user_uploads/${myUsername}/${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+                        return await uploadImageToFirebase(blob, filename);
                     }));
 
                     setImages(prev => { 
