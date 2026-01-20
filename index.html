@@ -2018,8 +2018,8 @@
                         return {
                             ...m,
                             images: [], // Ana belgede resim dizisini her zaman boşalt
-                            thumbnail: thumb,
-                            favoriteImage: previewImg, // Ana belgede küçük versiyon
+                            thumbnail: thumb || null,
+                            favoriteImage: previewImg || null, // Ana belgede küçük versiyon
                             hasImages: (m.images && m.images.length > 0) || !!m.favoriteImage || m.hasImages // İşaret
                         };
                     }));
