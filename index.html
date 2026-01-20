@@ -1060,122 +1060,109 @@
         const POLICIES = {
             terms: {
                 title: "HİZMET KOŞULLARI",
-                content: `Hizmet Koşulları
+                content: (
+                    <>
+                        <h3 className="font-bold text-lg mb-2 text-gray-800 dark:text-white">Hizmet Koşulları</h3>
+                        <p className="mb-4">Bu Hizmet Koşulları, Maporys.com (“Platform”) üzerinden sunulan tüm hizmetlerin kullanımına ilişkin şartları düzenler. Platforma erişen veya kayıt olan her kullanıcı bu koşulları kabul etmiş sayılır.</p>
+                        
+                        <h4 className="font-bold text-md mb-1 text-gray-800 dark:text-gray-200">Hizmetin Kapsamı</h4>
+                        <p className="mb-4">Maporys, kullanıcıların konum bazlı içerik paylaşmasına, harita üzerinde anı, bilgi veya deneyim eklemesine olanak tanıyan bir dijital platformdur.</p>
 
-Bu Hizmet Koşulları, Maporys.com (“Platform”) üzerinden sunulan tüm hizmetlerin kullanımına ilişkin şartları düzenler. Platforma erişen veya kayıt olan her kullanıcı bu koşulları kabul etmiş sayılır.
+                        <h4 className="font-bold text-md mb-1 text-gray-800 dark:text-gray-200">Kullanıcı Yükümlülükleri</h4>
+                        <p className="mb-2">Kullanıcılar;</p>
+                        <ul className="list-disc ml-5 mb-4 space-y-1">
+                            <li>Paylaştıkları içeriklerin hukuka uygun olduğunu,</li>
+                            <li>Başkalarının haklarını ihlal etmediğini,</li>
+                            <li>Yanıltıcı, zararlı veya yasa dışı içerik paylaşmayacaklarını</li>
+                        </ul>
+                        <p className="mb-4">kabul ve taahhüt eder.</p>
 
-Hizmetin Kapsamı
+                        <h4 className="font-bold text-md mb-1 text-gray-800 dark:text-gray-200">İçerikler</h4>
+                        <p className="mb-4">Kullanıcılar tarafından paylaşılan tüm içeriklerin sorumluluğu ilgili kullanıcıya aittir. Maporys, gerekli gördüğü durumlarda içeriği kaldırma veya erişimi kısıtlama hakkını saklı tutar.</p>
 
-Maporys, kullanıcıların konum bazlı içerik paylaşmasına, harita üzerinde anı, bilgi veya deneyim eklemesine olanak tanıyan bir dijital platformdur.
+                        <h4 className="font-bold text-md mb-1 text-gray-800 dark:text-gray-200">Hizmetin Değiştirilmesi</h4>
+                        <p className="mb-4">Maporys, platformun içeriğini ve sunulan hizmetleri önceden bildirimde bulunmaksızın değiştirme, durdurma veya sonlandırma hakkını saklı tutar.</p>
 
-Kullanıcı Yükümlülükleri
-
-Kullanıcılar;
-
-Paylaştıkları içeriklerin hukuka uygun olduğunu,
-
-Başkalarının haklarını ihlal etmediğini,
-
-Yanıltıcı, zararlı veya yasa dışı içerik paylaşmayacaklarını
-kabul ve taahhüt eder.
-
-İçerikler
-
-Kullanıcılar tarafından paylaşılan tüm içeriklerin sorumluluğu ilgili kullanıcıya aittir. Maporys, gerekli gördüğü durumlarda içeriği kaldırma veya erişimi kısıtlama hakkını saklı tutar.
-
-Hizmetin Değiştirilmesi
-
-Maporys, platformun içeriğini ve sunulan hizmetleri önceden bildirimde bulunmaksızın değiştirme, durdurma veya sonlandırma hakkını saklı tutar.
-
-Sorumluluğun Sınırlandırılması
-
-Platform “olduğu gibi” sunulmaktadır. Teknik aksaklıklar, veri kaybı veya hizmet kesintilerinden doğabilecek zararlardan Maporys sorumlu tutulamaz.`
+                        <h4 className="font-bold text-md mb-1 text-gray-800 dark:text-gray-200">Sorumluluğun Sınırlandırılması</h4>
+                        <p className="mb-4">Platform “olduğu gibi” sunulmaktadır. Teknik aksaklıklar, veri kaybı veya hizmet kesintilerinden doğabilecek zararlardan Maporys sorumlu tutulamaz.</p>
+                    </>
+                )
             },
             privacy: {
                 title: "GİZLİLİK POLİTİKASI",
-                content: `Gizlilik Politikası
+                content: (
+                    <>
+                        <h3 className="font-bold text-lg mb-2 text-gray-800 dark:text-white">Gizlilik Politikası</h3>
+                        <p className="mb-4">Bu Gizlilik Politikası, Maporys.com üzerinden toplanan kişisel verilerin nasıl işlendiğini açıklamaktadır.</p>
 
-Bu Gizlilik Politikası, Maporys.com üzerinden toplanan kişisel verilerin nasıl işlendiğini açıklamaktadır.
+                        <h4 className="font-bold text-md mb-1 text-gray-800 dark:text-gray-200">Toplanan Veriler</h4>
+                        <p className="mb-2">Platformu kullanırken aşağıdaki veriler toplanabilir:</p>
+                        <ul className="list-disc ml-5 mb-4 space-y-1">
+                            <li>Ad, kullanıcı adı, e-posta adresi</li>
+                            <li>Konum bilgileri (kullanıcı izni ile)</li>
+                            <li>IP adresi ve cihaz bilgileri</li>
+                            <li>Kullanıcı tarafından paylaşılan içerikler</li>
+                        </ul>
 
-Toplanan Veriler
+                        <h4 className="font-bold text-md mb-1 text-gray-800 dark:text-gray-200">Verilerin Kullanım Amacı</h4>
+                        <p className="mb-2">Toplanan veriler;</p>
+                        <ul className="list-disc ml-5 mb-4 space-y-1">
+                            <li>Hizmetlerin sunulması ve geliştirilmesi</li>
+                            <li>Kullanıcı deneyiminin iyileştirilmesi</li>
+                            <li>Güvenliğin sağlanması</li>
+                            <li>Yasal yükümlülüklerin yerine getirilmesi</li>
+                        </ul>
+                        <p className="mb-4">amaçlarıyla işlenir.</p>
 
-Platformu kullanırken aşağıdaki veriler toplanabilir:
+                        <h4 className="font-bold text-md mb-1 text-gray-800 dark:text-gray-200">Verilerin Paylaşımı</h4>
+                        <p className="mb-4">Kişisel veriler, yasal zorunluluklar dışında üçüncü kişilerle paylaşılmaz.</p>
 
-Ad, kullanıcı adı, e-posta adresi
+                        <h4 className="font-bold text-md mb-1 text-gray-800 dark:text-gray-200">Veri Güvenliği</h4>
+                        <p className="mb-4">Maporys, kişisel verilerin korunması için teknik ve idari güvenlik önlemleri alır.</p>
 
-Konum bilgileri (kullanıcı izni ile)
-
-IP adresi ve cihaz bilgileri
-
-Kullanıcı tarafından paylaşılan içerikler
-
-Verilerin Kullanım Amacı
-
-Toplanan veriler;
-
-Hizmetlerin sunulması ve geliştirilmesi
-
-Kullanıcı deneyiminin iyileştirilmesi
-
-Güvenliğin sağlanması
-
-Yasal yükümlülüklerin yerine getirilmesi
-amaçlarıyla işlenir.
-
-Verilerin Paylaşımı
-
-Kişisel veriler, yasal zorunluluklar dışında üçüncü kişilerle paylaşılmaz.
-
-Veri Güvenliği
-
-Maporys, kişisel verilerin korunması için teknik ve idari güvenlik önlemleri alır.
-
-Kullanıcı Hakları
-
-Kullanıcılar;
-
-Kişisel verilerine erişme
-
-Düzeltme veya silinmesini talep etme
-
-Veri işlemeye itiraz etme
-haklarına sahiptir.`
+                        <h4 className="font-bold text-md mb-1 text-gray-800 dark:text-gray-200">Kullanıcı Hakları</h4>
+                        <p className="mb-2">Kullanıcılar;</p>
+                        <ul className="list-disc ml-5 mb-4 space-y-1">
+                            <li>Kişisel verilerine erişme</li>
+                            <li>Düzeltme veya silinmesini talep etme</li>
+                            <li>Veri işlemeye itiraz etme</li>
+                        </ul>
+                        <p className="mb-4">haklarına sahiptir.</p>
+                    </>
+                )
             },
             cookies: {
                 title: "ÇEREZ POLİTİKASI",
-                content: `Çerez Politikası
+                content: (
+                    <>
+                        <h3 className="font-bold text-lg mb-2 text-gray-800 dark:text-white">Çerez Politikası</h3>
+                        <p className="mb-4">Bu Çerez Politikası, Maporys.com’da kullanılan çerezlere ilişkin bilgileri içerir.</p>
 
-Bu Çerez Politikası, Maporys.com’da kullanılan çerezlere ilişkin bilgileri içerir.
+                        <h4 className="font-bold text-md mb-1 text-gray-800 dark:text-gray-200">Çerez Nedir?</h4>
+                        <p className="mb-4">Çerezler, web sitesi ziyaretiniz sırasında tarayıcınıza kaydedilen küçük metin dosyalarıdır.</p>
 
-Çerez Nedir?
+                        <h4 className="font-bold text-md mb-1 text-gray-800 dark:text-gray-200">Kullanılan Çerez Türleri</h4>
+                        <p className="mb-2">Maporys’te:</p>
+                        <ul className="list-disc ml-5 mb-4 space-y-1">
+                            <li>Zorunlu çerezler</li>
+                            <li>Performans ve analiz çerezleri</li>
+                            <li>Kullanıcı tercihlerini hatırlayan çerezler</li>
+                        </ul>
+                        <p className="mb-4">kullanılabilir.</p>
 
-Çerezler, web sitesi ziyaretiniz sırasında tarayıcınıza kaydedilen küçük metin dosyalarıdır.
+                        <h4 className="font-bold text-md mb-1 text-gray-800 dark:text-gray-200">Çerezlerin Amacı</h4>
+                        <p className="mb-2">Çerezler;</p>
+                        <ul className="list-disc ml-5 mb-4 space-y-1">
+                            <li>Platformun düzgün çalışması</li>
+                            <li>Kullanıcı deneyiminin iyileştirilmesi</li>
+                            <li>Site performansının analiz edilmesi</li>
+                        </ul>
+                        <p className="mb-4">amacıyla kullanılmaktadır.</p>
 
-Kullanılan Çerez Türleri
-
-Maporys’te:
-
-Zorunlu çerezler
-
-Performans ve analiz çerezleri
-
-Kullanıcı tercihlerini hatırlayan çerezler
-kullanılabilir.
-
-Çerezlerin Amacı
-
-Çerezler;
-
-Platformun düzgün çalışması
-
-Kullanıcı deneyiminin iyileştirilmesi
-
-Site performansının analiz edilmesi
-amacıyla kullanılmaktadır.
-
-Çerezlerin Kontrolü
-
-Kullanıcılar, tarayıcı ayarları üzerinden çerezleri kontrol edebilir veya silebilir. Ancak bazı çerezlerin devre dışı bırakılması platformun işlevselliğini etkileyebilir.`
+                        <h4 className="font-bold text-md mb-1 text-gray-800 dark:text-gray-200">Çerezlerin Kontrolü</h4>
+                        <p className="mb-4">Kullanıcılar, tarayıcı ayarları üzerinden çerezleri kontrol edebilir veya silebilir. Ancak bazı çerezlerin devre dışı bırakılması platformun işlevselliğini etkileyebilir.</p>
+                    </>
+                )
             }
         };
 
@@ -1187,7 +1174,7 @@ Kullanıcılar, tarayıcı ayarları üzerinden çerezleri kontrol edebilir veya
                             <h2 className="text-lg font-bold text-gray-800 dark:text-white">{title}</h2>
                             <button onClick={onClose} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition-colors"><Icon name="x" className="w-5 h-5 text-gray-500"/></button>
                         </div>
-                        <div className="p-6 overflow-y-auto custom-scrollbar text-sm text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
+                        <div className="p-6 overflow-y-auto custom-scrollbar text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
                             {content}
                         </div>
                         <div className="p-4 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-900 rounded-b-2xl flex justify-end">
@@ -1206,6 +1193,7 @@ Kullanıcılar, tarayıcı ayarları üzerinden çerezleri kontrol edebilir veya
             const [password, setPassword] = useState("");
             const [securityQuestion, setSecurityQuestion] = useState("");
             const [securityAnswer, setSecurityAnswer] = useState("");
+            const [isTermsAccepted, setIsTermsAccepted] = useState(false);
             const [error, setError] = useState("");
             const [loading, setLoading] = useState(false);
             const [success, setSuccess] = useState("");
@@ -1265,7 +1253,10 @@ Kullanıcılar, tarayıcı ayarları üzerinden çerezleri kontrol edebilir veya
                 }
 
                 if (!username.trim() || !password.trim()) { setError("Kullanıcı adı ve şifre zorunludur."); return; }
-                if (mode === "register" && (!securityQuestion || !securityAnswer.trim())) { setError("Güvenlik sorusu ve cevabı zorunludur."); return; }
+                if (mode === "register") {
+                    if (!securityQuestion || !securityAnswer.trim()) { setError("Güvenlik sorusu ve cevabı zorunludur."); return; }
+                    if (!isTermsAccepted) { setError("Hizmet koşullarını kabul etmelisiniz."); return; }
+                }
                 
                 setLoading(true);
                 try {
@@ -1388,15 +1379,23 @@ Kullanıcılar, tarayıcı ayarları üzerinden çerezleri kontrol edebilir veya
                                 </div>
 
                                 {mode === "register" && (
-                                    <div className="text-[10px] text-gray-500 dark:text-gray-400 mt-2 mb-2 leading-tight px-2 text-center">
-                                        Kaydol butonuna tıklayarak <span onClick={() => setActivePolicy('terms')} className="text-blue-600 dark:text-blue-400 cursor-pointer hover:underline font-bold">Hizmet Koşullarımızı</span>, <span onClick={() => setActivePolicy('privacy')} className="text-blue-600 dark:text-blue-400 cursor-pointer hover:underline font-bold">Gizlilik Politikamızı</span> ve <span onClick={() => setActivePolicy('cookies')} className="text-blue-600 dark:text-blue-400 cursor-pointer hover:underline font-bold">Çerez Politikamızı</span> kabul etmiş olursunuz.
+                                    <div className="flex items-start gap-2 mt-3 mb-2 px-2">
+                                        <input 
+                                            type="checkbox" 
+                                            checked={isTermsAccepted} 
+                                            onChange={(e) => setIsTermsAccepted(e.target.checked)} 
+                                            className="mt-0.5 cursor-pointer accent-red-600 w-4 h-4 shrink-0"
+                                        />
+                                        <div className="text-[10px] text-gray-500 dark:text-gray-400 leading-tight text-left">
+                                            Kaydol butonuna tıklayarak <span onClick={() => setActivePolicy('terms')} className="text-blue-600 dark:text-blue-400 cursor-pointer hover:underline font-bold">Hizmet Koşullarımızı</span>, <span onClick={() => setActivePolicy('privacy')} className="text-blue-600 dark:text-blue-400 cursor-pointer hover:underline font-bold">Gizlilik Politikamızı</span> ve <span onClick={() => setActivePolicy('cookies')} className="text-blue-600 dark:text-blue-400 cursor-pointer hover:underline font-bold">Çerez Politikamızı</span> kabul etmiş olursunuz.
+                                        </div>
                                     </div>
                                 )}
 
                                 {error && <div className="p-3 bg-red-50 text-red-600 text-xs rounded-lg text-left font-medium flex gap-2 items-start"><Icon name="alert-circle" className="w-4 h-4 shrink-0"/> {error}</div>}
                                 {success && <div className="p-3 bg-green-50 text-green-600 text-xs rounded-lg text-left font-medium flex gap-2 items-start"><Icon name="check-circle" className="w-4 h-4 shrink-0"/> {success}</div>}
                                 
-                                <button type="submit" className="w-full bg-red-600 text-white font-bold py-3 rounded-lg hover:bg-red-700 transition-all shadow-lg hover:shadow-red-500/30 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed mt-2" disabled={loading}>
+                                <button type="submit" className="w-full bg-red-600 text-white font-bold py-3 rounded-lg hover:bg-red-700 transition-all shadow-lg hover:shadow-red-500/30 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed mt-2" disabled={loading || (mode === "register" && !isTermsAccepted)}>
                                     {loading ? "İşleniyor..." : (mode === "register" ? "Hesap Oluştur" : "Giriş Yap")}
                                 </button>
                                 {mode === "login" && <button type="button" onClick={() => { setMode("forgot"); setError(""); setSuccess(""); }} className="text-xs text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white underline mt-4 block mx-auto">Şifremi Unuttum</button>}
