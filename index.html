@@ -343,6 +343,30 @@
             return `${date.toLocaleDateString('tr-TR')} ${timeStr}`;
         };
 
+        const sanitizeFirestoreData = (data) => {
+            if (data === undefined) return null;
+            if (data === null) return null;
+
+            if (Array.isArray(data)) {
+                return data.map(item => sanitizeFirestoreData(item));
+            }
+
+            if (typeof data === 'object') {
+                // Date, RegExp ve Firestore özel tiplerini koru (constructor kontrolü)
+                if (data.constructor !== Object) return data;
+
+                const result = {};
+                for (const key in data) {
+                    if (Object.prototype.hasOwnProperty.call(data, key)) {
+                        result[key] = sanitizeFirestoreData(data[key]);
+                    }
+                }
+                return result;
+            }
+
+            return data;
+        };
+
         // --- Şehir ve Kategori Bazlı Öneriler ---
         const citySuggestionsData = {
             "Adana": { "Genel": ["Taş Köprü", "Sabancı Merkez Camii", "Büyük Saat", "Kazancılar Çarşısı"], "Yemek": ["Adana Kebap ", "Şalgam Suyu", "Bici Bici", "Şırdan"], "Doğa": ["Seyhan Baraj Gölü", "Kapıkaya Kanyonu", "Belemedik", "Karataş Tabiat Parkı "], "Eğlence": ["Playland", "GoKart Yarış Pisti", "Kano", "Optimum"], "Tarih": ["Anavarza Antik Kenti", "Varda Köprüsü", "Yılankale", "Ramazanoğlu Konağı"] },
@@ -1989,11 +2013,11 @@
                         
                         if (shouldSaveExternal) {
                             const imageDocId = `${targetUser}_${m.cityName}`;
-                            const extPayload = { 
+                            const extPayload = sanitizeFirestoreData({
                                 images: m.images || [],
                                 // High-res favori resmi de external'a yedekle
                                 ...(m.favoriteImage ? { favoriteImage: m.favoriteImage } : {}) 
-                            };
+                            });
                             
                             // Merge true ile kaydet ki varsa eski veriler (örn: images boşsa) korunmasın, üstüne yazsın.
                             // Bekle, merge true yaparsak ve images: [] gönderirsek silinmez mi?
@@ -2040,7 +2064,7 @@
                         return;
                     }
 
-                    await docRef.set(payload, { merge: true });
+                    await docRef.set(sanitizeFirestoreData(payload), { merge: true });
                 } catch (e) { 
                     console.error("Kayıt Hatası:", e);
                     alert("Kayıt sırasında bir hata oluştu! " + e.message);
