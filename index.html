@@ -837,6 +837,38 @@
             );
         };
 
+        // --- NEW POST MODAL ---
+        const NewPostModal = ({ onClose, onPost }) => {
+            const [text, setText] = useState("");
+            const maxLength = 150;
+
+            const handleSubmit = () => {
+                if(!text.trim()) return;
+                onPost(text);
+                onClose();
+            };
+
+            return (
+                <div className="fixed inset-0 z-[1600] bg-black/70 flex items-center justify-center p-4 animate-fadeIn">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm p-5 relative">
+                        <button onClick={onClose} className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"><Icon name="x" className="w-5 h-5"/></button>
+                        <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">Yeni Gönderi Paylaş</h3>
+                        <textarea 
+                            className="w-full border dark:border-gray-600 rounded-xl p-3 text-sm bg-gray-50 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 min-h-[100px] resize-none"
+                            placeholder="Aklından geçenleri yaz..."
+                            maxLength={maxLength}
+                            value={text}
+                            onChange={e => setText(e.target.value)}
+                        ></textarea>
+                        <div className="flex justify-between items-center mt-2">
+                            <span className={`text-xs font-bold ${text.length >= maxLength ? 'text-red-500' : 'text-gray-400'}`}>{text.length}/{maxLength}</span>
+                            <button onClick={handleSubmit} disabled={!text.trim()} className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-indigo-700 disabled:opacity-50 transition-colors">Paylaş</button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
         // --- PARTNER MODAL ---
         const PartnerModal = ({ myUsername, currentPartner, onClose, onLink, onBreakUp }) => {
             const [partnerName, setPartnerName] = useState("");
