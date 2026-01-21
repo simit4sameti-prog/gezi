@@ -52,6 +52,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
 
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6212448037400866" 
      crossorigin="anonymous"></script>
@@ -177,7 +178,7 @@
         const firebaseConfig = MANUAL_FIREBASE_CONFIG || (typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null);
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
-        let app, auth, db;
+        let app, auth, db, storage;
         let isFirebaseReady = false;
 
         if (typeof firebase !== 'undefined' && firebaseConfig) {
@@ -189,6 +190,7 @@
                 }
                 auth = firebase.auth();
                 db = firebase.firestore();
+                storage = firebase.storage();
                 isFirebaseReady = true;
             } catch (e) {
                 console.error("Firebase başlatma hatası:", e);
@@ -292,6 +294,23 @@
                 };
                 img.src = url;
             });
+        };
+
+        const dataURLtoBlob = (dataurl) => {
+            var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+                bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+            while(n--){
+                u8arr[n] = bstr.charCodeAt(n);
+            }
+            return new Blob([u8arr], {type:mime});
+        };
+
+        const uploadImageToFirebase = async (blob, path) => {
+            if (!storage) throw new Error("Storage not initialized");
+            const storageRef = storage.ref();
+            const fileRef = storageRef.child(path);
+            await fileRef.put(blob);
+            return await fileRef.getDownloadURL();
         };
 
         const createThumbnail = (base64) => {
@@ -2263,37 +2282,55 @@
                     }
 
                     const optimizedMarkers = await Promise.all(newMarkers.map(async (m) => {
-                        // Eğer büyük resim verisi varsa, bunu ayır
+                        // Resim kontrolü
                         if (m.images && m.images.length > 0) {
-                            // Sadece dolu base64 stringleri için işlem yap (zaten referans ise atla)
-                            // Basit kontrol: uzunluk > 1000 ise resimdir, değilse referans olabilir ama biz her zaman external tutacağız
-                            // Eğer zaten boşaltılmışsa m.images boştur veya doludur.
-                            
-                            // Yeni eklenen veya mevcut büyük resimleri ayıkla
-                            // Burada veriyi external koleksiyona yazıyoruz
-                            const imageDocId = `${targetUser}_${m.cityName}`;
-                            await photosCollection.doc(imageDocId).set({ images: m.images });
+                            // URL kontrolü: Eğer hepsi http/https ise (yeni sistem), bunları ana belgede tutabiliriz.
+                            const areAllUrls = m.images.every(img => img.startsWith('http'));
 
                             // Thumbnail oluştur (ilk resimden)
                             let thumb = m.thumbnail;
                             if (!thumb && m.images[0]) {
-                                thumb = await createThumbnail(m.images[0]);
+                                // Eğer URL ise direkt kullan, değilse oluştur
+                                if (m.images[0].startsWith('http')) {
+                                    thumb = m.images[0];
+                                } else {
+                                    thumb = await createThumbnail(m.images[0]);
+                                }
                             }
 
-                            // favoriteImage'i ana belge için küçült (Feed'de net görünsün ama 1MB limitini aşmasın)
+                            // favoriteImage kontrolü
                             let previewImg = m.favoriteImage;
-                            if (previewImg && previewImg.length > 200000) {
-                                // Eğer 200KB'dan büyükse küçült (yaklaşık 600px - 800px)
+                            if (!previewImg && m.images.length > 0) {
+                                previewImg = m.images[m.images.length - 1];
+                            }
+
+                            // Base64 ise ve büyükse küçült
+                            if (previewImg && !previewImg.startsWith('http') && previewImg.length > 200000) {
                                 previewImg = await resizeBase64(previewImg, 800, 0.7);
                             }
 
-                            return {
-                                ...m,
-                                images: [], // Ana belgede resim dizisini boşalt (External'a taşıdık)
-                                thumbnail: thumb,
-                                favoriteImage: previewImg, // Feed için optimize edilmiş ama net versiyonu tut
-                                hasImages: true // İşaret koy
-                            };
+                            if (areAllUrls) {
+                                // URL bazlı: Kotasız sistem, resimleri dizide tut
+                                return {
+                                    ...m,
+                                    images: m.images, // URL'leri koru
+                                    thumbnail: thumb,
+                                    favoriteImage: previewImg,
+                                    hasImages: true
+                                };
+                            } else {
+                                // Base64 (Legacy): External koleksiyona taşı
+                                const imageDocId = `${targetUser}_${m.cityName}`;
+                                await photosCollection.doc(imageDocId).set({ images: m.images });
+
+                                return {
+                                    ...m,
+                                    images: [], // Ana belgede resim dizisini boşalt
+                                    thumbnail: thumb,
+                                    favoriteImage: previewImg,
+                                    hasImages: true
+                                };
+                            }
                         } else {
                             // Resim yoksa veya silindiyse
                             return { ...m, thumbnail: m.thumbnail || null };
@@ -2548,12 +2585,19 @@
             const handleImage = async (e) => { 
                 const files = Array.from(e.target.files); 
                 try {
-                    const compressedFiles = await Promise.all(files.map(file => compressImage(file)));
+                    const uploadedUrls = await Promise.all(files.map(async (file) => {
+                        const compressedDataUrl = await compressImage(file);
+                        const blob = dataURLtoBlob(compressedDataUrl);
+                        // Generate a unique path: user_uploads/{username}/{timestamp}_{random}.jpg
+                        const filename = `user_uploads/${myUsername}/${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+                        return await uploadImageToFirebase(blob, filename);
+                    }));
+
                     setImages(prev => { 
-                        const newImages = [...prev, ...compressedFiles]; 
+                        const newImages = [...prev, ...uploadedUrls];
                         // Yeni fotoğraf eklendiğinde onu kapak (favori) yap
-                        if (compressedFiles.length > 0) {
-                            setFavoriteImage(compressedFiles[compressedFiles.length - 1]);
+                        if (uploadedUrls.length > 0) {
+                            setFavoriteImage(uploadedUrls[uploadedUrls.length - 1]);
                         }
                         return newImages; 
                     });
@@ -2997,7 +3041,26 @@
                                                 </div>
                                             </div>
 
-                                            {(item.favoriteImage || item.thumbnail || (item.images && item.images[0])) && <img src={item.favoriteImage || item.thumbnail || (item.images && item.images[0])} className="w-full h-44 object-cover cursor-zoom-in" onClick={() => { if(item.images && item.images.length > 0) openLightbox(item.images[0], item.images); else if(item.favoriteImage) openLightbox(item.favoriteImage, [item.favoriteImage]); else if(item.thumbnail) openLightbox(item.thumbnail, [item.thumbnail]); }}/>}
+                                            {(item.images && item.images.length > 1) ? (
+                                                <div className="grid grid-cols-2 gap-0.5 w-full h-44">
+                                                     {item.images.slice(0, 4).map((img, idx) => {
+                                                         // Toplu gösterim: eğer 3 resim varsa ilki büyük, diğerleri küçük. 4 varsa 2x2.
+                                                         const isLarge = item.images.length === 3 && idx === 0;
+                                                         const displayImages = item.images;
+
+                                                         return (
+                                                             <img
+                                                                 key={idx}
+                                                                 src={img}
+                                                                 className={`w-full h-full object-cover cursor-zoom-in ${isLarge ? 'col-span-2' : ''}`}
+                                                                 onClick={() => openLightbox(img, displayImages)}
+                                                             />
+                                                         );
+                                                     })}
+                                                </div>
+                                            ) : (
+                                                (item.favoriteImage || item.thumbnail || (item.images && item.images[0])) && <img src={item.favoriteImage || item.thumbnail || (item.images && item.images[0])} className="w-full h-44 object-cover cursor-zoom-in" onClick={() => { if(item.images && item.images.length > 0) openLightbox(item.images[0], item.images); else if(item.favoriteImage) openLightbox(item.favoriteImage, [item.favoriteImage]); else if(item.thumbnail) openLightbox(item.thumbnail, [item.thumbnail]); }}/>
+                                            )}
                                             
                                             <div className="p-3">
                                                 {/* GÜNLÜK (NOTLAR) GİZLİLİĞİ: TAM METİN GİZLİ, SADECE HASHTAGLER GÖSTERİLİR */}
