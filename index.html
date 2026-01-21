@@ -263,7 +263,7 @@
                     URL.revokeObjectURL(url);
                     const canvas = document.createElement('canvas');
                     // Daha net görseller için çözünürlük artırıldı
-                    const MAX_DIMENSION = 1200; 
+                    const MAX_DIMENSION = 2048;
                     let width = img.width;
                     let height = img.height;
                     
@@ -281,11 +281,6 @@
                     // Kalite 0.8 - Daha net
                     let dataUrl = canvas.toDataURL('image/jpeg', 0.8);
                     
-                    // Çok büyükse kaliteyi hafif düşür ama boyutu koru
-                    if (dataUrl.length > 500000) {
-                         dataUrl = canvas.toDataURL('image/jpeg', 0.6);
-                    }
-
                     resolve(dataUrl);
                 };
                 img.onerror = (e) => {
@@ -2339,13 +2334,6 @@
                     
                     // Veri boyutunu kontrol et (Firestore limiti ~1MB)
                     const payload = { markers: optimizedMarkers, lastUpdated: new Date().toISOString() };
-                    const jsonString = JSON.stringify(payload);
-                    const bytes = new Blob([jsonString]).size;
-                    
-                    if (bytes > 950000) {
-                        alert("HATA: Depolama alanı doldu! Çok fazla veri var. Lütfen bazı kayıtları siliniz.");
-                        return;
-                    }
 
                     await docRef.set(payload, { merge: true });
                 } catch (e) { 
@@ -2584,6 +2572,10 @@
 
             const handleImage = async (e) => { 
                 const files = Array.from(e.target.files); 
+                if (files.length > 4) {
+                    alert("Toplu yüklemelerde en fazla 4 fotoğraf seçebilirsiniz.");
+                    return;
+                }
                 try {
                     const uploadedUrls = await Promise.all(files.map(async (file) => {
                         const compressedDataUrl = await compressImage(file);
