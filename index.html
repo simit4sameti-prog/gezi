@@ -259,6 +259,10 @@
                 // Büyük dosyalarda bellek sorununu önlemek için createObjectURL kullanıyoruz
                 const url = URL.createObjectURL(file);
                 const img = new Image();
+                img.onerror = (err) => {
+                    URL.revokeObjectURL(url);
+                    reject(err);
+                };
                 img.onload = () => {
                     URL.revokeObjectURL(url);
                     const canvas = document.createElement('canvas');
@@ -314,8 +318,9 @@
         };
 
         const createThumbnail = (base64) => {
-            return new Promise((resolve) => {
+            return new Promise((resolve, reject) => {
                 const img = new Image();
+                img.onerror = (err) => reject(err);
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
                     // Thumbnail boyutunu artırdık (netlik için)
@@ -332,8 +337,9 @@
         };
 
         const resizeBase64 = (base64, maxWidth = 600, quality = 0.6) => {
-            return new Promise((resolve) => {
+            return new Promise((resolve, reject) => {
                 const img = new Image();
+                img.onerror = (err) => reject(err);
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
                     let w = img.width; let h = img.height;
@@ -1491,6 +1497,7 @@
             const [currentChatFriend, setCurrentChatFriend] = useState(null);
             const [darkMode, setDarkMode] = useState(false); 
             const [isStatsOpen, setIsStatsOpen] = useState(false); 
+            const [isUploading, setIsUploading] = useState(false);
             const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
             const [isCinemaOpen, setIsCinemaOpen] = useState(false); 
             const [isMessagesOpen, setIsMessagesOpen] = useState(false);
@@ -2589,6 +2596,7 @@
                     return;
                 }
                 try {
+                    setIsUploading(true);
                     const uploadedUrls = await Promise.all(files.map(async (file) => {
                         const compressedDataUrl = await compressImage(file);
                         const blob = dataURLtoBlob(compressedDataUrl);
@@ -2608,6 +2616,8 @@
                 } catch (error) {
                     console.error("Resim yükleme hatası:", error);
                     alert("Fotoğraflar yüklenirken bir sorun oluştu.");
+                } finally {
+                    setIsUploading(false);
                 }
             };
             const toggleCheckedPlace = (place) => { if(isReadOnly) return; setCheckedPlaces(prev => prev.includes(place) ? prev.filter(p=>p!==place) : [...prev, place]); };
@@ -2827,8 +2837,8 @@
                                         </span>
                                     )}
                                  </button>
-                                 <button onClick={()=>setIsLeaderboardOpen(true)} className="flex-1 min-w-[60px] bg-white/10 hover:bg-white/20 py-1.5 rounded flex flex-col items-center justify-center text-[10px] font-bold gap-0.5 transition-colors"><Icon name="trophy" className="w-4 h-4"/> Liderler</button>
-                                 <button onClick={()=>window.open('https://havadurumu-ok7v.vercel.app', '_blank')} className="flex-1 min-w-[60px] bg-white/10 hover:bg-white/20 py-1.5 rounded flex flex-col items-center justify-center text-[10px] font-bold gap-0.5 transition-colors whitespace-nowrap"><Icon name="sun" className="w-4 h-4"/> Hava Durumu</button>
+                                 <button onClick={()=>setIsLeaderboardOpen(true)} className="flex-1 min-w-[60px] bg-white/10 hover:bg-white/20 py-1.5 rounded flex flex-col items-center justify-center text-[10px] font-bold gap-0.5 transition-colors whitespace-nowrap"><Icon name="trophy" className="w-4 h-4"/> Liderler</button>
+                                 <button onClick={()=>window.open('https://havadurumu-ok7v.vercel.app', '_blank', 'noopener,noreferrer')} className="flex-1 min-w-[60px] bg-white/10 hover:bg-white/20 py-1.5 rounded flex flex-col items-center justify-center text-[10px] font-bold gap-0.5 transition-colors whitespace-nowrap"><Icon name="sun" className="w-4 h-4"/> Hava Durumu</button>
                             </div>
 
                             <div className="flex bg-black/20 rounded-lg p-1 mb-3 mx-5">
@@ -3253,7 +3263,13 @@
                                                     {!isReadOnly && <button onClick={()=>setImages(images.filter((_,x)=>x!==i))} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"><Icon name="x" className="w-3 h-3"/></button>}
                                                 </div>
                                             ))}
-                                            {!isReadOnly && images.length < 3 && <label className="aspect-square border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer flex items-center justify-center text-gray-400 hover:border-blue-500 hover:text-blue-500 transition-all shadow-sm"><Icon name="plus" className="w-6 h-6"/><input type="file" multiple className="hidden" onChange={handleImage}/></label>}
+                                            {isUploading && (
+                                                <div className="aspect-square rounded-lg border border-gray-100 bg-gray-50 flex flex-col items-center justify-center animate-pulse">
+                                                    <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                                                    <span className="text-[10px] mt-2 text-gray-400 font-bold">Yükleniyor</span>
+                                                </div>
+                                            )}
+                                            {!isReadOnly && !isUploading && images.length < 3 && <label className="aspect-square border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer flex items-center justify-center text-gray-400 hover:border-blue-500 hover:text-blue-500 transition-all shadow-sm"><Icon name="plus" className="w-6 h-6"/><input type="file" multiple className="hidden" onChange={handleImage}/></label>}
                                         </div>
                                     </div>
 
